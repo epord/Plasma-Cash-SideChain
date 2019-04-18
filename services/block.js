@@ -1,14 +1,9 @@
-const mongoose										= require('mongoose')
-		, moment 											= require('moment')
+const moment 											= require('moment')
 		, async												= require('async')
 		, { keccak256, bufferToHex }	= require('ethereumjs-util')
-		, { TransactionService }			= require('./transaction')
-		, SparseMerkleTree						= require('../utils/SparseMerkleTree')
-		, { BlockModel }							= require('../models');
-
-BlockModel.virtual('header_hash').get(function() { return this._id });
-
-const BlockService = mongoose.model('Block', BlockModel, 'blocks');
+		, { TransactionService,
+				BlockService }			= require('../services')
+		, SparseMerkleTree						= require('../utils/SparseMerkleTree');
 
 const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 	const timestamp = moment.now();
@@ -91,7 +86,6 @@ const depositBlock = (transaction, cb) => {
 }
 
 module.exports = {
-	BlockService,
 	createBlock,
 	mineBlock,
 	depositBlock

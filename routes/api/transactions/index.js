@@ -28,7 +28,7 @@ router.get('/', (req, res, next) => {
 
 router.post('/create', (req, res, next) => {
 	const { tokenId, owner, recipient, hash, blockSpent, signature } = req.body;
-	if (!tokenId || !owner || !recipient || !hash || !blockSpent || !signature) {
+	if (!tokenId || !/[0-9]+/.test(tokenId) || !owner || !recipient || !hash || !blockSpent || !signature) {
 		res.status(Status.BAD_REQUEST).json('Missing parameter');
 	}
 	createTransaction(tokenId, owner, recipient, hash, blockSpent, signature, (err, transaction) => {
