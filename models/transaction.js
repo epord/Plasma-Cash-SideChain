@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 module.exports = mongoose.Schema({
 
-	token_id: String,
+	token_id: Number,
 
 	owner: String,
 
@@ -14,6 +14,14 @@ module.exports = mongoose.Schema({
 	// Last block that spend token_id
 	// If (block_spent % childBlockInterval) == 0 then block_spent is a deposit block
 	block_spent: Number, /// TODO: bigger number
+
+	// Block which includes this transaction
+	mined_block: {
+		type: String,
+		ref: 'Block'
+	},
+
+	mined_timestamp: Date,
 
 	signature: String,
 

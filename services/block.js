@@ -1,9 +1,10 @@
 const moment 											= require('moment')
 		, async												= require('async')
-		, { keccak256, bufferToHex }	= require('ethereumjs-util')
+		, { bufferToHex }							= require('ethereumjs-util')
 		, { TransactionService,
-				BlockService }			= require('../services')
-		, SparseMerkleTree						= require('../utils/SparseMerkleTree');
+				BlockService }						= require('../services')
+		, SparseMerkleTree						= require('../utils/SparseMerkleTree')
+		, { keccak256 }								= require('../utils/cryptoUtils');;
 
 const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 	const timestamp = moment.now();
@@ -16,7 +17,7 @@ const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 	const sparseMerkleTree = new SparseMerkleTree(64, leaves);
 	const rootHash = sparseMerkleTree.root
 	const lastBlockHeaderHash = lastBlock ? lastBlock.header_hash : bufferToHex(Buffer.alloc(32));
-	const headerHash = bufferToHex(keccak256(blockNumber ,timestamp, lastBlockHeaderHash, rootHash));
+	const headerHash = keccak256(blockNumber, timestamp, lastBlockHeaderHash, rootHash);
 
 	BlockService.create({
 		_id: headerHash, timestamp,
@@ -29,9 +30,11 @@ const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 			block.populate({
 				path: 'transactions'
 			}, (err, block) => {
-
+				//TODO check 2 transactions not spend the same token
 				block.transactions.forEach(transaction => {
 					transaction.mined = true;
+					transaction.mined_timestamp = block.timestamp
+					transaction.mined_block = block._id
 					transaction.save();
 				});
 				cb();

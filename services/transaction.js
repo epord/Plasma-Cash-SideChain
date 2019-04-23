@@ -1,43 +1,42 @@
-const { keccak256
-			, bufferToHex
-			, pubToAddress } 				= require('ethereumjs-util')
-		, { recover }            	= require('../utils/sign')
+const { recover }            	= require('../utils/sign')
 		, { TransactionService
-			, BlockService }				= require('../services');
+			, BlockService }				= require('../services')
+		, { keccak256
+			, pubToAddress }				= require('../utils/cryptoUtils');
 
 const createTransaction = (_tokenId, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
 	const tokenId = _tokenId;
 	const owner = _owner.toLowerCase();
 	const recipient = _recipient.toLowerCase();
 	const hash = _hash.toLowerCase();
-	const blockSpent = _blockSpent.toLowerCase();
+	const blockSpent = _blockSpent;
 	const signature = _signature.toLowerCase();
 
 
 	/// TODO: check tokenId exists
-	BlockService
-		.findById(blockSpent)
-		.exec((err, block) => {
+	TransactionService
+		.find({ token_id: tokenId })
+		.sort({ mined_timestamp: -1 })
+		.exec((err, transactions) => {
 			if (err) return cb(err);
-			if (!block) return cb('blockSpent not found');
-			block.populate({
-				path: 'transactions'
-			}, (err, block) => {
+			if (transactions.length == 0) return cb('Token ID not in side chain');
+
+			const lastTransaction = transactions[0];
+			lastTransaction.populate({
+				path: 'mined_block'
+			}, (err, transaction) => {
 				if (err) return cb(err);
-				const lastTransaction = block.transactions.find(t => t.token_id == tokenId);
-				if (!lastTransaction) return cb(`blockSpent does not contain transaction with token ${tokenId}`);
-				if (lastTransaction.recipient !== owner) return cb('The recipient of the previous transaction is not the current owner');
+				const { mined_block } = transaction;
+				if (mined_block.block_number != blockSpent) return cb('blockSpent is invalid');
 
-
-				const calculatedHash = bufferToHex(keccak256(tokenId + blockSpent +  '1' +  recipient + owner));
+				const calculatedHash = keccak256(tokenId, blockSpent, recipient, owner);
 				console.log(calculatedHash)
 				if (hash !== calculatedHash) {
 					cb('Hash invalid');
 					return;
 				}
 
-				Buffer.prototype.hex = function() { bufferToHex(this) }
-				if(owner.toLowerCase() != bufferToHex(pubToAddress(bufferToHex(recover(hash, signature))))){
+				if(owner.toLowerCase() != pubToAddress(recover(hash, signature))) {
 					cb('Owner did not sign this');
 					return;
 				}
@@ -47,12 +46,13 @@ const createTransaction = (_tokenId, _owner, _recipient, _hash, _blockSpent, _si
 					owner,
 					recipient,
 					_id: hash,
-					block_spent: block.block_number,
+					block_spent: mined_block.block_number,
 					signature
 				},
 				cb);
 
 			});
+
 		})
 }
 

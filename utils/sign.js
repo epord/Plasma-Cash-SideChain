@@ -16,7 +16,7 @@ const recover = (hash, signature) => {
   }
 
   res = fromRpcSig(signature)
-  return ecrecover(toBuffer(_hash), res.v, res.r, res.s);
+  return bufferToHex(ecrecover(toBuffer(_hash), res.v, res.r, res.s));
 }
 
 module.exports = {

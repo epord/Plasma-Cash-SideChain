@@ -11,8 +11,8 @@ BlockModel.virtual('header_hash').get(function() { return this._id });
 const BlockService = mongoose.model('Block', BlockModel, 'blocks');
 
 const Services = {
-	BlockService: BlockService,
-	TransactionService: TransactionService
+	BlockService,
+	TransactionService
 };
 
 module.exports = Services;

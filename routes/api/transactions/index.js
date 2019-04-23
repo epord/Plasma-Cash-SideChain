@@ -28,8 +28,8 @@ router.get('/', (req, res, next) => {
 
 router.post('/create', (req, res, next) => {
 	const { tokenId, owner, recipient, hash, blockSpent, signature } = req.body;
-	if (!tokenId || !/[0-9]+/.test(tokenId) || !owner || !recipient || !hash || !blockSpent || !signature) {
-		res.status(Status.BAD_REQUEST).json('Missing parameter');
+	if (!tokenId || !/[0-9]+/.test(tokenId) || !owner || !recipient || !hash || blockSpent == undefined || !signature) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter');
 	}
 	createTransaction(tokenId, owner, recipient, hash, blockSpent, signature, (err, transaction) => {
 		if (err) return res.status(Status.BAD_REQUEST).json(err);
