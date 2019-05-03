@@ -68,14 +68,14 @@ const reduceTransactionsByTokenId = (groupedTransactions, cb) => {
 				return cb();
 			})
 		}
-	})
+	});
 
 	async.parallel(jobs, (err, results) => {
 		if (err) return cb(err);
 		cb(null, results.filter(r => r));
-	})
+	});
 
-}
+};
 
 /**
  * Given a set of transactions, will find the first valid one, removem those that finds invalid
@@ -83,12 +83,10 @@ const reduceTransactionsByTokenId = (groupedTransactions, cb) => {
  * @param {Callback function (error, result)} cb where result is the first valid transaction, or undefined if none was found
  */
 const getFirstValidTransaction = (transactions, cb) => {
-	if(transactions.length == 0) {
-		return cb();
-	}
+	if(transactions.length === 0) return cb();
 
 	//Gets the first transaction
-	const t = transactions[0]
+	const t = transactions[0];
 
 	isTransactionValid({
 			tokenId: t.token_id,
@@ -107,17 +105,17 @@ const getFirstValidTransaction = (transactions, cb) => {
 			} else {
 				//If the transaction is invalid, remove it from the Database
 				//Notify somewhere who knows where
-				debug(invalidError)
+				debug(invalidError);
 				TransactionService.deleteOne(t._id).exec((err) => {
-						if(err) return cb(err)
+						if(err) return cb(err);
 
 						// Continue looking at the rest of the array in a recursive way
-						transactions.shift()
+						transactions.shift();
 						getFirstValidTransaction(transactions, cb)
 				});
 			}
 		})
-}
+};
 
 const mineBlock = (cb) => {
 	async.parallel({
@@ -138,14 +136,14 @@ const mineBlock = (cb) => {
 		}
 		const { lastBlock, transactions } = results;
 
-		const groupedTransactions = groupBy(transactions, "token_id")
+		const groupedTransactions = groupBy(transactions, "token_id");
 		reduceTransactionsByTokenId(Object.values(groupedTransactions), (err, result) => {
 			if(err) return cb(err);
 
 			let nextNumber;
 			if(!lastBlock) {
 				nextNumber = 0;
-			} else if(lastBlock.block_number + 1 % 1000 != 0) {
+			} else if(lastBlock.block_number + 1 % 1000 !== 0) {
 				nextNumber = lastBlock.block_number + 1
 			} else {
 				nextNumber = lastBlock.block_number + 2
@@ -154,7 +152,7 @@ const mineBlock = (cb) => {
 			createBlock(result, lastBlock, nextNumber, cb);
 		});
 	});
-}
+};
 
 const depositBlock = (transaction, cb) => {
 	BlockService
@@ -173,10 +171,10 @@ const depositBlock = (transaction, cb) => {
 
 			createBlock([transaction], lastBlock, nextNumber, cb);
 		});
-}
+};
 
 module.exports = {
 	createBlock,
 	mineBlock,
 	depositBlock
-}
+};

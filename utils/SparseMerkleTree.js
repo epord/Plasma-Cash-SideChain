@@ -39,14 +39,14 @@ module.exports = class SparseMerkleTree {
         for (let level = 0; level < depth; level++) {
             nextLevel = {};
             for(let index in treeLevel) {
-                halfIndex = web3.toBN(index).divRound(web3.toBN(2)).toString();
+                halfIndex = new BN(index).divRound(new BN(2)).toString();
                 value = treeLevel[index];
-                if (web3.toBN(index).mod(web3.toBN(2)).isZero()) {
-                    let coIndex = web3.toBN(index).add(web3.toBN(1)).toString();
+                if (new BN(index).mod(new BN(2)).isZero()) {
+                    let coIndex = new BN(index).add(new BN(1)).toString();
                     nextLevel[halfIndex] =
                         utils.bufferToHex(utils.keccak256(value, treeLevel[coIndex] || defaultNodes[level]));
                 } else {
-                    let coIndex = web3.toBN(index).sub(web3.toBN(1)).toString();
+                    let coIndex = new BN(index).sub(new BN(1)).toString();
                     if (treeLevel[coIndex] === undefined) {
                           nextLevel[halfIndex] =
                             utils.bufferToHex(utils.keccak256(defaultNodes[level], value));
@@ -60,14 +60,14 @@ module.exports = class SparseMerkleTree {
     }
 
     createMerkleProof(uid) {
-        let index = web3.toBN(uid)
+        let index = new BN(uid);
         let proof = '';
         let proofbits = new BN(0);
         let siblingIndex;
         let siblingHash;
         for (let level=0; level < this.depth; level++) {
-            siblingIndex = index.mod(web3.toBN(2)).isZero() ? index.add(web3.toBN(1)) : index.sub(web3.toBN(1));
-            index = index.divRound(web3.toBN(2));
+            siblingIndex = index.mod(new BN(2)).isZero() ? index.add(new BN(1)) : index.sub(new BN(1));
+            index = index.divRound(new BN(2));
 
             siblingHash = this.tree[level][siblingIndex.toString()];
             if (siblingHash) {
@@ -80,4 +80,4 @@ module.exports = class SparseMerkleTree {
         let total = Buffer.concat([buf, Buffer.from(proof, 'hex')]);
         return '0x' + total.toString('hex');
     }
-}
+};

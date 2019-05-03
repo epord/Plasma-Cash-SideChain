@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const BigNumberSchema = require('mongoose-bignumber');
 
 module.exports = mongoose.Schema({
 	prev: {
@@ -6,7 +7,12 @@ module.exports = mongoose.Schema({
 		ref: 'Block'
 	},
 
-	block_number: Number, /// TODO: bigger number
+	block_number: {
+		type: BigNumberSchema,
+		scale: 0,
+		required: true,
+		min: '0'
+	},
 
 	root_hash: String,
 

@@ -6,11 +6,11 @@ const keccak256 = (...args) => {
 		params.push(EthUtils.toBuffer(arg));
 	});
 	return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(params))));
-}
+};
 
 const pubToAddress = (pubKey) => {
 	return EthUtils.bufferToHex(EthUtils.pubToAddress(EthUtils.toBuffer(pubKey)));
-}
+};
 
 const generateTransaction = (tokenId, owner, recipient, blockSpent, privateKey) => {
 	const hash = keccak256(tokenId, blockSpent, recipient, owner);
@@ -26,7 +26,7 @@ const generateTransaction = (tokenId, owner, recipient, blockSpent, privateKey) 
 		"signature": realSignature
 	}))
 
-}
+};
 
 module.exports = {
 	keccak256,
