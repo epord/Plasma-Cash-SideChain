@@ -5,18 +5,18 @@ const EthUtils	= require('ethereumjs-util')
 // const RLP = require('rlp');
 
 
-const generateTransactionHash = (tokenId, blockSpent, owner, recipient) => {
+const generateTransactionHash = (slot, blockSpent, owner, recipient) => {
 	keccak256(
-		EthUtils.setLengthLeft(new BN(tokenId.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
+		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
 		EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
 		EthUtils.toBuffer(owner),														// must start with 0x
 		EthUtils.toBuffer(recipient),													// must start with 0x
 	)
 };
 
-const generateLeafHash = (tokenId, blockSpent, owner, recipient, signature) => {
+const generateLeafHash = (slot, blockSpent, owner, recipient, signature) => {
 	keccak256(
-		EthUtils.setLengthLeft(new BN(tokenId.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
+		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
 		EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
 		EthUtils.toBuffer(owner),														// must start with 0x
 		EthUtils.toBuffer(recipient),													// must start with 0x
@@ -48,8 +48,8 @@ const pubToAddress = (pubKey) => {
 	return EthUtils.bufferToHex(EthUtils.pubToAddress(EthUtils.toBuffer(pubKey)));
 };
 
-const generateTransaction = (tokenId, owner, recipient, blockSpent, privateKey) => {
-	const hash = generateTransactionHash(new BigNumber(tokenId), new BigNumber(blockSpent), owner, recipient);
+const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => {
+	const hash = generateTransactionHash(new BigNumber(slot), new BigNumber(blockSpent), owner, recipient);
 	const signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(privateKey));
 
 	// This method simulates eth-sign RPC method
@@ -57,7 +57,7 @@ const generateTransaction = (tokenId, owner, recipient, blockSpent, privateKey) 
 	const realSignature = EthUtils.toRpcSig(signature.v, signature.r, signature.s);
 
 	console.log(JSON.stringify({
-		"tokenId": tokenId,
+		"slot": slot,
 		"owner": owner,
 		"recipient": recipient,
 		"hash": hash,

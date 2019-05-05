@@ -14,12 +14,12 @@ const moment 											= require('moment')
 const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 	const timestamp = moment.now();
 
-	const maxTokenCount = getHighestOcurrence(transactions.map(t => t.token_id))
-	if(maxTokenCount > 1) return cb("Trying to mine 2 token Ids at once");
+	const maxSlotCount = getHighestOcurrence(transactions.map(t => t.slot));
+	if(maxSlotCount > 1) return cb("Trying to mine 2 slots at once");
 
 	const leaves = transactions.reduce((map, value) => {
-		map[value.token_id] = generateLeafHash(
-			value.token_id,
+		map[value.slot] = generateLeafHash(
+			value.slot,
 			value.block_spent,
 			value.owner,
 			value.recipient,
@@ -56,14 +56,14 @@ const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 }
 
 /**
- * Given an array of set of transactions, where each array, transactions share the same tokenId,
- * calculates the reduced set of transactions, one for each tokenId, eliminating transactions that it
+ * Given an array of set of transactions, where each array, transactions share the same slot,
+ * calculates the reduced set of transactions, one for each slot, eliminating transactions that it
  * find invalid in the process
  *
- * @param {Array of set of transactions with common TokenId} groupedTransactions
- * @param {CallBack functions, (error, result) => void} cb where result is the final set of transactions to be added
+ * @param {Array of set of transactions with common Slot} groupedTransactions
+ * @param {(error, result) => void} cb CallBack function, where result is the final set of transactions to be added
  */
-const reduceTransactionsByTokenId = (groupedTransactions, cb) => {
+const reduceTransactionsBySlot = (groupedTransactions, cb) => {
 
 	//Generate a paralel job for each group of transactions
 	const jobs = groupedTransactions.map(group => {
@@ -85,7 +85,7 @@ const reduceTransactionsByTokenId = (groupedTransactions, cb) => {
 
 /**
  * Given a set of transactions, will find the first valid one, removem those that finds invalid
- * @param {Set of transactions that share the same TokenId} transactions
+ * @param {Set of transactions that share the same Slot} transactions
  * @param {Callback function (error, result)} cb where result is the first valid transaction, or undefined if none was found
  */
 const getFirstValidTransaction = (transactions, cb) => {
@@ -95,7 +95,7 @@ const getFirstValidTransaction = (transactions, cb) => {
 	const t = transactions[0];
 
 	isTransactionValid({
-			tokenId: t.token_id,
+			slot: t.slot,
 			owner: t.owner,
 			recipient: t.recipient,
 			hash: t.hash,
@@ -142,8 +142,8 @@ const mineBlock = (cb) => {
 		}
 		const { lastBlock, transactions } = results;
 
-		const groupedTransactions = groupBy(transactions, "token_id");
-		reduceTransactionsByTokenId(Object.values(groupedTransactions), (err, result) => {
+		const groupedTransactions = groupBy(transactions, "slot");
+		reduceTransactionsBySlot(Object.values(groupedTransactions), (err, result) => {
 			if(err) return cb(err);
 
 			let nextNumber;

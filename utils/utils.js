@@ -1,7 +1,7 @@
 
 const getHighestOcurrence = (arr) => {
-	const occurences = {}
-	let max = 0
+	const occurences = {};
+	let max = 0;
 
 	arr.forEach(e => {
 		if(occurences[e] == undefined){
@@ -15,16 +15,16 @@ const getHighestOcurrence = (arr) => {
 	});
 
 	return max;
-}
+};
 
 const groupBy = (arr, key)  => {
 	return arr.reduce((result, e) => {
 		result[e[key]] == undefined ? result[e[key]] = [e] : result[e[key]].push(e);
 		return result
 	}, {})
-}
+};
 
 module.exports = {
 	getHighestOcurrence,
 	groupBy
-}
+};

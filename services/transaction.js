@@ -4,8 +4,8 @@ const { recover }            					= require('../utils/sign')
 		pubToAddress }						= require('../utils/cryptoUtils')
 	, { BigNumber }       					= require('bignumber.js');
 
-const createTransaction = (_tokenId, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
-	const tokenId = new BigNumber(_tokenId);
+const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
+	const slot = new BigNumber(_slot);
 	const owner = _owner.toLowerCase();
 	const recipient = _recipient.toLowerCase();
 	const hash = _hash.toLowerCase();
@@ -13,17 +13,17 @@ const createTransaction = (_tokenId, _owner, _recipient, _hash, _blockSpent, _si
 	const signature = _signature.toLowerCase();
 
 
-	if(tokenId.isNaN()) 	return cb('Invalid tokenId');
+	if(slot.isNaN()) 	return cb('Invalid slot');
 	if(blockSpent.isNaN()) 	return cb('Invalid blockSpent');
 
-	/// TODO: check tokenId exists
+	/// TODO: check slot exists
 
-	isTransactionValid({tokenId, owner, recipient, hash, blockSpent, signature}, (err, invalidError) => {
+	isTransactionValid({slot, owner, recipient, hash, blockSpent, signature}, (err, invalidError) => {
 		if (err) return cb(err);
 		if (invalidError) return cb(invalidError);
 
 		TransactionService.create({
-			token_id: tokenId,
+			slot: slot,
 			owner,
 			recipient,
 			_id: hash,
@@ -34,20 +34,20 @@ const createTransaction = (_tokenId, _owner, _recipient, _hash, _blockSpent, _si
 	})
 };
 /**
- * Given a transaction, determines if is valid or not. TokenId and BlockSpent must be BigNumbers
+ * Given a transaction, determines if is valid or not. Slot and BlockSpent must be BigNumbers
  * @param {*} transaction
- * @param {(err, invalidErr)} cb where err is a non-validating error, invalidErr is a validating error.
+ * @param {(err, invalidErr) => void } cb where err is a non-validating error, invalidErr is a validating error.
  * Callback being call without parameters means the transaction is valid
  */
 const isTransactionValid = (transaction, cb) => {
-	const { tokenId, owner, recipient, hash, blockSpent, signature } = transaction;
+	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
 	TransactionService
-		.find({ token_id: tokenId })
+		.find({ slot: slot })
 		.sort({ mined_timestamp: -1 })
 		.exec((err, transactions) => {
 			if (err) return cb(err);
-			if (transactions.length === 0) return cb(null, 'Token ID not in side chain');
+			if (transactions.length === 0) return cb(null, 'Slot is not in side chain');
 
 			const lastTransaction = transactions[0];
 			lastTransaction.populate({
@@ -59,7 +59,7 @@ const isTransactionValid = (transaction, cb) => {
 
 				if (! mined_block.block_number.eq(blockSpent)) return cb(null, 'blockSpent is invalid');
 
-				const calculatedHash = generateTransactionHash(tokenId, blockSpent, owner, recipient);
+				const calculatedHash = generateTransactionHash(slot, blockSpent, owner, recipient);
 
 				if (hash !== calculatedHash) return cb(null, 'Hash invalid');
 
