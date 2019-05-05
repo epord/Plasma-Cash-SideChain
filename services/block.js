@@ -1,14 +1,17 @@
-const moment 									= require('moment')
-		, debug 								= require('debug')('app:services:transaction')
-		, async									= require('async')
-		, { bufferToHex }						= require('ethereumjs-util')
-		, { BigNumber }							= require('bignumber.js')
-		, { TransactionService,
-				BlockService }					= require('../services')
-		, SparseMerkleTree						= require('../utils/SparseMerkleTree')
-		, { getHighestOcurrence, groupBy }		= require('../utils/utils')
-		, { generateLeafHash }					= require('../utils/cryptoUtils')
-		, { isTransactionValid }				= require('../services/transaction');
+const moment 								= require('moment')
+    , debug 								= require('debug')('app:services:transaction')
+    , async									= require('async')
+    , EthUtils       						= require('ethereumjs-util')
+    , { BigNumber }							= require('bignumber.js')
+    , { TransactionService,
+            BlockService }					= require('../services')
+    , SparseMerkleTree						= require('../utils/SparseMerkleTree')
+    , { getHighestOcurrence, groupBy }		= require('../utils/utils')
+    , { generateLeafHash,
+        generateDepositBlockRootHash,
+        generateBlockHeaderHash,
+		generateTransactionHash }		    = require('../utils/cryptoUtils')
+    , { isTransactionValid }				= require('../services/transaction');
 
 
 const blockInterval = new BigNumber(1000);
@@ -36,11 +39,13 @@ const createBlock = (transactions, blockNumber, cb) => {
 	const headerHash = generateBlockHeaderHash(blockNumber, rootHash);
 
 	BlockService.create({
-		_id: headerHash, timestamp,
+		_id: headerHash,
+		timestamp,
 		root_hash: rootHash,
 		block_number: blockNumber,
 		transactions: transactions.map(t => t.hash)
 	}, (err, block) => {
+			if(err) return cb(err);
 
 			block.populate({
 				path: 'transactions'
@@ -54,7 +59,7 @@ const createBlock = (transactions, blockNumber, cb) => {
 				cb();
 			});
 		})
-}
+};
 
 /**
  * Given an array of set of transactions, where each array, transactions share the same slot,
@@ -160,26 +165,52 @@ const mineBlock = (cb) => {
 	});
 };
 
-// const depositBlock = (    , cb) => {
-// 	BlockService
-// 		.findOne({})
-// 		.sort({ timestamp: -1 })
-// 		.exec((err, lastBlock) => {
-// 			if (err) {
-// 				console.error(err);
-// 				cb(err);
-// 			}
-//
-// 			const nextNumber = (() => {
-// 				if (!lastBlock) return 0;
-// 				return (int(lastBlock.block_number / 1000) + 1) * 1000;
-// 			})();
-//
-// 			createBlock([transaction], nextNumber, cb);
-// 		});
-// };
+const depositBlock = (slot, blockNumber, owner, cb) => {
+
+    //TODO make sure there is not other blockNumber, if there is, well... we got some trouble
+    //since we will have to know which one is the one on ethereum, lets hope that does not happen
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) {
+		return cb('Invalid slot');
+	}
+
+	const blockNumberBN = new BigNumber(blockNumber);
+	if(blockNumberBN.isNaN()) {
+		return cb('Invalid blockNumber');
+	}
+
+    const rootHash = generateDepositBlockRootHash(slotBN);
+    const headerHash = generateBlockHeaderHash(blockNumberBN, rootHash);
+
+    const blockSpent = new BigNumber(0);
+    const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
+
+	const hash = generateTransactionHash(slotBN, blockSpent, nullAddress, owner);
+	const timestamp = Date.now()
+
+	TransactionService.create({
+            slot: slotBN,
+            owner: nullAddress,
+            recipient: owner,
+            _id: hash,
+            block_spent: blockSpent,
+			mined: true,
+			mined_block: headerHash,
+			mined_timestamp: timestamp
+        }, (err, t) => {
+			BlockService.create({
+				_id: headerHash,
+				timestamp,
+				root_hash: rootHash,
+				block_number: blockNumberBN,
+				transactions: [t]
+			}, cb);
+    });
+};
 
 module.exports = {
 	createBlock,
 	mineBlock,
+	depositBlock,
 };

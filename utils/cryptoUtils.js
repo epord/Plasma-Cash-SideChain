@@ -1,12 +1,8 @@
-const EthUtils	= require('ethereumjs-util')
-, { BigNumber } = require('bignumber.js')
-, { BN } = require('bn.js');
-
-// const RLP = require('rlp');
+const EthUtils	= require('ethereumjs-util'), { BigNumber } = require('bignumber.js'), { BN } = require('bn.js');
 
 
 const generateTransactionHash = (slot, blockSpent, owner, recipient) => {
-	keccak256(
+	return keccak256(
 		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
 		EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
 		EthUtils.toBuffer(owner),														// must start with 0x
@@ -15,7 +11,7 @@ const generateTransactionHash = (slot, blockSpent, owner, recipient) => {
 };
 
 const generateLeafHash = (slot, blockSpent, owner, recipient, signature) => {
-	keccak256(
+	return keccak256(
 		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
 		EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
 		EthUtils.toBuffer(owner),														// must start with 0x
@@ -24,8 +20,14 @@ const generateLeafHash = (slot, blockSpent, owner, recipient, signature) => {
 	)
 };
 
+const generateDepositBlockRootHash = (slot) => {
+	return keccak256(
+		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
+	)
+};
+
 const generateBlockHeaderHash = (blockNumber, rootHash) => {
-	keccak256(
+	return keccak256(
 		EthUtils.setLengthLeft(new BN(blockNumber.toFixed()).toBuffer(), 256/8), 	// uint256 little endian
 		EthUtils.toBuffer(rootHash)														// must start with 0x
 	)
@@ -33,7 +35,6 @@ const generateBlockHeaderHash = (blockNumber, rootHash) => {
 
 const keccak256 = (...args) => {
 	const params = [];
-	//TODO: Is pushing enough or should we be using RLP?
 	args.forEach((arg) => {
 		params.push(arg);
 	});
@@ -69,5 +70,7 @@ module.exports = {
 	generateTransactionHash,
 	generateLeafHash,
 	generateBlockHeaderHash,
-	generateTransaction
+	generateTransaction,
+	generateDepositBlockRootHash,
+	pubToAddress
 };

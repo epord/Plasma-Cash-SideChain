@@ -61,38 +61,4 @@ router.post('/create', (req, res, next) => {
 });
 
 
-/**
- * Deposit a Token
- * {
- *  "slot": int|string,
- *  "blockSpent": int|string,
- *  "owner": string (hex),
- *  "recipient":string (hex),
- *  "hash": string (hex) [ keccak256(uint64(slot), uint256(blockSpent), owner, recipient) ],
- *  "signature" string (hex) [sig of hash]
- * }
- */
-// router.post('/deposit', (req, res, next) => {
-//     const { slot, owner, recipient, hash, blockSpent, signature } = req.body;
-//
-//     if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || !signature) {
-//         return res.status(Status.BAD_REQUEST).json('Missing parameter');
-//     }
-//
-//     const slotBN = new BigNumber(slot);
-//     if(slotBN.isNaN()) {
-//         return res.status(Status.BAD_REQUEST).json('Invalid slot');
-//     }
-//
-//     const blockSpentBN = new BigNumber(blockSpent);
-//     if(blockSpentBN.isNaN()) {
-//         return res.status(Status.BAD_REQUEST).json('Invalid blockSpent');
-//     }
-//
-//     createTransaction(slotBN, owner, recipient, hash, blockSpentBN, signature, (err, transaction) => {
-//         if (err) return res.status(Status.BAD_REQUEST).json(err);
-//         return res.status(Status.OK).json(transaction.hash);
-//     })
-// });
-
 module.exports = router;

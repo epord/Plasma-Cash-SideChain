@@ -63,6 +63,8 @@ const isTransactionValid = (transaction, cb) => {
 
 				if (hash !== calculatedHash) return cb(null, 'Hash invalid');
 
+				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return cb(null, "Owner does not match");
+
 				if(owner.toLowerCase() !== pubToAddress(recover(hash, signature))) return cb(null, 'Owner did not sign this');
 
 				cb();

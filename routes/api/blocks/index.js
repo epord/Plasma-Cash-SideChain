@@ -3,8 +3,9 @@ const express 			= require('express')
 , debug 						= require('debug')('app:api:blocks')
 , Status 						= require('http-status-codes')
 , async							= require('async')
+, BigNumber					= require("bignumber.js")
 , { BlockService } 	= require('../../../services')
-, { mineBlock } 		= require('../../../services/block');
+, { mineBlock, depositBlock }	= require('../../../services/block');
 
 debug('registering /api/blocks routes');
 
@@ -23,6 +24,37 @@ router.get('/', (req, res, next) => {
 
 router.post('/mine', (req, res, next) => {
 	mineBlock((err) => {
+		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+		res.status(Status.OK).json('ok');
+	});
+});
+
+/**
+ * Deposit a Token
+ * {
+ *  "slot": int|string,
+ *  "blockNumber": int|string,
+ *  "owner": string (hex),
+ * }
+ */
+router.post('/deposit', (req, res, next) => {
+	const { slot, blockNumber, owner } = req.body;
+
+	if (slot == undefined || !owner || blockNumber == undefined) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter');
+	}
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) {
+		return res.status(Status.BAD_REQUEST).json('Invalid slot');
+	}
+
+	const blockNumberBN = new BigNumber(blockNumber);
+	if(blockNumberBN.isNaN()) {
+		return res.status(Status.BAD_REQUEST).json('Invalid blockNumber');
+	}
+
+	depositBlock(slotBN, blockNumberBN, owner, (err) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 		res.status(Status.OK).json('ok');
 	});
