@@ -1,17 +1,20 @@
-const moment 											= require('moment')
-		, debug 											= require('debug')('app:services:transaction')
-		, async												= require('async')
-		, { bufferToHex }							= require('ethereumjs-util')
+const moment 									= require('moment')
+		, debug 								= require('debug')('app:services:transaction')
+		, async									= require('async')
+		, { bufferToHex }						= require('ethereumjs-util')
+		, { BigNumber }							= require('bignumber.js')
 		, { TransactionService,
-				BlockService }						= require('../services')
+				BlockService }					= require('../services')
 		, SparseMerkleTree						= require('../utils/SparseMerkleTree')
-		, { getHighestOcurrence, groupBy }					= require('../utils/utils')
-		, { generateLeafHash }								= require('../utils/cryptoUtils')
-		, { isTransactionValid }			= require('../services/transaction');
+		, { getHighestOcurrence, groupBy }		= require('../utils/utils')
+		, { generateLeafHash }					= require('../utils/cryptoUtils')
+		, { isTransactionValid }				= require('../services/transaction');
 
+
+const blockInterval = new BigNumber(1000);
 
 // private function
-const createBlock = (transactions, lastBlock, blockNumber, cb) => {
+const createBlock = (transactions, blockNumber, cb) => {
 	const timestamp = moment.now();
 
 	const maxSlotCount = getHighestOcurrence(transactions.map(t => t.slot));
@@ -30,12 +33,10 @@ const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 
 	const sparseMerkleTree = new SparseMerkleTree(64, leaves);
 	const rootHash = sparseMerkleTree.root;
-	const lastBlockHeaderHash = lastBlock ? lastBlock.header_hash : bufferToHex(Buffer.alloc(32));
-	const headerHash = generateBlockHeaderHash(blockNumber, timestamp, lastBlockHeaderHash, rootHash);
+	const headerHash = generateBlockHeaderHash(blockNumber, rootHash);
 
 	BlockService.create({
 		_id: headerHash, timestamp,
-		prev: lastBlockHeaderHash,
 		root_hash: rootHash,
 		block_number: blockNumber,
 		transactions: transactions.map(t => t.hash)
@@ -46,8 +47,8 @@ const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 			}, (err, block) => {
 				block.transactions.forEach(transaction => {
 					transaction.mined = true;
-					transaction.mined_timestamp = block.timestamp
-					transaction.mined_block = block._id
+					transaction.mined_timestamp = block.timestamp;
+					transaction.mined_block = block._id;
 					transaction.save();
 				});
 				cb();
@@ -148,39 +149,37 @@ const mineBlock = (cb) => {
 
 			let nextNumber;
 			if(!lastBlock) {
-				nextNumber = 0;
-			} else if(lastBlock.block_number + 1 % 1000 !== 0) {
-				nextNumber = lastBlock.block_number + 1
+				nextNumber = new BigNumber(0);
 			} else {
-				nextNumber = lastBlock.block_number + 2
+				const rest = lastBlock.block_number.mod(blockInterval);
+				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
-			createBlock(result, lastBlock, nextNumber, cb);
+			createBlock(result, nextNumber, cb);
 		});
 	});
 };
 
-const depositBlock = (transaction, cb) => {
-	BlockService
-		.findOne({})
-		.sort({ timestamp: -1 })
-		.exec((err, lastBlock) => {
-			if (err) {
-				console.error(err);
-				cb(err);
-			}
-
-			const nextNumber = (() => {
-				if (!lastBlock) return 0;
-				return (int(lastBlock.block_number / 1000) + 1) * 1000;
-			})();
-
-			createBlock([transaction], lastBlock, nextNumber, cb);
-		});
-};
+// const depositBlock = (    , cb) => {
+// 	BlockService
+// 		.findOne({})
+// 		.sort({ timestamp: -1 })
+// 		.exec((err, lastBlock) => {
+// 			if (err) {
+// 				console.error(err);
+// 				cb(err);
+// 			}
+//
+// 			const nextNumber = (() => {
+// 				if (!lastBlock) return 0;
+// 				return (int(lastBlock.block_number / 1000) + 1) * 1000;
+// 			})();
+//
+// 			createBlock([transaction], nextNumber, cb);
+// 		});
+// };
 
 module.exports = {
 	createBlock,
 	mineBlock,
-	depositBlock
 };

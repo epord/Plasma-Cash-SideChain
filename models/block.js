@@ -2,10 +2,6 @@ const mongoose = require('mongoose');
 const BigNumberSchema = require('mongoose-bignumber');
 
 module.exports = mongoose.Schema({
-	prev: {
-		type: String,
-		ref: 'Block'
-	},
 
 	block_number: {
 		type: BigNumberSchema,

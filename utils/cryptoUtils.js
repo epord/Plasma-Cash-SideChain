@@ -24,11 +24,9 @@ const generateLeafHash = (slot, blockSpent, owner, recipient, signature) => {
 	)
 };
 
-const generateBlockHeaderHash = (blockNumber, timestamp, lastBlockHeaderHash, rootHash) => {
+const generateBlockHeaderHash = (blockNumber, rootHash) => {
 	keccak256(
 		EthUtils.setLengthLeft(new BN(blockNumber.toFixed()).toBuffer(), 256/8), 	// uint256 little endian
-		EthUtils.setLengthLeft(new BN(timestamp).toBuffer(), 256/8),				// uint64 little endian
-		EthUtils.toBuffer(lastBlockHeaderHash),											// must start with 0x
 		EthUtils.toBuffer(rootHash)														// must start with 0x
 	)
 };
