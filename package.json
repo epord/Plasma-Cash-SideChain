@@ -33,6 +33,7 @@
     "mongoose-bignumber": "^1.1.0",
     "morgan": "^1.9.1",
     "q": "^1.5.1",
+    "rlp": "^2.2.3",
     "supports-color": "^6.1.0",
     "web3": "^1.0.0-beta.52",
     "web3-eth-accounts": "^1.0.0-beta.52"

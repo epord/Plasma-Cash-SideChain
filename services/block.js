@@ -5,8 +5,8 @@ const moment 											= require('moment')
 		, { TransactionService,
 				BlockService }						= require('../services')
 		, SparseMerkleTree						= require('../utils/SparseMerkleTree')
-, { getHighestOcurrence, groupBy }					= require('../utils/utils')
-		, { keccak256 }								= require('../utils/cryptoUtils')
+		, { getHighestOcurrence, groupBy }					= require('../utils/utils')
+		, { generateLeafHash }								= require('../utils/cryptoUtils')
 		, { isTransactionValid }			= require('../services/transaction');
 
 
@@ -18,14 +18,20 @@ const createBlock = (transactions, lastBlock, blockNumber, cb) => {
 	if(maxTokenCount > 1) return cb("Trying to mine 2 token Ids at once");
 
 	const leaves = transactions.reduce((map, value) => {
-		map[value.token_id] = value.hash;
+		map[value.token_id] = generateLeafHash(
+			value.token_id,
+			value.block_spent,
+			value.owner,
+			value.recipient,
+			value.signature
+		);
 		return map;
 	}, {});
 
 	const sparseMerkleTree = new SparseMerkleTree(64, leaves);
-	const rootHash = sparseMerkleTree.root
+	const rootHash = sparseMerkleTree.root;
 	const lastBlockHeaderHash = lastBlock ? lastBlock.header_hash : bufferToHex(Buffer.alloc(32));
-	const headerHash = keccak256(blockNumber, timestamp, lastBlockHeaderHash, rootHash);
+	const headerHash = generateBlockHeaderHash(blockNumber, timestamp, lastBlockHeaderHash, rootHash);
 
 	BlockService.create({
 		_id: headerHash, timestamp,

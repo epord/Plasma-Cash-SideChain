@@ -1,6 +1,7 @@
 const { recover }            					= require('../utils/sign')
-	, { TransactionService, BlockService }	= require('../services')
-	, { keccak256, pubToAddress }			= require('../utils/cryptoUtils')
+	, { TransactionService }	= require('../services')
+	, { generateTransactionHash,
+		pubToAddress }						= require('../utils/cryptoUtils')
 	, { BigNumber }       					= require('bignumber.js');
 
 const createTransaction = (_tokenId, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
@@ -58,7 +59,7 @@ const isTransactionValid = (transaction, cb) => {
 
 				if (! mined_block.block_number.eq(blockSpent)) return cb(null, 'blockSpent is invalid');
 
-				const calculatedHash = keccak256(tokenId.toString(), blockSpent.toString(), recipient, owner);
+				const calculatedHash = generateTransactionHash(tokenId, blockSpent, owner, recipient);
 
 				if (hash !== calculatedHash) return cb(null, 'Hash invalid');
 
