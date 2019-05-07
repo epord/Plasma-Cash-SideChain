@@ -20,7 +20,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 
 	isTransactionValid({slot, owner, recipient, hash, blockSpent, signature}, (err, invalidError) => {
 		if (err) return cb(err);
-		if (invalidError) return cb( {statusCode: 400, message: invalidError} );
+		if (invalidError) return cb({statusCode: 400, message: invalidError} );
 
 		TransactionService.create({
 			slot: slot,
@@ -29,7 +29,10 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 			_id: hash,
 			block_spent: blockSpent,
 			signature
-		}, (err, t) => cb(null, { statusCode: 201, message: t.hash }));
+		}, (err, t) => {
+			if(err) return cb(err)
+			cb(null, { statusCode: 201, message: t.hash })
+		});
 	})
 };
 /**

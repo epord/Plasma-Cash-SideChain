@@ -8,9 +8,10 @@ const express 					= require('express')
 
 debug('registering /api/transactions routes')
 
-const responseWithStatus = (res) => (status) => {
-	if (!status) return res.status(Status.INTERNAL_SERVER_ERROR).json("No response");
-	if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(status);
+const responseWithStatus = (res) => (err, status) => {
+	if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+	if (err && err.statusCode) return res.status(err.statusCode).json(err.message);
+	if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
 	return res.status(status.statusCode).json(status.message)
 };
 

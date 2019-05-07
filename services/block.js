@@ -58,7 +58,7 @@ const createBlock = (transactions, blockNumber, cb) => {
 					transaction.save();
 				});
 
-				cb({ statusCode: 201, message: blocktoJson(block) });
+				cb(null, { statusCode: 201, message: blocktoJson(block) });
 			});
 		})
 };
@@ -215,7 +215,7 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 				transactions: [t]
 			}, (err, block) => {
 				if(err) return cb(err);
-				cb({statusCode: 201, message: blocktoJson(block)})
+				cb(null, {statusCode: 201, message: blocktoJson(block)})
 			});
 		});
 	})
