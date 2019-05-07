@@ -8,6 +8,12 @@ const express 					= require('express')
 
 debug('registering /api/transactions routes')
 
+const responseWithStatus = (res) => (status) => {
+	if (!status) return res.status(Status.INTERNAL_SERVER_ERROR).json("No response");
+	if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(status);
+	return res.status(status.statusCode).json(status.message)
+};
+
 router.get('/:id([A-Fa-f0-9]+)', (req, res, next) => {
 	TransactionService
 		.findById(req.params.id)
@@ -54,10 +60,7 @@ router.post('/create', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid blockSpent');
 	}
 
-	createTransaction(slotBN, owner, recipient, hash, blockSpentBN, signature, (err, response) => {
-		if (err) return res.status(Status.BAD_REQUEST).json(err);
-		return res.status(response.statusCode).json(response.message);
-	})
+	createTransaction(slotBN, owner, recipient, hash, blockSpentBN, signature, responseWithStatus(res))
 });
 
 

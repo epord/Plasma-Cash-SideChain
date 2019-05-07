@@ -22,7 +22,7 @@ describe('Deposit', () => {
     async.parallel([
       cb => BlockService.deleteMany({}, cb),
       cb => TransactionService.deleteMany({}, cb),
-      cb => depositBlock(1, 2, '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E', cb)
+      cb => depositBlock(1, 2, '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E', () => { cb() })
     ], done);
   });
 
@@ -37,8 +37,8 @@ describe('Deposit', () => {
           .post('/api/transactions/create')
           .set('Content-type', 'application/json')
           .send(transaction)
-          .expect(200, done);
+          .expect(201, done);
 
   })
 
-})
+});

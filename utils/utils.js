@@ -24,7 +24,20 @@ const groupBy = (arr, key)  => {
 	}, {})
 };
 
+const logErr = (err) => { if (err) console.log(err) };
+
+
+const blocktoJson = (block) => ({
+	block_number: block.block_number.toFixed(),
+	root_hash: block.root_hash,
+	header_hash: block.header_hash,
+	timestamp: block.timestamp,
+	transactions: block.transactions
+});
+
 module.exports = {
 	getHighestOcurrence,
-	groupBy
+	groupBy,
+	logErr,
+	blocktoJson
 };

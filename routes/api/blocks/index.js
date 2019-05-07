@@ -5,12 +5,25 @@ const express 			= require('express')
 , async							= require('async')
 , BigNumber					= require("bignumber.js")
 , { BlockService } 	= require('../../../services')
+, { blocktoJson } = require('../../../utils/utils')
 , { mineBlock, depositBlock }	= require('../../../services/block');
 
 debug('registering /api/blocks routes');
 
-router.get('/:id([A-Fa-f0-9]+)', (req, res, next) => {
-	res.send(`Block id: ${req.params.id}`);
+
+const responseWithStatus = (res) => (status) => {
+		if (!status) return res.status(Status.INTERNAL_SERVER_ERROR).json("No response");
+		if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(status);
+		return res.status(status.statusCode).json(status.message)
+};
+
+router.get('/:block_number([0-9]+)', (req, res, next) => {
+	BlockService
+		.findOne({ block_number: req.params.block_number})
+		.exec((err, block) => {
+			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+			res.status(Status.OK).json(blocktoJson(block));
+		})
 });
 
 router.get('/', (req, res, next) => {
@@ -18,15 +31,12 @@ router.get('/', (req, res, next) => {
 		.find({})
 		.exec((err, blocks) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(blocks);
+			res.status(Status.OK).json(blocks.map(blocktoJson));
 		})
 });
 
 router.post('/mine', (req, res, next) => {
-	mineBlock((err, response) => {
-		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-		return res.status(response.statusCode).json(response.message);
-	});
+	mineBlock(responseWithStatus(res));
 });
 
 /**
@@ -54,15 +64,7 @@ router.post('/deposit', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid blockNumber');
 	}
 
-	depositBlock(slotBN, blockNumberBN, owner, (err) => {
-		if (err) {
-			if(err.statusCode) {
-				return res.status(err.statusCode).json(err.message);
-			}
-			return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-		}
-			res.status(Status.OK).json('ok');
-	});
+	depositBlock(slotBN, blockNumberBN, owner, responseWithStatus(res));
 });
 
 module.exports = router;
