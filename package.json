@@ -1,9 +1,12 @@
 {
   "name": "node-boilerplate",
+  "jest": {
+    "testEnvironment": "node"
+  },
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "better-npm-run start"
   },
   "betterScripts": {
@@ -37,5 +40,9 @@
     "supports-color": "^6.1.0",
     "web3": "^1.0.0-beta.52",
     "web3-eth-accounts": "^1.0.0-beta.52"
+  },
+  "devDependencies": {
+    "supertest": "^4.0.2",
+    "jest": "^24.8.0"
   }
 }

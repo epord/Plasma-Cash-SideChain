@@ -55,8 +55,13 @@ router.post('/deposit', (req, res, next) => {
 	}
 
 	depositBlock(slotBN, blockNumberBN, owner, (err) => {
-		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-		res.status(Status.OK).json('ok');
+		if (err) {
+			if(err.statusCode) {
+				return res.status(err.statusCode).json(err.message);
+			}
+			return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+		}
+			res.status(Status.OK).json('ok');
 	});
 });
 

@@ -1,4 +1,4 @@
-const EthUtils	= require('ethereumjs-util'), { BigNumber } = require('bignumber.js'), { BN } = require('bn.js');
+const EthUtils	= require('ethereumjs-util'), BigNumber = require('bignumber.js'), BN = require('bn.js');
 
 
 const generateTransactionHash = (slot, blockSpent, owner, recipient) => {
@@ -55,14 +55,14 @@ const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => 
 	// https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
 	const realSignature = EthUtils.toRpcSig(signature.v, signature.r, signature.s);
 
-	console.log(JSON.stringify({
+	return JSON.stringify({
 		"slot": slot,
 		"owner": owner,
 		"recipient": recipient,
 		"hash": hash,
 		"blockSpent": blockSpent,
 		"signature": realSignature
-	}))
+	});
 
 };
 

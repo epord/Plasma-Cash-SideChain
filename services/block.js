@@ -180,25 +180,31 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 		return cb('Invalid blockNumber');
 	}
 
-    const rootHash = generateDepositBlockRootHash(slotBN);
-    const headerHash = generateBlockHeaderHash(blockNumberBN, rootHash);
+	const rootHash = generateDepositBlockRootHash(slotBN);
+	const headerHash = generateBlockHeaderHash(blockNumberBN, rootHash);
 
-    const blockSpent = new BigNumber(0);
-    const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
+	const blockSpent = new BigNumber(0);
+	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
 
 	const hash = generateTransactionHash(slotBN, blockSpent, nullAddress, owner);
 	const timestamp = Date.now()
 
-	TransactionService.create({
-            slot: slotBN,
-            owner: nullAddress,
-            recipient: owner,
-            _id: hash,
-            block_spent: blockSpent,
+	TransactionService.findOne({ slot: slotBN })
+	.exec((err, transaction) => {
+		if (err) return cb(err);
+		if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"})
+
+		TransactionService.create({
+			slot: slotBN,
+			owner: nullAddress,
+			recipient: owner,
+			_id: hash,
+			block_spent: blockSpent,
 			mined: true,
 			mined_block: headerHash,
 			mined_timestamp: timestamp
-        }, (err, t) => {
+		}, (err, t) => {
+			if(err) return cb(err)
 			BlockService.create({
 				_id: headerHash,
 				timestamp,
@@ -206,7 +212,8 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 				block_number: blockNumberBN,
 				transactions: [t]
 			}, cb);
-    });
+		});
+	})
 };
 
 module.exports = {
