@@ -3,9 +3,10 @@ const { app } = require('../server')
     , mongo = require('../mongo')
     , dotenv = require('dotenv')
     , async = require('async')
-    , _ = require('lodash');
-
-const { BlockService, TransactionService } = require('../services');
+    , _ = require('lodash')
+    , CryptoUtils = require('../utils/cryptoUtils')
+    , { depositBlock } = require('../services/block')
+    , { BlockService, TransactionService } = require('../services');
 
 
 describe('Deposit', () => {
@@ -17,22 +18,27 @@ describe('Deposit', () => {
     });
   });
 
-  beforeEach((cb) => {
+  beforeEach((done) => {
     async.parallel([
-      cb => BlockService.remove({}, cb),
-      cb => TransactionService.remove({}, cb)
-    ], cb)
-
+      cb => BlockService.deleteMany({}, cb),
+      cb => TransactionService.deleteMany({}, cb),
+      cb => depositBlock(1, 2, '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E', cb)
+    ], done);
   });
 
-  it("Works with a correct transaction", (done) => {
-    return request.post("/api/transactions/create")
-    .set('Content-type', "application/json")
-    .send({
-      "slot": 1,
-      "blockNumber": 2,
-      "owner": '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD'
-    }).expect(200, done);
+  it('Works with a correct transaction', (done) => {
+    const slot = 1;
+    const blockSpent = 2;
+    const owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
+    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
+    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
+    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
+    return request
+          .post('/api/transactions/create')
+          .set('Content-type', 'application/json')
+          .send(transaction)
+          .expect(200, done);
+
   })
 
 })

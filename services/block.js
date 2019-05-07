@@ -143,9 +143,9 @@ const mineBlock = (cb) => {
 			.exec(callback);
 		}
 	}, (err, results) => {
-		if (err) {
-			return cb(err);
-		}
+		if (err) return cb(err);
+		if(!results) return cb(null, { statusCode: 400, message: "Last block does not exist"});
+
 		const { lastBlock, transactions } = results;
 
 		const groupedTransactions = groupBy(transactions, "slot");

@@ -54,9 +54,9 @@ router.post('/create', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid blockSpent');
 	}
 
-	createTransaction(slotBN, owner, recipient, hash, blockSpentBN, signature, (err, transaction) => {
+	createTransaction(slotBN, owner, recipient, hash, blockSpentBN, signature, (err, response) => {
 		if (err) return res.status(Status.BAD_REQUEST).json(err);
-		return res.status(Status.OK).json(transaction.hash);
+		return res.status(response.statusCode).json(response.message);
 	})
 });
 

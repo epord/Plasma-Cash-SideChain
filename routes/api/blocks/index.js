@@ -23,9 +23,9 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/mine', (req, res, next) => {
-	mineBlock((err) => {
+	mineBlock((err, response) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-		res.status(Status.OK).json('ok');
+		return res.status(response.statusCode).json(response.message);
 	});
 });
 

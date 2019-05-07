@@ -20,7 +20,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 
 	isTransactionValid({slot, owner, recipient, hash, blockSpent, signature}, (err, invalidError) => {
 		if (err) return cb(err);
-		if (invalidError) return cb(invalidError);
+		if (invalidError) return cb(null, invalidError);
 
 		TransactionService.create({
 			slot: slot,
@@ -29,8 +29,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 			_id: hash,
 			block_spent: blockSpent,
 			signature
-		},
-		cb);
+		}, (err, t) => cb(null, { statusCode: 200, message: t.hash }));
 	})
 };
 /**
@@ -47,7 +46,7 @@ const isTransactionValid = (transaction, cb) => {
 		.sort({ mined_timestamp: -1 })
 		.exec((err, transactions) => {
 			if (err) return cb(err);
-			if (transactions.length === 0) return cb(null, 'Slot is not in side chain');
+			if (transactions.length === 0) return cb(null, {statusCode: 400, message: 'Slot is not in side chain'});
 
 			const lastTransaction = transactions[0];
 			lastTransaction.populate({
@@ -56,16 +55,17 @@ const isTransactionValid = (transaction, cb) => {
 				if (err) return cb(err);
 
 				const { mined_block } = transaction;
+				if (!mined_block) return cb(null, {statusCode: 400, message: 'Last mined block does not exist'});
 
-				if (! mined_block.block_number.eq(blockSpent)) return cb(null, 'blockSpent is invalid');
+				if (!mined_block.block_number.eq(blockSpent)) return cb(null, {statusCode: 400, message: 'blockSpent is invalid'});
 
 				const calculatedHash = generateTransactionHash(slot, blockSpent, owner, recipient);
 
-				if (hash !== calculatedHash) return cb(null, 'Hash invalid');
+				if (hash !== calculatedHash) return cb(null, {statusCode: 400, message: 'Hash invalid'});
 
-				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return cb(null, "Owner does not match");
+				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return cb(null, {statusCode: 400, message: "Owner does not match"});
 
-				if(owner.toLowerCase() !== pubToAddress(recover(hash, signature))) return cb(null, 'Owner did not sign this');
+				if(owner.toLowerCase() !== pubToAddress(recover(hash, signature))) return cb(null, {statusCode: 400, message: 'Owner did not sign this'});
 
 				cb();
 		})
