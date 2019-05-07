@@ -1,7 +1,8 @@
 {
   "name": "node-boilerplate",
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testRegex": "/test/.*.js$"
   },
   "version": "1.0.0",
   "private": true,
