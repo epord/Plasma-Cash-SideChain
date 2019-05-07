@@ -1,11 +1,11 @@
-const { app } = require('../server');
-const request = require('supertest')(app);
-const mongo = require('../mongo');
-const dotenv 		= require('dotenv');
-const { logErr } = require("../utils/utils");
-const { BigNumber } = require("bignumber.js");
-
-const { BlockService, TransactionService } = require('../services');
+const { app } = require('../server'),
+  request = require('supertest')(app),
+  mongo = require('../mongo'),
+  dotenv 		= require('dotenv'),
+  { logErr } = require("../utils/utils"),
+  EthUtils	= require('ethereumjs-util'),
+  BN = require('bn.js'),
+  { BlockService, TransactionService } = require('../services');
 
 
 describe('Deposit', () => {
@@ -31,25 +31,25 @@ describe('Deposit', () => {
 
   it("Works with a really big numbers", (done) => {
     const blockNumber = "90000000000000000001";
-    const slot = new BigNumber("10000000000000000000");
+    const slot = "10000000000000000000";
+    const rootHash = EthUtils.bufferToHex(EthUtils.keccak256(
+      EthUtils.setLengthLeft(new BN(slot).toBuffer(), 64/8), 		// uint64 little endian
+    ));
 
     return request.post("/api/blocks/deposit")
       .set('Content-type', "application/json")
       .send({
-        "slot": slot.toFixed(),
+        "slot": slot,
         "blockNumber": blockNumber,
         "owner": '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD'
       }).expect(201).then( response => {
         expect(response.body.block_number).toBe(blockNumber);
-        expect(response.body.transactions[0]).toBe(generateDepositBlockRootHash(slot));
-        expect(response.body.transactions.length).toBe(1);
-
+        expect(response.body.transactions[0].slot).toBe(slot);
 
         return request.get("/api/blocks/" + response.body.block_number)
           .expect(200).then((response) => {
             expect(response.body.transactions.length).toBe(1);
-            expect(response.body.transactions[0]).toBe(generateDepositBlockRootHash(slot));
-            expect(response.body.block_number).toBe(response.body.blockNumber);
+            expect(response.body.root_hash).toBe(rootHash);
             done()
           })
       });
