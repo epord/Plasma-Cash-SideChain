@@ -9,7 +9,7 @@ const { app } = require('../server')
     , { BlockService, TransactionService } = require('../services');
 
 
-describe('Deposit', () => {
+describe('Create transaction', () => {
 
   beforeAll(() => {
     dotenv.config();
@@ -38,7 +38,6 @@ describe('Deposit', () => {
           .set('Content-type', 'application/json')
           .send(transaction)
           .expect(200, done);
-
   })
 
 })
