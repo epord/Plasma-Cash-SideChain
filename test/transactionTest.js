@@ -61,7 +61,6 @@ describe('Transactions', () => {
     const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
     const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
     const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
-    transaction
     request
     .post('/api/transactions/create')
     .set('Content-type', 'application/json')
@@ -76,7 +75,6 @@ describe('Transactions', () => {
     const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
     const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
     const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
-    transaction
     request
     .post('/api/transactions/create')
     .set('Content-type', 'application/json')
