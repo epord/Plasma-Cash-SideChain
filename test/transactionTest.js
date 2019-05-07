@@ -9,7 +9,7 @@ const { app } = require('../server')
     , { BlockService, TransactionService } = require('../services');
 
 
-describe('Deposit', () => {
+describe('Create transaction', () => {
 
   beforeAll(() => {
     dotenv.config();
