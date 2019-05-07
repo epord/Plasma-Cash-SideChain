@@ -19,11 +19,11 @@ describe('Transactions', () => {
   });
 
   beforeEach((done) => {
-    async.parallel([
-      cb => BlockService.deleteMany({}, cb),
-      cb => TransactionService.deleteMany({}, cb),
-      cb => depositBlock(1, 2, '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E', cb)
-    ], done);
+    async.auto({
+      clearBlocks: cb => BlockService.deleteMany({}, cb),
+      clearTransactions: cb => TransactionService.deleteMany({}, cb),
+      firstDeposit: ['clearBlocks' , 'clearTransactions', (res, cb) => depositBlock(1, 2, '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E', cb)],
+    }, done);
   });
 
   it('Works with a correct transaction', (done) => {
@@ -69,7 +69,6 @@ describe('Transactions', () => {
     .expect(400, done);
   })
 
-
   it('Fails if blockSpent does not exist', (done) => {
     const slot = 1;
     const blockSpent = 20;
@@ -78,6 +77,21 @@ describe('Transactions', () => {
     const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
     const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
     transaction
+    request
+    .post('/api/transactions/create')
+    .set('Content-type', 'application/json')
+    .send(transaction)
+    .expect(400, done);
+  })
+
+  it('Fails if invalid signature', (done) => {
+    const slot = 1;
+    const blockSpent = 20;
+    const owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
+    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
+    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
+    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
+    transaction.signature = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
     request
     .post('/api/transactions/create')
     .set('Content-type', 'application/json')
