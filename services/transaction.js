@@ -2,6 +2,7 @@ const { recover }            					= require('../utils/sign')
 	, { TransactionService }	= require('../services')
 	, { generateTransactionHash,
 		pubToAddress }						= require('../utils/cryptoUtils')
+	, { transactionToJson }						= require('../utils/utils')
 	, { BigNumber }       					= require('bignumber.js');
 
 const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
@@ -31,7 +32,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 			signature
 		}, (err, t) => {
 			if(err) return cb(err)
-			cb(null, { statusCode: 201, message: t.hash })
+			cb(null, { statusCode: 201, message: transactionToJson(t) })
 		});
 	})
 };
@@ -59,6 +60,7 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 		)
 		.limit(1)
 		.exec((err, transactions) => {
+
 			if (err) return validateTransactionCb(err);
 			if (transactions.length === 0) return validateTransactionCb(null, 'Slot is not in side chain');
 
@@ -79,7 +81,12 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 
 				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
-				if(owner.toLowerCase() !== pubToAddress(recover(hash, signature))) return validateTransactionCb(null, 'Owner did not sign this');
+				try {
+					const pubAddress = pubToAddress(recover(hash, signature));
+					if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
+				} catch (e) {
+					return validateTransactionCb(null, 'Invalid Signature');
+				}
 
 				validateTransactionCb();
 		})

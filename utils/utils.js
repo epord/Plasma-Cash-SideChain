@@ -27,7 +27,7 @@ const groupBy = (arr, key)  => {
 const logErr = (err) => { if (err) console.log(err) };
 
 
-const blocktoJson = (block) => ({
+const blockToJson = (block) => ({
 	block_number: block.block_number.toFixed(),
 	root_hash: block.root_hash,
 	header_hash: block.header_hash,
@@ -35,9 +35,23 @@ const blocktoJson = (block) => ({
 	transactions: block.transactions
 });
 
+const transactionToJson = (transaction) => ({
+	slot: transaction.slot.toFixed(),
+	owner: transaction.owner,
+	recipient: transaction.recipient,
+	hash: transaction.hash,
+	block_spent: transaction.block_spent.toFixed(),
+	signature: transaction.signature,
+
+	mined_timestamp: transaction.mined_timestamp,
+	mined_block: transaction.mined_block,
+	mined: transaction.mined
+});
+
 module.exports = {
 	getHighestOcurrence,
 	groupBy,
 	logErr,
-	blocktoJson
+	blockToJson,
+	transactionToJson
 };

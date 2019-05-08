@@ -12,7 +12,7 @@ const moment 								= require('moment')
         generateBlockHeaderHash,
 		generateTransactionHash }		    = require('../utils/cryptoUtils')
     , { isTransactionValid }				= require('../services/transaction')
-		, { blocktoJson } = require( "../utils/utils");
+		, { blockToJson } = require( "../utils/utils");
 
 
 const blockInterval = new BigNumber(1000);
@@ -60,7 +60,7 @@ const createBlock = (transactions, blockNumber, cb) => {
 					transaction.save();
 				});
 
-				cb(null, { statusCode: 201, message: blocktoJson(block) });
+				cb(null, { statusCode: 201, message: blockToJson(block) });
 			});
 		})
 };
@@ -216,7 +216,7 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 							transactions: [t]
 						}, (err, block) => {
 							if(err) return cb(err);
-							cb(null, {statusCode: 201, message: blocktoJson(block)})
+							cb(null, {statusCode: 201, message: blockToJson(block)})
 						});
 					});
 				});

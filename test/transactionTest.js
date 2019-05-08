@@ -3,98 +3,109 @@ const { app } = require('../server')
     , mongo = require('../mongo')
     , dotenv = require('dotenv')
     , async = require('async')
-    , _ = require('lodash')
-    , CryptoUtils = require('../utils/cryptoUtils')
-    , { depositBlock } = require('../services/block')
+    , { generateTransaction} = require('../utils/cryptoUtils')
     , { BlockService, TransactionService } = require('../services');
 
 
-describe('Transactions', () => {
+const transactionURL = "/api/transactions/create";
+const depositURL = "/api/blocks/deposit";
+const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
+
+const _owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
+const _recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
+const _privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
+const _slot = "1";
+const _blockNumber = "2";
+
+const _transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
+
+const addDeposit = (slot, owner, blockNumber) => {
+    return jsonPost(depositURL).send({
+      "slot": slot,
+      "blockNumber": blockNumber,
+      "owner": _owner
+    }).expect(201)
+};
+
+describe('Transactions Works', () => {
 
   beforeAll(() => {
     dotenv.config();
-    mongo.init((err) => {
-      if (err) console.log(err);
-    });
+    mongo.init(() => {});
   });
 
   beforeEach((done) => {
-    async.auto({
-      clearBlocks: cb => BlockService.deleteMany({}, cb),
-      clearTransactions: cb => TransactionService.deleteMany({}, cb),
-      firstDeposit: ['clearBlocks' , 'clearTransactions', (res, cb) => depositBlock(1, 2, '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E', cb)],
-    }, done);
+    async.parallel([
+      cb => BlockService.deleteMany({}, cb),
+      cb => TransactionService.deleteMany({}, cb)
+    ], done);
   });
 
   it('Works with a correct transaction', (done) => {
-    const slot = 1;
-    const blockSpent = 2;
-    const owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
-    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
-    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
-    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
-    return request
-          .post('/api/transactions/create')
-          .set('Content-type', 'application/json')
-          .send(transaction)
-          .expect(201, done);
+    addDeposit(_slot, _owner, _blockNumber).then ( _ =>
+      jsonPost(transactionURL).send(_transaction).expect(201).then(_ => done())
+    )
   });
 
-  it('Fails if incorrect owner', (done) => {
-    const slot = 1;
-    const blockSpent = 2;
-    const notRealOwner = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
-    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
-    const transaction = CryptoUtils.generateTransaction(slot, notRealOwner, recipient, blockSpent, privateKey);
-    request
-    .post('/api/transactions/create')
-    .set('Content-type', 'application/json')
-    .send(transaction)
-    .expect(400, done);
-  })
+});
 
-  it('Fails if slot does not exist', (done) => {
-    const slot = 22;
-    const blockSpent = 3;
-    const owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
-    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
-    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
-    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
-    request
-    .post('/api/transactions/create')
-    .set('Content-type', 'application/json')
-    .send(transaction)
-    .expect(400, done);
-  })
+describe('Transactions Fails', () => {
 
-  it('Fails if blockSpent does not exist', (done) => {
-    const slot = 1;
-    const blockSpent = 20;
-    const owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
-    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
-    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
-    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
-    request
-    .post('/api/transactions/create')
-    .set('Content-type', 'application/json')
-    .send(transaction)
-    .expect(400, done);
-  })
+  beforeAll(() => {
+    dotenv.config();
+    mongo.init(_=> {});
+  });
 
-  it('Fails if invalid signature', (done) => {
-    const slot = 1;
-    const blockSpent = 20;
-    const owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
-    const recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
-    const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
-    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockSpent, privateKey);
-    transaction.signature = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-    request
-    .post('/api/transactions/create')
-    .set('Content-type', 'application/json')
-    .send(transaction)
-    .expect(400, done);
-  })
+  beforeEach((done) => {
+    async.parallel([
+      cb => BlockService.deleteMany({}, cb),
+      cb => TransactionService.deleteMany({}, cb)
+      ], done);
+  });
 
-})
+  it('If incorrect owner', (done) => {
+    const notRealOwner = '0x390bc8F4721CAfB8C41ab898cA81df785156bD04';
+    const notRealPrivateKey = '0x97ae3b77c061e6cb62e9a80e619880c79ce42c82ad904b36899a367594066282';
+
+    addDeposit(_slot, _owner, _blockNumber).then(_ => {
+        const transaction = generateTransaction(_slot, notRealOwner, _recipient, _blockNumber, notRealPrivateKey);
+        jsonPost(transactionURL).send(transaction).expect(400).then(()=> done());
+      }
+    );
+  });
+
+  it('If slot does not exist', (done) => {
+    addDeposit("500", _owner, _blockNumber).then ( _ =>
+      jsonPost(transactionURL).send(_transaction).expect(400).then(_=> done()))
+  });
+
+  it('If blockSpent does not exist', (done) => {
+    addDeposit(_slot, _owner, "500").then ( _ =>
+      jsonPost(transactionURL).send(_transaction).expect(400).then(_=> done()))
+  });
+
+  it('If signature is malformed', (done) => {
+    addDeposit(_slot, _owner, _blockNumber).then ( _ => {
+      const transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
+      transaction.signature = '0x1';
+      jsonPost(transactionURL).send(transaction).expect(400).then(_=> done())
+    });
+  });
+
+  it('If signature is invalid', (done) => {
+    addDeposit(_slot, _owner, _blockNumber).then ( _ => {
+      const transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
+      transaction.signature = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+      jsonPost(transactionURL).send(transaction).expect(400).then(_=> done())
+    });
+  });
+
+  it('If signature is not correct', (done) => {
+    addDeposit(_slot, _owner, _blockNumber).then ( _ => {
+      const notRealPrivateKey = '0x97ae3b77c061e6cb62e9a80e619880c79ce42c82ad904b36899a367594066282';
+      const transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, notRealPrivateKey);
+      jsonPost(transactionURL).send(transaction).expect(400).then(_=> done())
+    });
+  });
+
+});

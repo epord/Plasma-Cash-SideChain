@@ -5,7 +5,7 @@ const express 			= require('express')
 , async							= require('async')
 , BigNumber					= require("bignumber.js")
 , { BlockService } 	= require('../../../services')
-, { blocktoJson } = require('../../../utils/utils')
+, { blockToJson } = require('../../../utils/utils')
 , { mineBlock, depositBlock }	= require('../../../services/block');
 
 debug('registering /api/blocks routes');
@@ -27,7 +27,7 @@ router.get('/:block_number([0-9]+)', (req, res, next) => {
 		.findOne({ block_number: req.params.block_number})
 		.exec((err, block) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(blocktoJson(block));
+			res.status(Status.OK).json(blockToJson(block));
 		})
 });
 
@@ -36,7 +36,7 @@ router.get('/', (req, res, next) => {
 		.find({})
 		.exec((err, blocks) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(blocks.map(blocktoJson));
+			res.status(Status.OK).json(blocks.map(blockToJson));
 		})
 });
 
