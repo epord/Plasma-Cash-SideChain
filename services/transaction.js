@@ -46,7 +46,18 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 
 	TransactionService
 		.find({ slot: slot })
-		.sort({ mined_timestamp: -1 })
+		.populate(
+			{ path: 'mined_block',
+				options: {
+					collation: {
+						locale: "en_US",
+						numericOrdering: true
+					},
+					sort: { block_number: -1 }
+				}
+			}
+		)
+		.limit(1)
 		.exec((err, transactions) => {
 			if (err) return validateTransactionCb(err);
 			if (transactions.length === 0) return validateTransactionCb(null, 'Slot is not in side chain');

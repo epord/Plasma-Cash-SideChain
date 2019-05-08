@@ -22,12 +22,11 @@ logger.format('mine', (tokens, req, res) => {const sock = req.socket;
 		return sock.remoteAddress;
 	})();
 	return `[\u001b[90m${moment().format('DD/MM/YYYY HH:mm,SSS')}\u001b[37m] ${ip} - \u001b[90m${req.method} ${req.originalUrl} \u001b[${color}m${res.statusCode} \u001b[90m${Date.now() - req._startTime}ms\u001b[0m`;
-})
+});
 
 app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use('/api', logger('mine'));
 app.use('/api', routes.api);
 
 const init = (cb) => {
@@ -35,6 +34,7 @@ const init = (cb) => {
 		var host = server.address().address
 		var port = server.address().port
 		debug('Listening on port %s', port)
+		app.use('/api', logger('mine'));
 		cb();
 	})
 

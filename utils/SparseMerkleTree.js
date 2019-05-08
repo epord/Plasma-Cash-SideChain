@@ -1,5 +1,4 @@
-const utils = require('ethereumjs-util');
-const web3 = require('web3-utils');
+const utils = require('web3-utils');
 const BN = require('bn.js');
 
 module.exports = class SparseMerkleTree {
@@ -20,10 +19,10 @@ module.exports = class SparseMerkleTree {
     }
 
     setdefaultNodes(depth) {
-        let defaultNodes = new Array(depth + 1);
-        defaultNodes[0] = utils.bufferToHex(utils.keccak256(0));
+        let defaultNodes = new Array(depth + new BN(1));
+        defaultNodes[0] = utils.soliditySha3(0);
         for (let i = 1; i < depth + 1; i++) {
-            defaultNodes[i] = utils.bufferToHex(utils.keccak256(defaultNodes[i-1], defaultNodes[i-1]));
+            defaultNodes[i] = utils.soliditySha3(defaultNodes[i-new BN(1)], defaultNodes[i-new BN(1)]);
         }
         return defaultNodes;
     }
@@ -39,17 +38,17 @@ module.exports = class SparseMerkleTree {
         for (let level = 0; level < depth; level++) {
             nextLevel = {};
             for(let index in treeLevel) {
-                halfIndex = new BN(index).divRound(new BN(2)).toString();
+                halfIndex = new BN(index).div(new BN(2)).toString();
                 value = treeLevel[index];
                 if (new BN(index).mod(new BN(2)).isZero()) {
                     let coIndex = new BN(index).add(new BN(1)).toString();
                     nextLevel[halfIndex] =
-                        utils.bufferToHex(utils.keccak256(value, treeLevel[coIndex] || defaultNodes[level]));
+                      utils.soliditySha3(value, treeLevel[coIndex] || defaultNodes[level]);
                 } else {
                     let coIndex = new BN(index).sub(new BN(1)).toString();
                     if (treeLevel[coIndex] === undefined) {
-                          nextLevel[halfIndex] =
-                            utils.bufferToHex(utils.keccak256(defaultNodes[level], value));
+                        nextLevel[halfIndex] =
+                          utils.soliditySha3(defaultNodes[level], value);
                     }
                 }
             }
@@ -67,7 +66,7 @@ module.exports = class SparseMerkleTree {
         let siblingHash;
         for (let level=0; level < this.depth; level++) {
             siblingIndex = index.mod(new BN(2)).isZero() ? index.add(new BN(1)) : index.sub(new BN(1));
-            index = index.divRound(new BN(2));
+            index = index.div(new BN(2));
 
             siblingHash = this.tree[level][siblingIndex.toString()];
             if (siblingHash) {
@@ -80,4 +79,4 @@ module.exports = class SparseMerkleTree {
         let total = Buffer.concat([buf, Buffer.from(proof, 'hex')]);
         return '0x' + total.toString('hex');
     }
-};
+}

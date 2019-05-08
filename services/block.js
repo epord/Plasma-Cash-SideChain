@@ -39,6 +39,8 @@ const createBlock = (transactions, blockNumber, cb) => {
 	const rootHash = sparseMerkleTree.root;
 	const headerHash = generateBlockHeaderHash(blockNumber, rootHash);
 
+	if(!rootHash) return cb({statusCode: 500, message: "Problem calculating merkle root hash"});
+
 	BlockService.create({
 		_id: headerHash,
 		timestamp,
@@ -135,8 +137,10 @@ const mineBlock = (cb) => {
 	async.parallel({
 		lastBlock: callback => {
 			BlockService
-				.findOne({})
-				.sort({ timestamp: -1 })
+				.find({})
+				.sort({block_number: -1})
+				.collation({locale: "en_US", numericOrdering: true})
+				.limit(1)
 				.exec(callback);
 		},
 		transactions: callback => {
@@ -148,17 +152,16 @@ const mineBlock = (cb) => {
 		if (err) return cb(err);
 
 		const { lastBlock, transactions } = results;
-
 		const groupedTransactions = groupBy(transactions, "slot");
 		reduceTransactionsBySlot(Object.values(groupedTransactions), (err, transactions) => {
 			if(err) return cb(err);
 
 			let nextNumber;
-			if(!lastBlock) {
+			if(!lastBlock[0]) {
 				nextNumber = new BigNumber(1000);
 			} else {
-				const rest = lastBlock.block_number.mod(blockInterval);
-				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
+				const rest = lastBlock[0].block_number.mod(blockInterval);
+				nextNumber = lastBlock[0].block_number.minus(rest).plus(blockInterval);
 			}
 
 			createBlock(transactions, nextNumber, cb);
@@ -168,18 +171,11 @@ const mineBlock = (cb) => {
 
 const depositBlock = (slot, blockNumber, owner, cb) => {
 
-    //TODO make sure there is not other blockNumber, if there is, well... we got some trouble
-    //since we will have to know which one is the one on ethereum, lets hope that does not happen
-
 	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) {
-		return cb({ statusCode: 400, message: 'Invalid slot'});
-	}
+	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
 
 	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) {
-		return cb({ statusCode: 400, message: 'Invalid blockNumber'});
-	}
+	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockNumber'});
 
 	const rootHash = generateDepositBlockRootHash(slotBN);
 	const headerHash = generateBlockHeaderHash(blockNumberBN, rootHash);
@@ -188,37 +184,43 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
 
 	const hash = generateTransactionHash(slotBN, blockSpent, nullAddress, owner);
-	const timestamp = Date.now()
+	const timestamp = Date.now();
 
-	TransactionService.findOne({ slot: slotBN })
-	.exec((err, transaction) => {
-		if (err) return cb(err);
-		if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"})
-
-		TransactionService.create({
-			slot: slotBN,
-			owner: nullAddress,
-			recipient: owner,
-			_id: hash,
-			block_spent: blockSpent,
-			mined: true,
-			mined_block: headerHash,
-			mined_timestamp: timestamp
-		}, (err, t) => {
+	BlockService.findOne({block_number: blockNumber})
+		.exec((err, block) => {
 			if(err) return cb(err);
+			if(block) return cb({statusCode: 409, message: "Block number already deposited"});
 
-			BlockService.create({
-				_id: headerHash,
-				timestamp,
-				root_hash: rootHash,
-				block_number: blockNumberBN,
-				transactions: [t]
-			}, (err, block) => {
-				if(err) return cb(err);
-				cb(null, {statusCode: 201, message: blocktoJson(block)})
-			});
+			TransactionService.findOne({ slot: slotBN })
+				.exec((err, transaction) => {
+					if (err) return cb(err);
+					if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"});
+
+					TransactionService.create({
+						slot: slotBN,
+						owner: nullAddress,
+						recipient: owner,
+						_id: hash,
+						block_spent: blockSpent,
+						mined: true,
+						mined_block: headerHash,
+						mined_timestamp: timestamp
+					}, (err, t) => {
+						if(err) return cb(err);
+
+						BlockService.create({
+							_id: headerHash,
+							timestamp,
+							root_hash: rootHash,
+							block_number: blockNumberBN,
+							transactions: [t]
+						}, (err, block) => {
+							if(err) return cb(err);
+							cb(null, {statusCode: 201, message: blocktoJson(block)})
+						});
+					});
+				});
 		});
-	})
 };
 
 module.exports = {

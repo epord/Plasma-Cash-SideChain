@@ -10,8 +10,12 @@ const express 			= require('express')
 
 debug('registering /api/blocks routes');
 
-
+const logError = (err) => {
+	if (err && !err.statusCode) return console.log(err);
+	if (err && err.statusCode) return console.log(err.message);
+}
 const responseWithStatus = (res) => (err, status) => {
+	logError(err);
 		if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 		if (err && err.statusCode) return res.status(err.statusCode).json(err.message);
 		if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");

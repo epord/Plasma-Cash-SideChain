@@ -38,7 +38,7 @@ describe('Transactions', () => {
           .set('Content-type', 'application/json')
           .send(transaction)
           .expect(201, done);
-  })
+  });
 
   it('Fails if incorrect owner', (done) => {
     const slot = 1;
