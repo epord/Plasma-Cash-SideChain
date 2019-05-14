@@ -43,7 +43,7 @@ describe('Transactions Works', () => {
 
   it('Works with a correct transaction', (done) => {
     addDeposit(_slot, _owner, _blockNumber).then ( _ =>
-      jsonPost(transactionURL).send(_transaction).expect(201).then(_ => done())
+      jsonPost(transactionURL).send(_transaction).expect(201).then(() => done())
     )
   });
 

@@ -9,7 +9,6 @@ const moment 								= require('moment')
     , { getHighestOcurrence, groupBy }		= require('../utils/utils')
     , { generateLeafHash,
         generateDepositBlockRootHash,
-        generateBlockHeaderHash,
 		generateTransactionHash }		    = require('../utils/cryptoUtils')
     , { isTransactionValid }				= require('../services/transaction')
 		, { blockToJson } = require( "../utils/utils");
@@ -37,26 +36,24 @@ const createBlock = (transactions, blockNumber, cb) => {
 
 	const sparseMerkleTree = new SparseMerkleTree(64, leaves);
 	const rootHash = sparseMerkleTree.root;
-	const headerHash = generateBlockHeaderHash(blockNumber, rootHash);
 
 	if(!rootHash) return cb({statusCode: 500, message: "Problem calculating merkle root hash"});
 
 	BlockService.create({
-		_id: headerHash,
+		_id: blockNumber,
 		timestamp,
 		root_hash: rootHash,
-		block_number: blockNumber,
 		transactions: transactions.map(t => t.hash)
 	}, (err, block) => {
 			if(err) return cb(err);
 
-			block.populate({
-				path: 'transactions'
-			}, (err, block) => {
+			block.populate("transactions", (err, block) => {
+				//TODO rollback
+				if(err) return cb(err);
+
 				block.transactions.forEach(transaction => {
-					transaction.mined = true;
 					transaction.mined_timestamp = block.timestamp;
-					transaction.mined_block = block._id;
+					transaction.mined_block = block.block_number;
 					transaction.save();
 				});
 
@@ -119,10 +116,9 @@ const getFirstValidTransaction = (transactions, transactionsCb) => {
 			if(!invalidError) {
 				transactionsCb(null, t)
 			} else {
-				//If the transaction is invalid, remove it from the Database
+				//If the transaction is invalid, remove it from the DatabasFfine
 				//Notify somewhere who knows where
-				debug(invalidError);
-				TransactionService.deleteOne(t._id).exec((err) => {
+				TransactionService.deleteOne({ _id: t._id }).exec((err) => {
 						if(err) return transactionsCb(err);
 
 						// Continue looking at the rest of the array in a recursive way
@@ -137,15 +133,14 @@ const mineBlock = (cb) => {
 	async.parallel({
 		lastBlock: callback => {
 			BlockService
-				.find({})
-				.sort({block_number: -1})
+				.findOne({})
+				.sort({_id: -1})
 				.collation({locale: "en_US", numericOrdering: true})
-				.limit(1)
 				.exec(callback);
 		},
 		transactions: callback => {
 			TransactionService
-			.find({ mined: false })
+			.find({ mined_block: null })
 			.exec(callback);
 		}
 	}, (err, results) => {
@@ -154,14 +149,15 @@ const mineBlock = (cb) => {
 		const { lastBlock, transactions } = results;
 		const groupedTransactions = groupBy(transactions, "slot");
 		reduceTransactionsBySlot(Object.values(groupedTransactions), (err, transactions) => {
+
 			if(err) return cb(err);
 
 			let nextNumber;
-			if(!lastBlock[0]) {
+			if(!lastBlock) {
 				nextNumber = new BigNumber(1000);
 			} else {
-				const rest = lastBlock[0].block_number.mod(blockInterval);
-				nextNumber = lastBlock[0].block_number.minus(rest).plus(blockInterval);
+				const rest = lastBlock.block_number.mod(blockInterval);
+				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
 			createBlock(transactions, nextNumber, cb);
@@ -178,7 +174,6 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockNumber'});
 
 	const rootHash = generateDepositBlockRootHash(slotBN);
-	const headerHash = generateBlockHeaderHash(blockNumberBN, rootHash);
 
 	const blockSpent = new BigNumber(0);
 	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
@@ -186,7 +181,7 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 	const hash = generateTransactionHash(slotBN, blockSpent, nullAddress, owner);
 	const timestamp = Date.now();
 
-	BlockService.findOne({block_number: blockNumber})
+	BlockService.findById(blockNumberBN)
 		.exec((err, block) => {
 			if(err) return cb(err);
 			if(block) return cb({statusCode: 409, message: "Block number already deposited"});
@@ -203,16 +198,15 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 						_id: hash,
 						block_spent: blockSpent,
 						mined: true,
-						mined_block: headerHash,
+						mined_block: blockNumberBN,
 						mined_timestamp: timestamp
 					}, (err, t) => {
 						if(err) return cb(err);
 
 						BlockService.create({
-							_id: headerHash,
+							_id: blockNumberBN,
 							timestamp,
 							root_hash: rootHash,
-							block_number: blockNumberBN,
 							transactions: [t]
 						}, (err, block) => {
 							if(err) return cb(err);

@@ -32,9 +32,9 @@ describe('Mining Works', () => {
       });
   };
 
-  beforeAll(() => {
+  beforeAll(done => {
     dotenv.config();
-    mongo.init(() => {});
+    mongo.init(done);
   });
 
   beforeEach((done) => {

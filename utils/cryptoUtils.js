@@ -26,13 +26,6 @@ const generateDepositBlockRootHash = (slot) => {
 	)
 };
 
-const generateBlockHeaderHash = (blockNumber, rootHash) => {
-	return keccak256(
-		EthUtils.setLengthLeft(new BN(blockNumber.toFixed()).toBuffer(), 256/8), 	// uint256 little endian
-		EthUtils.toBuffer(rootHash)														// must start with 0x
-	)
-};
-
 const keccak256 = (...args) => {
 	const params = [];
 	args.forEach((arg) => {
@@ -69,7 +62,6 @@ const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => 
 module.exports = {
 	generateTransactionHash,
 	generateLeafHash,
-	generateBlockHeaderHash,
 	generateTransaction,
 	generateDepositBlockRootHash,
 	pubToAddress

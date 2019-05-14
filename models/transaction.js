@@ -28,17 +28,12 @@ module.exports = mongoose.Schema({
 
 	// Block which includes this transaction
 	mined_block: {
-		type: String,
+		type: BigNumberSchema,
 		ref: 'Block'
 	},
 
 	mined_timestamp: Date,
 
 	signature: String,
-
-	mined: {
-		type: Boolean,
-		default: false,
-	}
 
 });

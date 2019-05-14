@@ -17,8 +17,6 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 	if(slot.isNaN()) 	return cb({statusCode: 400, message: 'Invalid slot'});
 	if(blockSpent.isNaN()) 	return cb({statusCode: 400, message: 'Invalid blockSpent'});
 
-	/// TODO: check slot exists
-
 	isTransactionValid({slot, owner, recipient, hash, blockSpent, signature}, (err, invalidError) => {
 		if (err) return cb(err);
 		if (invalidError) return cb({statusCode: 400, message: invalidError} );
@@ -45,55 +43,50 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 const isTransactionValid = (transaction, validateTransactionCb) => {
 	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
-	TransactionService
-		.find({ slot: slot })
-		.populate(
-			{ path: 'mined_block',
-				options: {
-					collation: {
-						locale: "en_US",
-						numericOrdering: true
-					},
-					sort: { block_number: -1 }
-				}
-			}
-		)
-		.limit(1)
-		.exec((err, transactions) => {
+		getLastMinedTransaction({ slot: slot }, (err, lastTransaction) => {
 
 			if (err) return validateTransactionCb(err);
-			if (transactions.length === 0) return validateTransactionCb(null, 'Slot is not in side chain');
+			if (!lastTransaction) return validateTransactionCb(null, 'Slot is not in side chain');
 
-			const lastTransaction = transactions[0];
-			lastTransaction.populate({
-				path: 'mined_block'
-			}, (err, transaction) => {
-				if (err) return validateTransactionCb(err);
+			if (err) return validateTransactionCb(err);
 
-				const { mined_block } = transaction;
-				if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
+			const { mined_block } = lastTransaction;
+			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
-				if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
+			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-				const calculatedHash = generateTransactionHash(slot, blockSpent, owner, recipient);
+			const calculatedHash = generateTransactionHash(slot, blockSpent, owner, recipient);
 
-				if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
+			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
-				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
+			if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
-				try {
-					const pubAddress = pubToAddress(recover(hash, signature));
-					if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
-				} catch (e) {
-					return validateTransactionCb(null, 'Invalid Signature');
-				}
+			try {
+				const pubAddress = pubToAddress(recover(hash, signature));
+				if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
+			} catch (e) {
+				return validateTransactionCb(null, 'Invalid Signature');
+			}
 
-				validateTransactionCb();
-		})
+			validateTransactionCb();
 	})
 };
 
+const getLastMinedTransaction = (filter, cb) => {
+	filter.mined_block = { $ne: null }
+	TransactionService
+	.findOne(filter)
+	.sort({mined_block: -1})
+	.collation({locale: "en_US", numericOrdering: true})
+	.populate("mined_block")
+	.exec((err, transaction) => {
+		if (err) return cb(err);
+		cb(null, transaction);
+	});
+}
+
 module.exports = {
 	createTransaction,
-	isTransactionValid
+	isTransactionValid,
+	getLastMinedTransaction
 };

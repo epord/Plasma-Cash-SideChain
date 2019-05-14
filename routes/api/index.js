@@ -11,5 +11,6 @@ router.use((req, res, next) => {
 
 router.use('/blocks', require('./blocks'));
 router.use('/transactions', require('./transactions'));
+router.use('/tokens', require('./tokens'));
 
 module.exports = router;

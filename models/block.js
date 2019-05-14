@@ -3,7 +3,7 @@ const BigNumberSchema = require('mongoose-bignumber');
 
 module.exports = mongoose.Schema({
 
-	block_number: {
+	_id: {
 		type: BigNumberSchema,
 		scale: 0,
 		required: true,
@@ -11,9 +11,6 @@ module.exports = mongoose.Schema({
 	},
 
 	root_hash: String,
-
-	// header hash
-	_id: String,
 
 	timestamp: {
 		type: Date,

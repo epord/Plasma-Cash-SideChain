@@ -24,7 +24,7 @@ const responseWithStatus = (res) => (err, status) => {
 
 router.get('/:block_number([0-9]+)', (req, res, next) => {
 	BlockService
-		.findOne({ block_number: req.params.block_number})
+		.findById(req.params.block_number)
 		.exec((err, block) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			res.status(Status.OK).json(blockToJson(block));

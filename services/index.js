@@ -7,7 +7,7 @@ const { TransactionModel, BlockModel } 	= require('../models')
 TransactionModel.virtual('hash').get(function() { return this._id });
 const TransactionService = mongoose.model('Transaction', TransactionModel, 'transactions');
 
-BlockModel.virtual('header_hash').get(function() { return this._id });
+BlockModel.virtual('block_number').get(function() { return this._id });
 const BlockService = mongoose.model('Block', BlockModel, 'blocks');
 
 const Services = {

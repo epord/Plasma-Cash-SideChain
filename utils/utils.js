@@ -30,7 +30,6 @@ const logErr = (err) => { if (err) console.log(err) };
 const blockToJson = (block) => ({
 	block_number: block.block_number.toFixed(),
 	root_hash: block.root_hash,
-	header_hash: block.header_hash,
 	timestamp: block.timestamp,
 	transactions: block.transactions
 });
@@ -45,7 +44,6 @@ const transactionToJson = (transaction) => ({
 
 	mined_timestamp: transaction.mined_timestamp,
 	mined_block: transaction.mined_block,
-	mined: transaction.mined
 });
 
 module.exports = {
