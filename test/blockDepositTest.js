@@ -9,10 +9,12 @@ const { app } = require('../server'),
   { BlockService, TransactionService } = require('../services');
 
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
+const jsonGet = (url) => request.get(url).set('Accept', 'application/json');
 const blocksURL = "/api/blocks/";
 const depositURL = "/api/blocks/deposit";
 const mineURL = "/api/blocks/mine";
 const transactionURL = "/api/transactions/create";
+const lastSlotOwnerURL = slot => `/api/tokens/${slot}/last-owner`;
 
 describe('Deposit Works', () => {
 
@@ -123,6 +125,47 @@ describe('Deposit Works', () => {
           });
       })
   });
+
+  it("Two independent deposits", done => {
+    async.waterfall([
+      next =>  {
+        jsonPost(depositURL)
+        .send({
+          slot: 123,
+          blockNumber: 5,
+          owner: '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD'
+        })
+        .expect(201)
+        .then(() => next())
+      },
+      next => {
+        jsonPost(depositURL)
+        .send({
+          slot: 124,
+          blockNumber: 6,
+          owner: '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E'
+        })
+        .expect(201)
+        .then(() => next())
+      },
+      next => {
+        jsonGet(lastSlotOwnerURL(123))
+        .expect(200)
+        .then(response => {
+          expect(response.body.last_owner.toLowerCase()).toBe('0xf62c9Df4c6eC38b9232831548d354BB6A67985eD'.toLowerCase());
+          next();
+        })
+      },
+      next => {
+        jsonGet(lastSlotOwnerURL(124))
+        .expect(200)
+        .then(response => {
+          expect(response.body.last_owner.toLowerCase()).toBe('0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E'.toLowerCase());
+          next();
+        })
+      },
+    ], done);
+  })
 
 });
 

@@ -15,18 +15,18 @@ const lastSlotOwnerURL = slot => `/api/tokens/${slot}/last-owner`;
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
 const jsonGet = (url) => request.get(url).set('Accept', 'application/json');
 
-const _owner = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
-const _recipient = '0xf62c9Df4c6eC38b9232831548d354BB6A67985eD';
-const _privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
+const Alice = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
+const AlicePK = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
+const Bob = '0x6C7B0A12E80f1C7Aae55E0DEeEE4C4e378C2Cb4A';
+const BobPK = '0xaa6d0a9653d94b802195bfd7002f5273021cf709c1e785b332f8173a8b91c487';
+const Carl = '0xb9aCBd4964aBfb68c0Bb2298a92eca751e5db8Ea';
+const CarlPK = '0x2ef40bc7684ea255106dbb70b272da62e7bf939b61ceb097fe37160dbd05a67e';
+
 const _slot = "1";
 const _blockNumber = "2";
 
 const addDeposit = (slot, owner, blockNumber) => {
-    return jsonPost(depositURL).send({
-      "slot": slot,
-      "blockNumber": blockNumber,
-      "owner": _owner
-    }).expect(201)
+    return jsonPost(depositURL).send({ slot, blockNumber, owner }).expect(201)
 };
 
 describe('Token Owners', () => {
@@ -45,25 +45,23 @@ describe('Token Owners', () => {
 
   it("Deposit's owner is correct", (done) => {
     async.waterfall([
-      next => addDeposit(_slot, _owner, _blockNumber).then(() => next()),
+      next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
       next => {
         jsonGet(lastSlotOwnerURL(_slot))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner).toBe(_owner);
-          next()
+          expect(response.body.last_owner).toBe(Alice);
+          next();
         })
       }
     ], done)
   });
 
   it("Slot's owner is receiver from last mined transaction", (done) => {
-    const Alice = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E';
-    const Bob   = '0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13F';
     async.waterfall([
       next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
       next => {
-        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, _privateKey);
+        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => jsonPost(mineURL).expect(201).then(() => next()),
@@ -72,7 +70,88 @@ describe('Token Owners', () => {
         .expect(200)
         .then(response => {
           expect(response.body.last_owner.toLowerCase()).toBe(Bob.toLowerCase());
-          next()
+          next();
+        })
+      }
+    ], done);
+  });
+
+  it("Slot's owner do not change if transaction is not mined", (done) => {
+    async.waterfall([
+      next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
+      next => {
+        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
+        jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
+      },
+      next => {
+        jsonGet(lastSlotOwnerURL(_slot))
+        .expect(200)
+        .then(response => {
+          expect(response.body.last_owner.toLowerCase()).toBe(Alice.toLowerCase());
+          next();
+        })
+      }
+    ], done);
+  });
+
+  it("Two transactions of the same coin works", (done) => {
+    async.waterfall([
+      next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
+      next => {
+        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
+        jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
+      },
+      next => jsonPost(mineURL).expect(201).then((ans) => {
+        const minedBlockNumber = JSON.parse(ans.res.text).block_number;
+        next(null, minedBlockNumber)
+      }),
+      (minedBlockNumber, next) => {
+        const transaction = generateTransaction(_slot, Bob, Carl, minedBlockNumber, BobPK);
+        jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
+      },
+      next => jsonPost(mineURL).expect(201).then(() => next()),
+      next => {
+        jsonGet(lastSlotOwnerURL(_slot))
+        .expect(200)
+        .then(response => {
+          expect(response.body.last_owner.toLowerCase()).toBe(Carl.toLowerCase());
+          next();
+        })
+      }
+    ], done);
+  });
+
+  it("Two transactions of different coins works", (done) => {
+    const slot1 = "1";
+    const slot2 = "2";
+    const depositBlockNumber1 = "1";
+    const depositBlockNumber2 = "2";
+    async.waterfall([
+      next => addDeposit(slot1, Alice, depositBlockNumber1).expect(201).then(() => next()),
+      next => addDeposit(slot2, Bob, depositBlockNumber2).expect(201).then(() => next()),
+      next => {
+        const transaction = generateTransaction(slot1, Alice, Carl, depositBlockNumber1, AlicePK);
+        jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
+      },
+      next => {
+        const transaction = generateTransaction(slot2, Bob, Carl, depositBlockNumber2, BobPK);
+        jsonPost(transactionURL).send(transaction).expect(201).then(() => next())
+      },
+      next => jsonPost(mineURL).expect(201).then(() => next()),
+      next => {
+        jsonGet(lastSlotOwnerURL(slot1))
+        .expect(200)
+        .then(response => {
+          expect(response.body.last_owner.toLowerCase()).toBe(Carl.toLowerCase());
+          next();
+        })
+      },
+      next => {
+        jsonGet(lastSlotOwnerURL(slot2))
+        .expect(200)
+        .then(response => {
+          expect(response.body.last_owner.toLowerCase()).toBe(Carl.toLowerCase());
+          next();
         })
       }
     ], done);
