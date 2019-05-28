@@ -165,6 +165,29 @@ const mineBlock = (cb) => {
 	});
 };
 
+const validateAndDeposit = (cb) => {
+	const { slot, blockNumber, owner } = req.body;
+
+	if (slot == undefined || !owner || blockNumber == undefined) {
+		return cb('Missing parameter');
+	}
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) {
+		return cb('Invalid Slot');
+	}
+
+	const blockNumberBN = new BigNumber(blockNumber);
+	if(blockNumberBN.isNaN()) {
+		return cb('Invalid BlockNumber');
+	}
+
+	depositBlock(slotBN, blockNumberBN, owner, (err, status) => {
+			if(err) return cb(err);
+			cb();
+	});
+}
+
 const depositBlock = (slot, blockNumber, owner, cb) => {
 
 	const slotBN = new BigNumber(slot);
@@ -221,4 +244,5 @@ module.exports = {
 	createBlock,
 	mineBlock,
 	depositBlock,
+	validateAndDeposit,
 };
