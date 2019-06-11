@@ -3384,12 +3384,12 @@
         }
       },
       "links": {},
-      "address": "0x607C0e51D90D118612036d22036c0438c41fD8A1",
-      "transactionHash": "0xdaab02dbbd952efae8df3821ecbb71f7231996a818a8a698804ad9f8c121525f"
+      "address": "0xd641205E8F36A858c5867945782C917E3F63d1e8",
+      "transactionHash": "0x4dba413888a50eab358c8e7ce6b45081b92c200353151b7fc537d3c281b02806"
     }
   },
   "schemaVersion": "3.0.0",
-  "updatedAt": "2019-05-28T19:07:36.119Z",
+  "updatedAt": "2019-06-11T18:20:42.913Z",
   "devdoc": {
     "methods": {
       "approve(address,uint256)": {
