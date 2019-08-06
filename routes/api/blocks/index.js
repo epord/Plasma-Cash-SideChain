@@ -6,7 +6,7 @@ const express 			= require('express')
 , BigNumber					= require("bignumber.js")
 , { BlockService } 	= require('../../../services')
 , { blockToJson } = require('../../../utils/utils')
-, { mineBlock, depositBlock }	= require('../../../services/block');
+, { mineBlock, depositBlock, getProof }	= require('../../../services/block');
 
 debug('registering /api/blocks routes');
 
@@ -70,6 +70,29 @@ router.post('/deposit', (req, res, next) => {
 	}
 
 	depositBlock(slotBN, blockNumberBN, owner, responseWithStatus(res));
+});
+
+router.post('/proof', (req, res, next) => {
+	const { blockNumber, slot } = req.body;
+
+	if (!slot || !blockNumber) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter');
+	}
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) {
+		return res.status(Status.BAD_REQUEST).json('Invalid slot');
+	}
+
+	const blockNumberBN = new BigNumber(blockNumber);
+	if(blockNumberBN.isNaN()) {
+		return res.status(Status.BAD_REQUEST).json('Invalid blockNumber');
+	}
+
+	getProof(slotBN, blockNumber, (err, proof) => {
+		if(err) return responseWithStatus(err);
+		return responseWithStatus(null, { statusCode: 200, message: proof });
+	});
 });
 
 module.exports = router;

@@ -1,24 +1,21 @@
 const EthUtils	= require('ethereumjs-util'), BigNumber = require('bignumber.js'), BN = require('bn.js');
+const SparseMerkleTree = require('../utils/SparseMerkleTree')
 
 
 const generateTransactionHash = (slot, blockSpent, owner, recipient) => {
-	return keccak256(
-		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
-		EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
-		EthUtils.toBuffer(owner),														// must start with 0x
-		EthUtils.toBuffer(recipient),													// must start with 0x
-	)
+	return EthUtils.bufferToHex(EthUtils.keccak256(getTransactionBytes(slot, blockSpent, owner, recipient)))
 };
 
-const generateLeafHash = (slot, blockSpent, owner, recipient, signature) => {
-	return keccak256(
-		EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
-		EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
-		EthUtils.toBuffer(owner),														// must start with 0x
-		EthUtils.toBuffer(recipient),													// must start with 0x
-		EthUtils.toBuffer(signature)													// must start with 0x
-	)
-};
+const getTransactionBytes = (slot, blockSpent, owner, recipient) => {
+	const params = [
+			EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8), 		// uint64 little endian
+			EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
+			EthUtils.toBuffer(owner),														// must start with 0x
+			EthUtils.toBuffer(recipient),													// must start with 0x];
+	];
+
+	return EthUtils.bufferToHex(Buffer.concat(params));
+}
 
 const generateDepositBlockRootHash = (slot) => {
 	return keccak256(
@@ -59,10 +56,25 @@ const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => 
 
 };
 
+const generateSMTFromTransactions = (transactions) => {
+	const leaves = transactions.reduce((map, value) => {
+		map[value.slot] = generateTransactionHash(
+			value.slot,
+			value.block_spent,
+			value.owner,
+			value.recipient
+		);
+		return map;
+	}, {});
+
+	return new SparseMerkleTree(64, leaves);
+}
+
 module.exports = {
 	generateTransactionHash,
-	generateLeafHash,
 	generateTransaction,
 	generateDepositBlockRootHash,
-	pubToAddress
+	pubToAddress,
+	generateSMTFromTransactions,
+	getTransactionBytes
 };

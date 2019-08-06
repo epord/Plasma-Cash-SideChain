@@ -1,4 +1,7 @@
 
+
+const { getTransactionBytes } = require('../utils/cryptoUtils');
+
 const getHighestOcurrence = (arr) => {
 	const occurences = {};
 	let max = 0;
@@ -46,10 +49,25 @@ const transactionToJson = (transaction) => ({
 	mined_block: transaction.mined_block,
 });
 
+const exitDataToJson = (lastTx, lastProof, prevTx, prevProof) => {
+	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.owner, prevTx.recipient) : "0x0";
+	let prevTxInclusionProof = prevTx ? prevProof : "0x0";
+	let prevBlock = prevTx ? prevTx.mined_block._id : '0';
+	return {
+		prevTxBytes,
+		exitingTxBytes: getTransactionBytes(lastTx.slot, lastTx.block_spent, lastTx.owner, lastTx.recipient),
+		prevTxInclusionProof,
+		exitingTxInclusionProof: lastProof,
+		signature: lastTx.signature,
+		blocks: [prevBlock, lastTx.mined_block._id]
+	}
+}
+
 module.exports = {
 	getHighestOcurrence,
 	groupBy,
 	logErr,
 	blockToJson,
-	transactionToJson
+	transactionToJson,
+	exitDataToJson
 };

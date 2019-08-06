@@ -48,8 +48,6 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 			if (err) return validateTransactionCb(err);
 			if (!lastTransaction) return validateTransactionCb(null, 'Slot is not in side chain');
 
-			if (err) return validateTransactionCb(err);
-
 			const { mined_block } = lastTransaction;
 			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
@@ -85,8 +83,24 @@ const getLastMinedTransaction = (filter, cb) => {
 	});
 }
 
+const getPrevLastMinedTransaction = (filter, cb) => {
+	filter.mined_block = { $ne: null }
+	TransactionService
+	.find(filter)
+	.sort({mined_block: -1})
+	.collation({locale: "en_US", numericOrdering: true})
+	.populate("mined_block")
+	.skip(1)
+	.limit(1)
+	.exec((err, transaction) => {
+		if (err) return cb(err);
+		cb(null, transaction[0]);
+	});
+}
+
 module.exports = {
 	createTransaction,
 	isTransactionValid,
-	getLastMinedTransaction
+	getLastMinedTransaction,
+	getPrevLastMinedTransaction
 };

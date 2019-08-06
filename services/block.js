@@ -1,16 +1,13 @@
-const moment 								= require('moment')
-    , debug 								= require('debug')('app:services:transaction')
-    , async									= require('async')
-    , EthUtils       						= require('ethereumjs-util')
-    , { BigNumber }							= require('bignumber.js')
-    , { TransactionService,
-            BlockService }					= require('../services')
-    , SparseMerkleTree						= require('../utils/SparseMerkleTree')
-    , { getHighestOcurrence, groupBy }		= require('../utils/utils')
-    , { generateLeafHash,
-        generateDepositBlockRootHash,
-		generateTransactionHash }		    = require('../utils/cryptoUtils')
-    , { isTransactionValid }				= require('../services/transaction')
+const moment = require('moment')
+    , debug = require('debug')('app:services:transaction')
+    , async = require('async')
+    , EthUtils = require('ethereumjs-util')
+    , { BigNumber } = require('bignumber.js')
+    , { TransactionService, BlockService } = require('../services')
+    , SparseMerkleTree = require('../utils/SparseMerkleTree')
+    , { getHighestOcurrence, groupBy } = require('../utils/utils')
+    , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
+    , { isTransactionValid } = require('../services/transaction')
 		, { blockToJson } = require( "../utils/utils");
 
 
@@ -23,18 +20,8 @@ const createBlock = (transactions, blockNumber, cb) => {
 	const maxSlotCount = getHighestOcurrence(transactions.map(t => t.slot));
 	if(maxSlotCount > 1) return cb({ statusCode: 500, message: "Trying to mine 2 slots at once"});
 
-	const leaves = transactions.reduce((map, value) => {
-		map[value.slot] = generateLeafHash(
-			value.slot,
-			value.block_spent,
-			value.owner,
-			value.recipient,
-			value.signature
-		);
-		return map;
-	}, {});
 
-	const sparseMerkleTree = new SparseMerkleTree(64, leaves);
+	const sparseMerkleTree = generateSMTFromTransactions(transactions);
 	const rootHash = sparseMerkleTree.root;
 
 	if(!rootHash) return cb({statusCode: 500, message: "Problem calculating merkle root hash"});
@@ -154,7 +141,7 @@ const mineBlock = (cb) => {
 
 			let nextNumber;
 			if(!lastBlock) {
-				nextNumber = new BigNumber(1000);
+				nextNumber = blockInterval;
 			} else {
 				const rest = lastBlock.block_number.mod(blockInterval);
 				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
@@ -240,9 +227,32 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 		});
 };
 
+const getProof = (slot, blockNumber, cb) => {
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
+
+	const blockNumberBN = new BigNumber(blockNumber);
+	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockNumber'});
+
+	BlockService
+	.findById(blockNumberBN)
+	.populate("transactions")
+	.exec((err, block) => {
+		if (err) return cb(err);
+
+		const sparseMerkleTree = generateSMTFromTransactions(block.transactions);
+
+		const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
+		cb(null, proof);
+	})
+}
+
 module.exports = {
 	createBlock,
 	mineBlock,
 	depositBlock,
 	validateAndDeposit,
+	getProof,
+	blockInterval
 };
