@@ -8,11 +8,19 @@
   "private": true,
   "scripts": {
     "test": "jest --runInBand --verbose",
-    "start": "better-npm-run start"
+    "start": "better-npm-run start",
+    "debug": "better-npm-run debug"
   },
   "betterScripts": {
     "start": {
       "command": "node app.js",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "app:*"
+      }
+    },
+    "debug": {
+      "command": "node --inspect-brk=9229 app.js",
       "env": {
         "NODE_ENV": "development",
         "DEBUG": "app:*"
