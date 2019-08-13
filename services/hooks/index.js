@@ -77,6 +77,20 @@ const init = () => {
 		}
 	})
 
+	const exitInterface = getEventInterface(RootChainContract, 'StartedExit');
+	subscribeLogEvent(RootChainContract, exitInterface, (error, result) => {
+		console.log(error);
+		if (!error) {
+			console.log(depositInterface.abiItem.inputs)
+		  const eventObj = web3.eth.abi.decodeLog(
+				exitInterface.abiItem.inputs,
+				result.data == "0x" ? undefined : result.data,
+				result.topics.slice(1)
+			)
+			console.log(`Exit: `, eventObj)
+		}
+	});
+
 	const transferInterface = getEventInterface(CryptoMonContract, 'Transfer');
 	subscribeLogEvent(CryptoMonContract, transferInterface, (error, result) => {
 		console.log(error);
@@ -88,7 +102,8 @@ const init = () => {
 		  )
 		  console.log(`New Transfer!`, eventObj)
 		}
-	})
+	});
+
 }
 
 module.exports = {

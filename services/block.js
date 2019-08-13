@@ -188,7 +188,7 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 	const blockSpent = new BigNumber(0);
 	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
 
-	const hash = generateTransactionHash(slotBN, blockSpent, nullAddress, owner);
+	const hash = generateTransactionHash(slotBN, blockSpent, new BigNumber(1), owner);
 	const timestamp = Date.now();
 
 	BlockService.findById(blockNumberBN)
