@@ -7,8 +7,7 @@ const RLP 				= require('rlp');
 
 const generateTransactionHash = (slot, blockSpent, denonimation, recipient) => {
 	if(blockSpent.isZero()) {
-		console.log("deposit")
-		return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8))) //uint256 little endian
+		return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8))) //uint64 little endian
 	} else {
 		return EthUtils.bufferToHex(EthUtils.keccak256(getTransactionBytes(slot, blockSpent, denonimation, recipient)))
 	}

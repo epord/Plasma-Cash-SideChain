@@ -83,7 +83,7 @@ const init = () => {
 		if (!error) {
 			console.log(depositInterface.abiItem.inputs)
 		  const eventObj = web3.eth.abi.decodeLog(
-				exitInterface.abiItem.inputs,
+				depositInterface.abiItem.inputs,
 				result.data == "0x" ? undefined : result.data,
 				result.topics.slice(1)
 			)
