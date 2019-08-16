@@ -83,11 +83,25 @@ const init = () => {
 		if (!error) {
 			console.log(depositInterface.abiItem.inputs)
 		  const eventObj = web3.eth.abi.decodeLog(
-				depositInterface.abiItem.inputs,
+				exitInterface.abiItem.inputs,
 				result.data == "0x" ? undefined : result.data,
 				result.topics.slice(1)
 			)
 			console.log(`Exit: `, eventObj)
+		}
+	});
+
+	const FexitInterface = getEventInterface(RootChainContract, 'FinalizedExit');
+	subscribeLogEvent(RootChainContract, FexitInterface, (error, result) => {
+		console.log(error);
+		if (!error) {
+			console.log(depositInterface.abiItem.inputs)
+		  const eventObj = web3.eth.abi.decodeLog(
+				FexitInterface.abiItem.inputs,
+				result.data == "0x" ? undefined : result.data,
+				result.topics.slice(1)
+			)
+			console.log(`FinalizedExit: `, eventObj)
 		}
 	});
 
