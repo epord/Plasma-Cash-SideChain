@@ -6,7 +6,7 @@ const { app } = require('../server'),
   { generateTransaction } = require("../utils/cryptoUtils"),
   EthUtils	= require('ethereumjs-util'),
   BN = require('bn.js'),
-  { BlockService, TransactionService } = require('../services');
+  { BlockService, TransactionService, CoinStateService } = require('../services');
 
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
 const jsonGet = (url) => request.get(url).set('Accept', 'application/json');
@@ -179,7 +179,8 @@ describe('Deposit Fails', () => {
   beforeEach((done) => {
     async.parallel([
       cb => BlockService.deleteMany({}, cb),
-      cb => TransactionService.deleteMany({}, cb)
+      cb => TransactionService.deleteMany({}, cb),
+      cb => CoinStateService.deleteMany({}, cb)
     ], done);
   });
 

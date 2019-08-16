@@ -47,7 +47,9 @@ const pubToAddress = (pubKey) => {
 
 const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => {
 	//TODO migrate slot and blockSpent to BigNumber
-	const hash = generateTransactionHash(slot, new BigNumber(blockSpent), new BigNumber(1), recipient);
+	const slotBN = new BigNumber(slot);
+	const blockSpentBN = new BigNumber(blockSpent);
+	const hash = generateTransactionHash(slotBN, blockSpentBN, new BigNumber(1), recipient);
 	const signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(privateKey));
 
 	// This method simulates eth-sign RPC method
@@ -55,11 +57,11 @@ const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => 
 	const realSignature = EthUtils.toRpcSig(signature.v, signature.r, signature.s);
 
 	return {
-		slot: slot.toFixed(),
+		slot: slotBN.toFixed(),
 		owner: owner,
 		recipient: recipient,
 		hash: hash,
-		blockSpent: blockSpent,
+		blockSpent: blockSpentBN.toFixed(),
 		signature: realSignature
 	};
 

@@ -4,7 +4,7 @@ const { app } = require('../server')
     , dotenv = require('dotenv')
     , async = require('async')
     , { generateTransaction} = require('../utils/cryptoUtils')
-    , { BlockService, TransactionService } = require('../services');
+    , { BlockService, TransactionService, CoinStateService } = require('../services');
 
 
 const transactionURL = "/api/transactions/create";
@@ -37,7 +37,8 @@ describe('Transactions Works', () => {
   beforeEach((done) => {
     async.parallel([
       cb => BlockService.deleteMany({}, cb),
-      cb => TransactionService.deleteMany({}, cb)
+      cb => TransactionService.deleteMany({}, cb),
+      cb => CoinStateService.deleteMany({}, cb)
     ], done);
   });
 

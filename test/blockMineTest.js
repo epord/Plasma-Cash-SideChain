@@ -4,7 +4,7 @@ const { app } = require('../server'),
   async = require('async'),
   dotenv 		= require('dotenv'),
   { generateTransaction } = require("../utils/cryptoUtils"),
-  { BlockService, TransactionService } = require('../services');
+  { BlockService, TransactionService, CoinStateService } = require('../services');
 
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
 const depositURL = "/api/blocks/deposit";
@@ -40,7 +40,8 @@ describe('Mining Works', () => {
   beforeEach((done) => {
     async.parallel([
       cb => BlockService.deleteMany({}, cb),
-      cb => TransactionService.deleteMany({}, cb)
+      cb => TransactionService.deleteMany({}, cb),
+      cb => CoinStateService.deleteMany({}, cb)
     ], done);
   });
 

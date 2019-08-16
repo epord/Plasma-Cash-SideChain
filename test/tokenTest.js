@@ -5,7 +5,7 @@ const { app } = require('../server')
     , async = require('async')
     , { generateTransaction} = require('../utils/cryptoUtils')
     , _ = require('lodash')
-    , { BlockService, TransactionService } = require('../services');
+    , { BlockService, TransactionService, CoinStateService } = require('../services');
 
 
 const transactionURL = "/api/transactions/create";
@@ -39,7 +39,8 @@ describe('Token Owners', () => {
   beforeEach((done) => {
     async.parallel([
       cb => BlockService.deleteMany({}, cb),
-      cb => TransactionService.deleteMany({}, cb)
+      cb => TransactionService.deleteMany({}, cb),
+      cb => CoinStateService.deleteMany({}, cb)
     ], done);
   });
 

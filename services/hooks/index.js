@@ -5,6 +5,7 @@ const RootChainJson = require("./RootChain.json");
 const BigNumber = require("bignumber.js");
 const _ = require('lodash');
 const { depositBlock }	= require('../../services/block');
+const { exitSlot }	= require('../../services/coinState');
 
 const subscribeLogEvent = (contract, interface, cb) => {
 	const subscription = web3.eth.subscribe('logs', {
@@ -88,6 +89,7 @@ const init = () => {
 				result.topics.slice(1)
 			)
 			console.log(`Exit: `, eventObj)
+			exitSlot(eventObj.slot, err => { if (err) console.log(err) });
 		}
 	});
 

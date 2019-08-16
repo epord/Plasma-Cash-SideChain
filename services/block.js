@@ -3,7 +3,7 @@ const moment = require('moment')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
     , { BigNumber } = require('bignumber.js')
-    , { TransactionService, BlockService } = require('../services')
+    , { TransactionService, BlockService, CoinStateService } = require('../services')
     , SparseMerkleTree = require('../utils/SparseMerkleTree')
     , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
@@ -200,6 +200,12 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 				.exec((err, transaction) => {
 					if (err) return cb(err);
 					if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"});
+
+					/// TODO: make atomic
+					CoinStateService.create({
+						_id: slotBN,
+						state: "DEPOSITED"
+					})
 
 					TransactionService.create({
 						slot: slotBN,

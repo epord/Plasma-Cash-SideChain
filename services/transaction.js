@@ -1,5 +1,5 @@
 const { recover }            					= require('../utils/sign')
-	, { TransactionService }	= require('../services')
+	, { TransactionService, CoinStateService }	= require('../services')
 	, { generateTransactionHash,
 		pubToAddress }						= require('../utils/cryptoUtils')
 	, { transactionToJson }						= require('../utils/utils')
@@ -66,7 +66,15 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 				return validateTransactionCb(null, 'Invalid Signature');
 			}
 
-			validateTransactionCb();
+			CoinStateService.findById(slot, (err, coinState) => {
+				if (err) return validateTransactionCb(err);
+
+				if(coinState.state != "DEPOSITED") {
+					return validateTransactionCb(null, "Coin state is not DEPOSITED");
+				} else {
+					return validateTransactionCb();
+				}
+			})
 	})
 };
 
