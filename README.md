@@ -3,6 +3,19 @@ Check that you have a mongo database running and specify the port in .env file.
 
 `npm install`
 `npm start`
+-----
+`ganache-cli -p 7545 -i 5777 --gasLimit=0x1fffffffffffff --allowUnlimitedContractSize -e 1000000000`
+`Setup metamask so it uses localhost 7545 and network id 5777`
+`Copy one of the private keys and import it to Metamask`
+`truffle migrate` - En el repo Plasma-Cash-RootChain
+`Go to Remix and paste all the liteInterfaces (Remove the I from the beggining of their names)`
+`Copy the migrated address into Remix`
+`Buy a CryptoMon with the 0.01 ether`
+
+
+
+`npm install -g remixd`
+`remixd -s <absolute-path> --remix-ide https://remix.ethereum.org`
 
 ## Usefull commands
 
