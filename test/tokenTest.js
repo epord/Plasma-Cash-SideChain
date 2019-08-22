@@ -51,7 +51,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(_slot))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner).toBe(Alice);
+          expect(response.body.last_owner).toBe(Alice.toLowerCase());
           next();
         })
       }

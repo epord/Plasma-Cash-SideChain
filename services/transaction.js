@@ -48,33 +48,42 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 			if (err) return validateTransactionCb(err);
 			if (!lastTransaction) return validateTransactionCb(null, 'Slot is not in side chain');
 
-			const { mined_block } = lastTransaction;
-			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
+			lastTransaction.populate("mined_block", (err, lastTransaction) => {
+				const { mined_block } = lastTransaction;
+				if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
-			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
+				if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-			const calculatedHash = generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
+				const calculatedHash = generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
 
-			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
+				console.log(calculatedHash);
 
-			if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
+				if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
-			try {
-				const pubAddress = pubToAddress(recover(hash, signature));
-				if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
-			} catch (e) {
-				return validateTransactionCb(null, 'Invalid Signature');
-			}
+				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
-			CoinStateService.findById(slot, (err, coinState) => {
-				if (err) return validateTransactionCb(err);
-
-				if(coinState.state != "DEPOSITED") {
-					return validateTransactionCb(null, "Coin state is not DEPOSITED");
-				} else {
-					return validateTransactionCb();
+				try {
+					const pubAddress = pubToAddress(recover(hash, signature));
+					console.log(pubAddress);
+					if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
+				} catch (e) {
+					return validateTransactionCb(null, 'Invalid Signature');
 				}
+
+				CoinStateService.findById(slot, (err, coinState) => {
+					if (err) return validateTransactionCb(err);
+
+					if(coinState.state != "DEPOSITED") {
+						return validateTransactionCb(null, "Coin state is not DEPOSITED");
+					} else {
+						return validateTransactionCb();
+					}
 			})
+
+
+			})
+
+
 	})
 };
 
@@ -84,7 +93,6 @@ const getLastMinedTransaction = (filter, cb) => {
 	.findOne(filter)
 	.sort({mined_block: -1})
 	.collation({locale: "en_US", numericOrdering: true})
-	.populate("mined_block")
 	.exec((err, transaction) => {
 		if (err) return cb(err);
 		cb(null, transaction);
@@ -97,7 +105,6 @@ const getPrevLastMinedTransaction = (filter, cb) => {
 	.find(filter)
 	.sort({mined_block: -1})
 	.collation({locale: "en_US", numericOrdering: true})
-	.populate("mined_block")
 	.skip(1)
 	.limit(1)
 	.exec((err, transaction) => {

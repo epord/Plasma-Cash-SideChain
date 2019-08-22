@@ -41,7 +41,7 @@ const transactionToJson = (transaction) => ({
 	owner: transaction.owner,
 	recipient: transaction.recipient,
 	hash: transaction.hash,
-	block_spent: transaction.block_spent.toFixed(),
+	blockSpent: transaction.block_spent.toFixed(),
 	signature: transaction.signature,
 
 	mined_timestamp: transaction.mined_timestamp,

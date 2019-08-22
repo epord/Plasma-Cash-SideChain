@@ -13,16 +13,16 @@ const getExitData = (slot, cb) => {
 		if (err) return cb(err)
 		if (!lastTransaction) return cb({ statusCode: 400, message: 'Slot is not in side chain' });
 
-		getProof(slot, lastTransaction.mined_block._id, (err, lastProof) => {
+		getProof(slot, lastTransaction.mined_block, (err, lastProof) => {
 			if (err) return cb(err)
 			if (!lastProof) return cb({ statusCode: 500, message: 'Could not create Proof for the exiting transaction' });
-			if (lastTransaction.mined_block._id.mod(blockInterval).isZero()) {
+			if (lastTransaction.mined_block.mod(blockInterval).isZero()) {
 
 				getPrevLastMinedTransaction({ slot: slotBN }, (err, prevTransaction) => {
 					if (err) return cb(err)
 					if (!prevTransaction) return cb({ statusCode: 500, message: 'Did not find the previous transaction for the slot' });
 
-					getProof(slot, prevTransaction.mined_block._id, (err, prevProof) => {
+					getProof(slot, prevTransaction.mined_block, (err, prevProof) => {
 						if (err) return cb(err)
 						if (!prevProof) return cb({ statusCode: 500, message: 'Could not create Proof for the previous transaction' });
 

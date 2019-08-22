@@ -17,13 +17,13 @@ const responseWithStatus = (res) => (err, status) => {
 	return res.status(status.statusCode).json(status.message)
 };
 
-router.get('/:id([A-Fa-f0-9]+)', (req, res, next) => {
-	TransactionService
-		.findById(req.params.id)
-		.exec((err, transaction) => {
-			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transactionToJson(transaction));
-		})
+router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req, res, next) => {
+	const { id } = req.params;
+	getLastMinedTransaction({ slot: id }, (err, transaction) => {
+		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+		if (!transaction) return res.status(Status.NOT_FOUND).json({});
+		res.status(Status.OK).json(transactionToJson(transaction));
+	});
 });
 
 //TODO esto es bastante hack
