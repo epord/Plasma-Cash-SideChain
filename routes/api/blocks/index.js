@@ -79,6 +79,7 @@ router.post('/proof', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Missing parameter');
 	}
 
+
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) {
 		return res.status(Status.BAD_REQUEST).json('Invalid slot');
@@ -90,8 +91,8 @@ router.post('/proof', (req, res, next) => {
 	}
 
 	getProof(slotBN, blockNumber, (err, proof) => {
-		if(err) return responseWithStatus(err);
-		return responseWithStatus(null, { statusCode: 200, message: proof });
+		if(err) return responseWithStatus(res)(err);
+		return responseWithStatus(res)(null, { statusCode: 200, message: proof });
 	});
 });
 

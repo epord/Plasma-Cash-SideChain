@@ -9,8 +9,27 @@ const exitSlot = (slot, cb) => {
 			state: 'EXITING'
 		}
 	}, cb);
+};
+
+const updateOwner = (slot, newOwner, cb) => {
+	CoinStateService.updateOne({
+		_id: new BigNumber(slot)
+	}, {
+		$set: {
+			owner: newOwner.toLowerCase()
+		}
+	}, cb);
+};
+
+const getOwnedTokens = (owner, cb) => {
+		CoinStateService.find({ owner: owner.toLowerCase() }).exec( (err, slots) => {
+			if(err) return cb(err);
+			return cb(null, slots.map(s => s.slot));
+		});
 }
 
 module.exports = {
-	exitSlot
+	exitSlot,
+	updateOwner,
+	getOwnedTokens
 }

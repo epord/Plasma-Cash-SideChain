@@ -4,7 +4,7 @@ const moment = require('moment')
     , EthUtils = require('ethereumjs-util')
     , { BigNumber } = require('bignumber.js')
     , { TransactionService, BlockService, CoinStateService } = require('../services')
-    , SparseMerkleTree = require('../utils/SparseMerkleTree')
+		, { updateOwner }	= require('../services/coinState')
     , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
     , { isTransactionValid } = require('../services/transaction')
@@ -42,6 +42,9 @@ const createBlock = (transactions, blockNumber, cb) => {
 					transaction.mined_timestamp = block.timestamp;
 					transaction.mined_block = block.block_number;
 					transaction.save();
+
+					//TODO this callback?
+					updateOwner(transaction.slot, transaction.recipient, (err) => { if(err) console.error(err) })
 				});
 
 				cb(null, { statusCode: 201, message: blockToJson(block) });
@@ -175,7 +178,9 @@ const validateAndDeposit = (cb) => {
 	});
 }
 
-const depositBlock = (slot, blockNumber, owner, cb) => {
+const depositBlock = (slot, blockNumber, _owner, cb) => {
+
+	const owner = _owner.toLowerCase();
 
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
@@ -204,8 +209,9 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 					/// TODO: make atomic
 					CoinStateService.create({
 						_id: slotBN,
-						state: "DEPOSITED"
-					})
+						state: "DEPOSITED",
+						owner: owner
+					});
 
 					TransactionService.create({
 						slot: slotBN,

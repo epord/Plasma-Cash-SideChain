@@ -3,7 +3,9 @@ const express = require('express')
 	, debug = require('debug')('app:api:tokens')
 	, Status = require('http-status-codes')
 	, { TransactionService } = require('../../../services')
-	, { createTransaction, getLastMinedTransaction } = require('../../../services/transaction')
+	, { getLastMinedTransaction } = require('../../../services/transaction')
+	, { getOwnedTokens } = require('../../../services/coinState')
+	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber = require('bignumber.js');
 
 debug('registering /api/tokens routes')
@@ -20,10 +22,11 @@ router.get('/:id([A-Fa-f0-9]+)', (req, res, next) => {
 		.findById(req.params.id)
 		.exec((err, transaction) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transaction);
+			res.status(Status.OK).json(transactionToJson(transaction));
 		})
 });
 
+//TODO esto es bastante hack
 router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 	const { id } = req.params;
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
@@ -32,6 +35,16 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 		res.status(Status.OK).json({ last_owner: transaction.recipient });
 	});
 });
+
+
+router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
+  const { owner } = req.params;
+  getOwnedTokens(owner, (err, slots) => {
+      if(err) return responseWithStatus(res)(err);
+      return responseWithStatus(res)(null, {statusCode: 200, message: slots})
+  });
+});
+
 
 
 module.exports = router;

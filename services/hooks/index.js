@@ -34,10 +34,10 @@ const init = () => {
 		if (!error) {
 			console.log(idebugInterface.abiItem.inputs)
 		  const eventObj = web3.eth.abi.decodeLog(
-			idebugInterface.abiItem.inputs,
-			result.data == "0x" ? undefined : result.data,
-			result.topics.slice(1)
-		  )
+				idebugInterface.abiItem.inputs,
+		(new BigNumber(result.data)).isZero() ? undefined : result.data,
+				result.topics.slice(1)
+		  );
 		  console.log(`Debug: `, eventObj)
 		}
 	})
@@ -49,7 +49,7 @@ const init = () => {
 			console.log(depositInterface.abiItem.inputs)
 		  const eventObj = web3.eth.abi.decodeLog(
 				depositInterface.abiItem.inputs,
-				result.data == "0x" ? undefined : result.data,
+				(new BigNumber(result.data)).isZero() ? undefined : result.data,
 				result.topics.slice(1)
 			)
 
@@ -85,7 +85,7 @@ const init = () => {
 			console.log(depositInterface.abiItem.inputs)
 		  const eventObj = web3.eth.abi.decodeLog(
 				exitInterface.abiItem.inputs,
-				result.data == "0x" ? undefined : result.data,
+				(new BigNumber(result.data)).isZero() ? undefined : result.data,
 				result.topics.slice(1)
 			)
 			console.log(`Exit: `, eventObj)
@@ -100,7 +100,7 @@ const init = () => {
 			console.log(depositInterface.abiItem.inputs)
 		  const eventObj = web3.eth.abi.decodeLog(
 				FexitInterface.abiItem.inputs,
-				result.data == "0x" ? undefined : result.data,
+				(new BigNumber(result.data)).isZero() ? undefined : result.data,
 				result.topics.slice(1)
 			)
 			console.log(`FinalizedExit: `, eventObj)
@@ -113,7 +113,7 @@ const init = () => {
 		if (!error) {
 		  const eventObj = web3.eth.abi.decodeLog(
 			transferInterface.abiItem.inputs,
-			result.data == "0x" ? undefined : result.data,
+				(new BigNumber(result.data)).isZero() ? undefined : result.data,
 			result.topics.slice(1)
 		  )
 		  console.log(`New Transfer!`, eventObj)
