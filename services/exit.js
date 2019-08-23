@@ -26,12 +26,12 @@ const getExitData = (slot, cb) => {
 						if (err) return cb(err)
 						if (!prevProof) return cb({ statusCode: 500, message: 'Could not create Proof for the previous transaction' });
 
-						cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof) });
+						cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof, slot) });
 					});
 				});
 
 			} else {
-				cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, null, null) });
+				cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, null, null, slot) });
 			}
 		})
 
