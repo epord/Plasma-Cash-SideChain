@@ -150,6 +150,7 @@ const mineBlock = (cb) => {
 				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
+			debug('mining')
 			createBlock(transactions, nextNumber, cb);
 		});
 	});

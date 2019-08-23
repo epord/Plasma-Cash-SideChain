@@ -24,7 +24,7 @@ const getEventInterface = (contract, eventName) => {
 }
 
 
-const init = () => {
+const init = (cb) => {
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
 	const CryptoMonContract = new web3.eth.Contract(CryptoMonsJson.abi,CryptoMonsJson.networks["5777"].address);
 
@@ -120,6 +120,7 @@ const init = () => {
 		}
 	});
 
+	cb();
 }
 
 module.exports = {
