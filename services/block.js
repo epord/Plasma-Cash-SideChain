@@ -7,7 +7,8 @@ const moment = require('moment')
 		, { updateOwner }	= require('../services/coinState')
     , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
-    , { isTransactionValid } = require('../services/transaction')
+    , { isTransactionValid } = require('./transaction')
+    , { submitBlock } = require('../utils/cryptoUtils')
 		, { blockToJson } = require( "../utils/utils");
 
 
@@ -47,7 +48,7 @@ const createBlock = (transactions, blockNumber, cb) => {
 					updateOwner(transaction.slot, transaction.recipient, (err) => { if(err) console.error(err) })
 				});
 
-				cb(null, { statusCode: 201, message: blockToJson(block) });
+				cb(null, block);
 			});
 		})
 };
@@ -151,7 +152,14 @@ const mineBlock = (cb) => {
 			}
 
 			debug('mining')
-			createBlock(transactions, nextNumber, cb);
+			createBlock(transactions, nextNumber, (err, block) => {
+				if(err) return cb(err);
+
+				submitBlock(block, (err)=> {
+					if(err) return cb(err);
+					cb(null, { statusCode: 201, message: blockToJson(block) });
+				})
+			});
 		});
 	});
 };

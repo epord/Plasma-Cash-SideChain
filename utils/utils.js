@@ -51,7 +51,7 @@ const transactionToJson = (transaction) => ({
 const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
 	let prevTxInclusionProof = prevTx ? prevProof : "0x0";
-	let prevBlock = prevTx ? prevTx.mined_block._id : '0';
+	let prevBlock = prevTx ? prevTx.mined_block : '0';
 	let prevTransactionHash = prevTx ? prevTx.hash : undefined;
 	return {
 		slot,
@@ -62,7 +62,7 @@ const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 		signature: lastTx.signature,
 		lastTransactionHash: lastTx.hash,
 		prevTransactionHash,
-		blocks: [prevBlock, lastTx.mined_block._id]
+		blocks: [prevBlock, lastTx.mined_block]
 	}
 }
 

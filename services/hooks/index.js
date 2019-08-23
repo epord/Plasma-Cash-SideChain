@@ -4,8 +4,8 @@ const CryptoMonsJson = require("./CryptoMons.json");
 const RootChainJson = require("./RootChain.json");
 const BigNumber = require("bignumber.js");
 const _ = require('lodash');
-const { depositBlock }	= require('../../services/block');
-const { exitSlot }	= require('../../services/coinState');
+const { depositBlock }	= require('../block');
+const { exitSlot }	= require('../coinState');
 
 const subscribeLogEvent = (contract, interface, cb) => {
 	const subscription = web3.eth.subscribe('logs', {
@@ -74,6 +74,7 @@ const init = (cb) => {
 
 			// TODO: que hacer con errores??
 
+			console.log(depositBlock);
 			depositBlock(slotBN, blockNumberBN, from, (err) => { console.error(err); });
 		}
 	})
