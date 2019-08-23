@@ -44,8 +44,8 @@ const transactionToJson = (transaction) => ({
 	blockSpent: transaction.block_spent.toFixed(),
 	signature: transaction.signature,
 
-	mined_timestamp: transaction.mined_timestamp,
-	mined_block: transaction.mined_block,
+	minedTimestamp: transaction.mined_timestamp,
+	minedBlock: transaction.mined_block,
 });
 
 const exitDataToJson = (lastTx, lastProof, prevTx, prevProof) => {
