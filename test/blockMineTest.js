@@ -1,10 +1,10 @@
-const { app } = require('../server'),
+const { app } = require('../src/server'),
   request = require('supertest')(app),
-  mongo = require('../mongo'),
+  mongo = require('../src/mongo'),
   async = require('async'),
   dotenv 		= require('dotenv'),
-  { generateTransaction } = require("../utils/cryptoUtils"),
-  { BlockService, TransactionService, CoinStateService } = require('../services');
+  { generateTransaction } = require("../src/utils/cryptoUtils"),
+  { BlockService, TransactionService, CoinStateService } = require('../src/services');
 
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
 const depositURL = "/api/blocks/deposit";

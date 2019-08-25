@@ -3,11 +3,11 @@ const moment = require('moment')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
     , { BigNumber } = require('bignumber.js')
-    , { TransactionService, BlockService, CoinStateService } = require('../services')
+    , { TransactionService, BlockService, CoinStateService } = require('./index')
     , SparseMerkleTree = require('../utils/SparseMerkleTree')
     , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
-    , { isTransactionValid } = require('../services/transaction')
+    , { isTransactionValid } = require('./transaction')
 		, { blockToJson } = require( "../utils/utils");
 
 

@@ -1,8 +1,15 @@
 ## Install
-Check that you have a mongo database running and specify the port in .env file.
+Install MongoDB using port `dbport` (default is `27017`), and create a database with name `dbname`.
 
-`npm install`
-`npm start`
+Create the file *.env* in the root directory and add the following lines:  
+PORT=8082  
+MONGO_URL=localhost  
+MONGO_PORT=`dbport`  
+MONGO_DB_NAME=`dbname`
+
+Run the following commands:  
+`npm install`  
+`npm start`  
 
 ## Usefull commands
 

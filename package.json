@@ -1,11 +1,12 @@
 {
-  "name": "node-boilerplate",
+  "name": "cryptomon-plasma-sidechain",
   "jest": {
     "testEnvironment": "node",
     "testRegex": "/test/.*.js$"
   },
   "version": "1.0.0",
   "private": true,
+  "main": "dist/app.js",
   "scripts": {
     "test": "jest --runInBand --verbose",
     "start": "better-npm-run start",
@@ -13,7 +14,7 @@
   },
   "betterScripts": {
     "start": {
-      "command": "node app.js",
+      "command": "tsc && node dist/app.js",
       "env": {
         "NODE_ENV": "development",
         "DEBUG": "app:*"
@@ -44,14 +45,17 @@
     "mongoose": "^5.5.5",
     "mongoose-bignumber": "^1.1.0",
     "morgan": "^1.9.1",
+    "node-gyp": "^5.0.3",
     "q": "^1.5.1",
     "rlp": "^2.2.3",
     "supports-color": "^6.1.0",
-    "web3": "^1.0.0-beta.52",
-    "web3-eth-accounts": "^1.0.0-beta.52"
+    "web3": "1.0.0-beta.52",
+    "web3-eth-accounts": "1.0.0-beta.52"
   },
   "devDependencies": {
+    "jest": "^24.8.0",
     "supertest": "^4.0.2",
-    "jest": "^24.8.0"
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.3"
   }
 }

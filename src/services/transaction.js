@@ -1,5 +1,5 @@
 const { recover }            					= require('../utils/sign')
-	, { TransactionService, CoinStateService }	= require('../services')
+	, { TransactionService, CoinStateService }	= require('./index')
 	, { generateTransactionHash,
 		pubToAddress }						= require('../utils/cryptoUtils')
 	, { transactionToJson }						= require('../utils/utils')

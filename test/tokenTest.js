@@ -1,11 +1,11 @@
-const { app } = require('../server')
+const { app } = require('../src/server')
     , request = require('supertest')(app)
-    , mongo = require('../mongo')
+    , mongo = require('../src/mongo')
     , dotenv = require('dotenv')
     , async = require('async')
-    , { generateTransaction} = require('../utils/cryptoUtils')
+    , { generateTransaction} = require('../src/utils/cryptoUtils')
     , _ = require('lodash')
-    , { BlockService, TransactionService, CoinStateService } = require('../services');
+    , { BlockService, TransactionService, CoinStateService } = require('../src/services');
 
 
 const transactionURL = "/api/transactions/create";

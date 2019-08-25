@@ -1,4 +1,4 @@
-const { getTransactionBytes } = require('../utils/cryptoUtils');
+const { getTransactionBytes } = require('./cryptoUtils');
 const BigNumber					= require("bignumber.js")
 
 const getHighestOcurrence = (arr) => {

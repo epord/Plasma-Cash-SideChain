@@ -1,4 +1,4 @@
-const express 	= require('express')
+let express 	= require('express')
 		, app 			= express()
 		, bodyParser	= require('body-parser')
 		, compression				= require('compression')
@@ -7,9 +7,10 @@ const express 	= require('express')
 		, logger		= require('morgan')
 		, routes 		= require('./routes');
 
-debug('setting up server')
+debug('setting up server');
 
-logger.format('mine', (tokens, req, res) => {const sock = req.socket;
+//TODO: Ver tipos de tokens, res y req
+logger.format('mine', (tokens: any, req: { socket: any; ip: any; method: any; originalUrl: any; _startTime: number; }, res: { statusCode: any; }) => {const sock = req.socket;
 	const color = (s => {
 		if (s >= 500) return 31;
 		if (s >= 400) return 33;
@@ -29,18 +30,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use('/api', routes.api);
 
-const init = (cb) => {
-	var server = app.listen(process.env.PORT || 8000, () => {
-		var host = server.address().address
-		var port = server.address().port
-		debug('Listening on port %s', port)
-		app.use('/api', logger('mine'));
-		cb();
-	})
-
+//TODO: Ver tipo de cb
+export function init(cb: () => void) {
+    let server = app.listen(process.env.PORT || 8000, () => {
+        let host = server.address().address;
+        let port = server.address().port;
+        debug('Listening on port %s', port);
+        app.use('/api', logger('mine'));
+        cb();
+    })
 }
 
 module.exports = {
-	init,
 	app
 };

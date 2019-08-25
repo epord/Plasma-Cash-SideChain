@@ -1,4 +1,4 @@
-const { CoinStateService } = require('../services')
+const { CoinStateService } = require('./index')
 const BigNumber = require('bignumber.js');
 
 const exitSlot = (slot, cb) => {
