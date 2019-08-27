@@ -2,7 +2,9 @@ const { recover }            					= require('../utils/sign')
 	, { TransactionService, CoinStateService }	= require('../services')
 	, { generateTransactionHash,
 		pubToAddress }						= require('../utils/cryptoUtils')
-	, { transactionToJson }						= require('../utils/utils')
+	, { transactionToJson, zip }						= require('../utils/utils')
+	, { getExitDataForBlock }										= require('./exit')
+	, async = require('async')
 	, { BigNumber }       					= require('bignumber.js');
 
 const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
@@ -99,23 +101,31 @@ const getLastMinedTransaction = (filter, cb) => {
 	});
 }
 
-const getPrevLastMinedTransaction = (filter, cb) => {
-	filter.mined_block = { $ne: null }
+const getHistory = (slot, cb) => {
+	let filter = { slot: slot };
+	filter.mined_block = { $ne: null };
 	TransactionService
-	.find(filter)
-	.sort({mined_block: -1})
-	.collation({locale: "en_US", numericOrdering: true})
-	.skip(1)
-	.limit(1)
-	.exec((err, transaction) => {
-		if (err) return cb(err);
-		cb(null, transaction[0]);
-	});
+		.find(filter)
+		.sort({mined_block: -1})
+		.collation({locale: "en_US", numericOrdering: true})
+		.exec((err, transactions) => {
+			if (err) return cb(err);
+
+			let proofRetrievers = transactions.map((t) => (cb) => getExitDataForBlock(slot, t.mined_block, cb));
+			async.parallel(proofRetrievers, (err, exitDatas) => {
+				if(err) return cb(err);
+
+				cb(null, zip(transactions, exitDatas).map((pair) => {
+						return { transaction: transactionToJson(pair[0]), exitData: pair[1] }
+					})
+				);
+			})
+		});
 }
 
 module.exports = {
 	createTransaction,
 	isTransactionValid,
 	getLastMinedTransaction,
-	getPrevLastMinedTransaction
+	getHistory
 };

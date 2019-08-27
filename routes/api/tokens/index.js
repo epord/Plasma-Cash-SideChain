@@ -2,8 +2,7 @@ const express = require('express')
 	, router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens')
 	, Status = require('http-status-codes')
-	, { TransactionService } = require('../../../services')
-	, { getLastMinedTransaction } = require('../../../services/transaction')
+	, { getLastMinedTransaction, getHistory } = require('../../../services/transaction')
 	, { getOwnedTokens } = require('../../../services/coinState')
 	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber = require('bignumber.js');
@@ -44,6 +43,15 @@ router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
       return responseWithStatus(res)(null, {statusCode: 200, message: slots})
   });
 });
+
+router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {
+	const { id } = req.params;
+	getHistory(id, (err, history) => {
+		if(err) return responseWithStatus(res)(err);
+		return responseWithStatus(res)(null, {statusCode: 200, message: { history: history }})
+	});
+});
+
 
 
 

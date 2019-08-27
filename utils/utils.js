@@ -66,11 +66,15 @@ const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 	}
 }
 
+const zip = (arr1, arr2) => arr1.map((e, i) => [e, arr2[i]])
+
+
 module.exports = {
 	getHighestOcurrence,
 	groupBy,
 	logErr,
 	blockToJson,
 	transactionToJson,
-	exitDataToJson
+	exitDataToJson,
+	zip
 };
