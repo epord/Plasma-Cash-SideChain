@@ -90,6 +90,7 @@ const init = (cb) => {
 				result.topics.slice(1)
 			)
 			console.log(`Exit: `, eventObj)
+			//TODO check who is exiting
 			exitSlot(eventObj.slot, err => { if (err) console.log(err) });
 		}
 	});

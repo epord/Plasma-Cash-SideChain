@@ -116,7 +116,7 @@ const getHistory = (slot, cb) => {
 				if(err) return cb(err);
 
 				cb(null, zip(transactions, exitDatas).map((pair) => {
-						return { transaction: transactionToJson(pair[0]), exitData: pair[1] }
+						return { transaction: transactionToJson(pair[0]), exitData: pair[1].message }
 					})
 				);
 			})
