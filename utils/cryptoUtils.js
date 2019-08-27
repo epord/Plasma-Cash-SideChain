@@ -88,20 +88,26 @@ const generateSMTFromTransactions = (transactions) => {
 
 const submitBlock = (block, cb) => {
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi, RootChainJson.networks["5777"].address);
-	RootChainContract.methods.submitBlock(block._id.toFixed(), block.root_hash).send({from: "0xf050fcc1ba9b67b69081ff978f62e98597c5ac46"}, (err, res) => {
-		if (err) return cb(err);
-		cb();
+	web3.eth.getAccounts().then(accounts => {
+		if (!accounts || accounts.length == 0) return cb(err);
+		RootChainContract.methods.submitBlock(block._id.toFixed(), block.root_hash).send({from: accounts[0]}, (err, res) => {
+			if (err) return cb(err);
+			cb();
+		});
 	});
 };
 
 
 const validateCryptoMons = (cb) => {
 	const VMC = new web3.eth.Contract(VMCJson.abi, VMCJson.networks["5777"].address);
-	VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: '0xf050fcc1ba9b67b69081ff978f62e98597c5ac46'}, (err, res) => {
-		console.log(err)
-		if (err) return cb(err);
-		console.log("Validated contract")
-		cb();
+	web3.eth.getAccounts().then(accounts => {
+		if (!accounts || accounts.length == 0) return cb(err);
+		VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]}, (err, res) => {
+			console.log(err)
+			if (err) return cb(err);
+			console.log("Validated contract")
+			cb();
+		});
 	});
 }
 
