@@ -48,6 +48,7 @@ const transactionToJson = (transaction) => ({
 	minedBlock: transaction.mined_block,
 });
 
+//TODO remove slot, get it from lastTx.slot
 const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
 	let prevTxInclusionProof = prevTx ? prevProof : "0x0";
@@ -66,6 +67,17 @@ const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 	}
 }
 
+
+const challengeAfterDataToJson = (challengingTx, proof) => {
+	return {
+		slot: challengingTx.slot,
+		challengingBlockNumber: challengingTx.mined_block,
+		challengingTransaction: getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
+		proof: proof,
+		signature: challengingTx.signature,
+	}
+}
+
 const zip = (arr1, arr2) => arr1.map((e, i) => [e, arr2[i]])
 
 
@@ -76,5 +88,6 @@ module.exports = {
 	blockToJson,
 	transactionToJson,
 	exitDataToJson,
+	challengeAfterDataToJson,
 	zip
 };
