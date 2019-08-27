@@ -21,8 +21,8 @@ const updateOwner = (slot, newOwner, cb) => {
 	}, cb);
 };
 
-const getOwnedTokens = (owner, cb) => {
-		CoinStateService.find({ owner: owner.toLowerCase(), state: "DEPOSITED" }).exec( (err, slots) => {
+const getOwnedTokens = (owner, exiting,  cb) => {
+		CoinStateService.find({ owner: owner.toLowerCase(), state: exiting ? "EXITING" : "DEPOSITED" }).exec( (err, slots) => {
 			if(err) return cb(err);
 			return cb(null, slots.map(s => s.slot));
 		});

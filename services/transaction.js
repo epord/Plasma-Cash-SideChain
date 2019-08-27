@@ -3,7 +3,6 @@ const { recover }            					= require('../utils/sign')
 	, { generateTransactionHash,
 		pubToAddress }						= require('../utils/cryptoUtils')
 	, { transactionToJson, zip }						= require('../utils/utils')
-	, { getExitDataForBlock }										= require('./exit')
 	, async = require('async')
 	, { BigNumber }       					= require('bignumber.js');
 
@@ -101,6 +100,15 @@ const getLastMinedTransaction = (filter, cb) => {
 	});
 }
 
+module.exports = {
+	createTransaction,
+	isTransactionValid,
+	getLastMinedTransaction
+};
+
+//TODO
+const { getExitDataForBlock } = require('./exit')
+
 const getHistory = (slot, cb) => {
 	let filter = { slot: slot };
 	filter.mined_block = { $ne: null };
@@ -123,9 +131,4 @@ const getHistory = (slot, cb) => {
 		});
 }
 
-module.exports = {
-	createTransaction,
-	isTransactionValid,
-	getLastMinedTransaction,
-	getHistory
-};
+exports.getHistory = getHistory

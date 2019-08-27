@@ -1,7 +1,7 @@
 const BigNumber = require("bignumber.js")
 , { exitDataToJson } = require('../utils/utils')
-, { getLastMinedTransaction, getPrevLastMinedTransaction} = require('./transaction')
-, { TransactionService, BlockService } = require('../services')
+, { getLastMinedTransaction} = require('./transaction')
+, { TransactionService } = require('../services')
 , { blockInterval, getProof } = require('./block');
 
 const getExitDataForBlock = (slot, block, cb) => {

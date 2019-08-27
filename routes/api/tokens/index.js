@@ -38,7 +38,11 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 
 router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
   const { owner } = req.params;
-  getOwnedTokens(owner, (err, slots) => {
+	const { exiting } = req.query;
+
+	const onlyExitingTokens = exiting === 'true';
+
+  getOwnedTokens(owner, onlyExitingTokens, (err, slots) => {
       if(err) return responseWithStatus(res)(err);
       return responseWithStatus(res)(null, {statusCode: 200, message: slots})
   });
