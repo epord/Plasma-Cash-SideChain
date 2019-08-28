@@ -105,6 +105,7 @@ router.post('/transactions/create', (req, res, next) => {
 							hash: t.hash,
 							proof: sparseMerkleTree.createMerkleProof(t.slot.toFixed()),
 							signature: t.signature,
+              block: t.mined_block,
 						}
 					};
 
@@ -113,17 +114,5 @@ router.post('/transactions/create', (req, res, next) => {
 			});
 		});
 });
-
-// router.get('/transactions/:id([0-9a-zA-z]+)/exitData', (req, res, next) => {
-// 	const { id } = req.params;
-//
-// 	TransactionService.findById(id).exec((err, t) => {
-// 		if(err) return responseWithStatus(res)(err);
-// 		if(!t)  return responseWithStatus(res)({ statusCode: 404, message: 'Transaction not found'});
-// 		if(!t.mined_block) return responseWithStatus(res)({ statusCode: Status.CONFLICT, message: 'Transaction not yet mined'});
-//
-// 		getExitDataForBlock(t.slot, t.mined_block, responseWithStatus(res));
-// 	});
-// });
 
 module.exports = router;
