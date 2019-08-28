@@ -58,7 +58,33 @@ const generateExitData = (slot, lastTransaction, cb) => {
 	})
 }
 
+getSingleData = (hash, cb) => {
+	TransactionService.findById(hash).exec((err, t) => {
+		if(err) return cb(err);
+		if(!t)  return cb({ statusCode: 404, message: 'Transaction not found'});
+		if(!t.mined_block) return cb({ statusCode: Status.CONFLICT, message: 'Transaction not yet mined'});
+
+		getProof(t.slot, t.mined_block, (err, proof) => {
+			if(err) return cb(err);
+
+			let exitingBytes = getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
+
+			const exitData = {
+				slot: t.slot,
+				bytes: exitingBytes,
+				hash: t.hash,
+				proof,
+				signature: t.signature,
+				block: block._id
+			};
+
+			return cb(null, {statusCode: 200, message: exitData})
+		});
+	});
+}
+
 module.exports = {
 	getExitData,
-	getExitDataForBlock
+	getExitDataForBlock,
+	getSingleData
 }

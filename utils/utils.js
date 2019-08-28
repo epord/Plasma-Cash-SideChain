@@ -69,8 +69,9 @@ const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 }
 
 
-const challengeAfterDataToJson = (challengingTx, proof) => {
+const challengeDataToJson = (challengingTx, proof) => {
 	return {
+		hash: challengingTx.hash,
 		slot: challengingTx.slot,
 		challengingBlockNumber: challengingTx.mined_block,
 		challengingTransaction: getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
@@ -89,6 +90,6 @@ module.exports = {
 	blockToJson,
 	transactionToJson,
 	exitDataToJson,
-	challengeAfterDataToJson,
+	challengeDataToJson,
 	zip
 };

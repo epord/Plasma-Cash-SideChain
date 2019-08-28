@@ -1,7 +1,7 @@
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:challenges')
-	, { getChallengeAfterData } = require("../../../services/challenges")
+	, { getChallengeAfterData, getChallengeBeforeData } = require("../../../services/challenges")
 	, BigNumber       			= require('bignumber.js')
 	, Status 					= require('http-status-codes');
 
@@ -40,6 +40,35 @@ router.get('/after/', (req, res, next) => {
 	}
 
 	getChallengeAfterData(slotBN, exitBlockBN, responseWithStatus(res));
+
+});
+
+/**
+ *  slot: slot being exited
+ *  parentBlock: parent of exited transaction
+ */
+router.get('/before', (req, res, next) => {
+	const { slot, parentBlock } = req.query;
+
+	if (!slot) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter slot');
+	}
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) {
+		return res.status(Status.BAD_REQUEST).json('Invalid slot');
+	}
+
+	if (!parentBlock) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter parentBlock');
+	}
+
+	const parentBlockBN = new BigNumber(parentBlock);
+	if(parentBlockBN.isNaN()) {
+		return res.status(Status.BAD_REQUEST).json('Invalid slot');
+	}
+
+	getChallengeBeforeData(slotBN, parentBlockBN, responseWithStatus(res));
 
 });
 

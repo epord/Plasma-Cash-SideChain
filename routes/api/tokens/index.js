@@ -35,7 +35,10 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 	});
 });
 
-
+/*
+*	Query params:
+* 	- exiting: only return tokens in state 'EXITING'
+*/
 router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
   const { owner } = req.params;
 	const { exiting } = req.query;

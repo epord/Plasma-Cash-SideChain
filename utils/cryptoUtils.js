@@ -103,7 +103,6 @@ const validateCryptoMons = (cb) => {
 	web3.eth.getAccounts().then(accounts => {
 		if (!accounts || accounts.length == 0) return cb(err);
 		VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]}, (err, res) => {
-			console.log(err)
 			if (err) return cb(err);
 			console.log("Validated contract")
 			cb();

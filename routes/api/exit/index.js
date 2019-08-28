@@ -3,7 +3,7 @@ const express 					= require('express')
 	, debug 					= require('debug')('app:api:exit')
 	, Status 					= require('http-status-codes')
 	, BigNumber       			= require('bignumber.js')
-	, { getExitData } = require('../../../services/exit')
+	, { getExitData, getSingleData } = require('../../../services/exit')
 	, { TransactionService }  = require( '../../../services')
 	, { getTransactionBytes } = require("../../../utils/cryptoUtils");
 
@@ -35,35 +35,7 @@ router.get('/data/:slot([A-Fa-f0-9]+)', (req, res, next) => {
 router.get('/singleData/:hash([0-9a-zA-z]+)', (req, res, next) => {
 	const { hash } = req.params;
 
-	TransactionService.findById(hash).exec((err, t) => {
-		if(err) return responseWithStatus(res)(err);
-		if(!t)  return responseWithStatus(res)({ statusCode: 404, message: 'Transaction not found'});
-		if(!t.mined_block) return responseWithStatus(res)({ statusCode: Status.CONFLICT, message: 'Transaction not yet mined'});
-
-		t.populate("mined_block", (err, t) => {
-			if(err) return responseWithStatus(res)(err);
-
-			t.mined_block.populate("transactions", (err, block) => {
-				if(err) return responseWithStatus(res)(err);
-
-				const sparseMerkleTree = generateSMTFromTransactions(block.transactions);
-
-				let exitingBytes = getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
-
-				const exitData = {
-					slot: t.slot,
-					bytes: exitingBytes,
-					hash: t.hash,
-					proof: sparseMerkleTree.createMerkleProof(t.slot.toFixed()),
-					signature: t.signature,
-					block: block._id
-				};
-
-				return responseWithStatus(res)(null, {statusCode: 200, message: exitData})
-			});
-		});
-
-	});
+	getSingleData(hash, responseWithStatus(res));
 
 
 });
