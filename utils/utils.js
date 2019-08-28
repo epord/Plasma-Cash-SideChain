@@ -30,9 +30,10 @@ const logErr = (err) => { if (err) console.log(err) };
 
 
 const blockToJson = (block) => ({
-	block_number: block.block_number.toFixed(),
-	root_hash: block.root_hash,
+	blockNumber: block.block_number.toFixed(),
+	rootHash: block.root_hash,
 	timestamp: block.timestamp,
+	//TODO check if transactions are populated or not
 	transactions: block.transactions
 });
 

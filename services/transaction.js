@@ -131,4 +131,4 @@ const getHistory = (slot, cb) => {
 		});
 }
 
-exports.getHistory = getHistory
+module.exports.getHistory = getHistory

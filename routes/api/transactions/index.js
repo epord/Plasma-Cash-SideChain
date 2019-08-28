@@ -40,7 +40,7 @@ router.get('/', (req, res, next) => {
  *  "blockSpent": int|string,
  *  "owner": string (hex),
  *  "recipient":string (hex),
- *  "hash": string (hex) [ keccak256(uint64(slot), uint256(blockSpent), owner, recipient) ],
+ *  "hash": string (hex) [ keccak256(uint64(slot), uint256(blockSpent), owner, recipient) ], //TODO is this hash correct?
  *  "signature" string (hex) [sig of hash]
  * }
  */
