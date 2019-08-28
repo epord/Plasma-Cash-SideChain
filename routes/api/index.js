@@ -15,6 +15,7 @@ router.use('/transactions', require('./transactions'));
 router.use('/tokens', require('./tokens'));
 router.use('/challenges', require('./challenges'));
 router.use('/hacks', require('./hacks'));
+/// TODO: rename to exits
 router.use('/exit', require('./exit'));
 
 module.exports = router;

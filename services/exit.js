@@ -1,5 +1,6 @@
 const BigNumber = require("bignumber.js")
 , { exitDataToJson } = require('../utils/utils')
+, { getTransactionBytes } = require('../utils/cryptoUtils')
 , { getLastMinedTransaction} = require('./transaction')
 , { TransactionService } = require('../services')
 , { blockInterval, getProof } = require('./block');
@@ -75,7 +76,7 @@ getSingleData = (hash, cb) => {
 				hash: t.hash,
 				proof,
 				signature: t.signature,
-				block: block._id
+				block: t.mined_block
 			};
 
 			return cb(null, {statusCode: 200, message: exitData})
