@@ -6,7 +6,7 @@ const BigNumber = require("bignumber.js");
 const _ = require('lodash');
 const { depositBlock }	= require('../block');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
-const { debug }	= require('debug')('app:api:hooks')
+const debug	= require('debug')('app:api:hooks')
 
 
 const subscribeLogEvent = (contract, iface, cb) => {
@@ -68,14 +68,14 @@ const onExitStarted = (iExitStarted) => (error, result) => {
 	const eventObj = eventToObj(iExitStarted, result)
 	debug(`Exit: `,eventObj);
 
-	getOwner(eventObj.slot, (err, owner) => {
+	getOwner(eventObj.slot.toString(), (err, owner) => {
 		if(err) console.error(err);
 		if(owner.toLowerCase() != eventObj.owner.toLowerCase()) {
-			debug(`ERROR: An impostor is trying to Exiting the slot ${eventObj.slot}`)
+			debug(`ERROR: An impostor is trying to Exiting the slot ${eventObj.slot.toString()}`)
 		}
 
 		//TODO Challenge automatically - Add a flag en .env to automatically challenge stuff
-		exitSlot(eventObj.slot, err => { if (err) console.error(err) });
+		exitSlot(eventObj.slot.toString(), err => { if (err) console.error(err) });
 	});
 };
 
@@ -96,21 +96,21 @@ const onChallengedExit = (iChallengedExit) => (error, result) => {
 	const eventObj = eventToObj(iChallengedExit, result);
 
 	//TODO Challenge automatically - Add a flag en .env to automatically challenge stuff
-	debug(`New Challenger approaches! ${eventObj.slot} at block ${eventObj.challengingBlockNumber}`)
+	debug(`New Challenger approaches! ${eventObj.slot.toString()} at block ${eventObj.challengingBlockNumber}`)
 };
 
 const onRespondedExitChallenge = (iRespondedExitChallenge) => (error, result) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iRespondedExitChallenge, result);
-	debug(`Challenged responded ${eventObj.slot}`)
+	debug(`Challenged responded ${eventObj.slot.toString()}`)
 };
 
 const onCoinReset = (iCoinReset) => (error, result) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iCoinReset, result);
-	debug(`Coin reset ${eventObj.slot} for ${eventObj.owner}`);
+	debug(`Coin reset ${eventObj.slot.toString()} for ${eventObj.owner}`);
 
-	resetSlot(eventObj.slot, (err, coinState) => {
+	resetSlot(eventObj.slot.toString(), (err, coinState) => {
 		if (err) return console.error(err);
 		//TODO what to do here?
 		if(coinState.owner.toLowerCase() != eventObj.owner.toLowerCase()) {

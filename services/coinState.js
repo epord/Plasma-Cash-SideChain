@@ -2,7 +2,7 @@ const { CoinStateService } = require('../services')
 const BigNumber = require('bignumber.js');
 
 const exitSlot = (slot, cb) => {
-	CoinStateService.updateOne({
+	CoinStateService.findOneAndUpdate({
 		_id: new BigNumber(slot)
 	}, {
 		$set: {
@@ -12,7 +12,7 @@ const exitSlot = (slot, cb) => {
 };
 
 const resetSlot = (slot, cb) => {
-	CoinStateService.updateOne({
+	CoinStateService.findOneAndUpdate({
 		_id: new BigNumber(slot)
 	}, {
 		$set: {
@@ -22,7 +22,7 @@ const resetSlot = (slot, cb) => {
 };
 
 const updateOwner = (slot, newOwner, cb) => {
-	CoinStateService.updateOne({
+	CoinStateService.findOneAndUpdate({
 		_id: new BigNumber(slot)
 	}, {
 		$set: {
