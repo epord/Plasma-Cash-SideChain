@@ -98,7 +98,7 @@ const getLastMinedTransaction = (filter, cb) => {
 		if (err) return cb(err);
 		cb(null, transaction);
 	});
-}
+};
 
 module.exports = {
 	createTransaction,
@@ -129,6 +129,6 @@ const getHistory = (slot, cb) => {
 				);
 			})
 		});
-}
+};
 
 module.exports.getHistory = getHistory

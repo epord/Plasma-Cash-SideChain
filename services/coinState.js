@@ -11,6 +11,16 @@ const exitSlot = (slot, cb) => {
 	}, cb);
 };
 
+const resetSlot = (slot, cb) => {
+	CoinStateService.updateOne({
+		_id: new BigNumber(slot)
+	}, {
+		$set: {
+			state: 'DEPOSITED'
+		}
+	}, cb);
+};
+
 const updateOwner = (slot, newOwner, cb) => {
 	CoinStateService.updateOne({
 		_id: new BigNumber(slot)
@@ -26,10 +36,19 @@ const getOwnedTokens = (owner, exiting,  cb) => {
 			if(err) return cb(err);
 			return cb(null, slots.map(s => s.slot));
 		});
-}
+};
+
+const getOwner = (token, cb) => {
+	CoinStateService.findById(token).exec( (err, coin) => {
+		if(err) return cb(err);
+		return cb(null, coin.owner);
+	});
+};
 
 module.exports = {
 	exitSlot,
 	updateOwner,
-	getOwnedTokens
+	getOwnedTokens,
+	getOwner,
+	resetSlot
 }
