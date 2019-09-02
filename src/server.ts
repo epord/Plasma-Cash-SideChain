@@ -40,7 +40,3 @@ export function init(cb: () => void) {
         cb();
     })
 }
-
-module.exports = {
-	app
-};

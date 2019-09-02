@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:7545'));
-const CryptoMonsJson = require("./CryptoMons.json");
-const RootChainJson = require("./RootChain.json");
+const CryptoMonsJson = require("../../json/CryptoMons.json");
+const RootChainJson = require("../../json/RootChain.json");
 const BigNumber = require("bignumber.js");
 const _ = require('lodash');
 const { depositBlock }	= require('../block');
@@ -94,7 +94,7 @@ export const init = () => {
 				result.data == "0x" ? undefined : result.data,
 				result.topics.slice(1)
 			);
-			console.log(`Exit: `, eventObj)
+			console.log(`Exit: `, eventObj);
             //TODO: Ver tipos
 			exitSlot(eventObj.slot, (err: any) => { if (err) console.log(err) });
 		}
@@ -105,7 +105,7 @@ export const init = () => {
 	subscribeLogEvent(RootChainContract, FexitInterface, (error: any, result: { data: string; topics: { slice: (arg0: number) => void; }; }) => {
 		console.log(error);
 		if (!error) {
-			console.log(depositInterface.abiItem.inputs)
+			console.log(depositInterface.abiItem.inputs);
 		  const eventObj = web3.eth.abi.decodeLog(
 				FexitInterface.abiItem.inputs,
 				result.data == "0x" ? undefined : result.data,

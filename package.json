@@ -14,7 +14,7 @@
   },
   "betterScripts": {
     "start": {
-      "command": "tsc && node dist/app.js",
+      "command": "tsc && copyfiles src/**/*.json dist/ && node dist/src/app.js",
       "env": {
         "NODE_ENV": "development",
         "DEBUG": "app:*"
@@ -36,6 +36,7 @@
     "bignumber.js": "^8.1.1",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
+    "copyfiles": "^2.1.1",
     "debug": "^4.1.1",
     "ethereumjs-util": "^6.1.0",
     "ethers": "^4.0.27",
