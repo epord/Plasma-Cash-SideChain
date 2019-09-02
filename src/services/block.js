@@ -4,11 +4,11 @@ const moment = require('moment')
     , EthUtils = require('ethereumjs-util')
     , { BigNumber } = require('bignumber.js')
     , { TransactionService, BlockService, CoinStateService } = require('../services')
-		, { updateOwner }	= require('../services/coinState')
+    , { updateOwner }	= require('../services/coinState')
     , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
     , { submitBlock } = require('../utils/cryptoUtils')
-		, { blockToJson } = require( "../utils/utils");
+    , { blockToJson } = require( "../utils/utils");
 
 
 const blockInterval = new BigNumber(1000);

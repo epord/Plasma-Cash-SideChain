@@ -4,7 +4,7 @@ const express 			= require('express')
 , Status 						= require('http-status-codes')
 , async							= require('async')
 , BigNumber					= require("bignumber.js")
-, { BlockService } 	= require('../../../services')
+, { BlockService } 	= require('../../../services/index.js')
 , { blockToJson } = require('../../../utils/utils')
 , { mineBlock, depositBlock, getProof }	= require('../../../services/block');
 

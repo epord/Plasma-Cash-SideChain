@@ -1,12 +1,12 @@
-const { app } = require('../server'),
+const { app } = require('../src/server'),
   request = require('supertest')(app),
-  mongo = require('../mongo'),
+  mongo = require('../src/mongo'),
   async = require('async'),
   dotenv 		= require('dotenv'),
-  { generateTransaction } = require("../utils/cryptoUtils"),
+  { generateTransaction } = require("../src/utils/cryptoUtils"),
   EthUtils	= require('ethereumjs-util'),
   BN = require('bn.js'),
-  { BlockService, TransactionService, CoinStateService } = require('../services');
+  { BlockService, TransactionService, CoinStateService } = require('../src/services');
 
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
 const jsonGet = (url) => request.get(url).set('Accept', 'application/json');

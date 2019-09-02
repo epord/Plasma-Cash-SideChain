@@ -1,8 +1,17 @@
 ## Install
-Check that you have a mongo database running and specify the port in .env file.
+Install MongoDB using port `dbport` (default is `27017`), and create a database with name `dbname`.
 
-`npm install`
-`npm start`
+Create the file *.env* in the root directory and add the following lines:  
+PORT=8082  
+MONGO_URL=localhost  
+MONGO_PORT=`dbport`  
+MONGO_DB_NAME=`dbname`
+BLOCKCHAIN_WS_URL = ws://localhost:7545
+
+Run the following commands:  
+`npm install`  
+`npm start`  
+
 -----
 `ganache-cli -p 7545 -i 5777 --gasLimit=0x1fffffffffffff --allowUnlimitedContractSize -e 1000000000`
 `Setup metamask so it uses localhost 7545 and network id 5777`
@@ -16,6 +25,7 @@ Check that you have a mongo database running and specify the port in .env file.
 
 `npm install -g remixd`
 `remixd -s <absolute-path> --remix-ide https://remix.ethereum.org`
+
 
 ## Usefull commands
 
