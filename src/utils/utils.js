@@ -30,9 +30,10 @@ const logErr = (err) => { if (err) console.log(err) };
 
 
 const blockToJson = (block) => ({
-	block_number: block.block_number.toFixed(),
-	root_hash: block.root_hash,
+	blockNumber: block.block_number.toFixed(),
+	rootHash: block.root_hash,
 	timestamp: block.timestamp,
+	//TODO check if transactions are populated or not
 	transactions: block.transactions
 });
 
@@ -41,26 +42,46 @@ const transactionToJson = (transaction) => ({
 	owner: transaction.owner,
 	recipient: transaction.recipient,
 	hash: transaction.hash,
-	block_spent: transaction.block_spent.toFixed(),
+	blockSpent: transaction.block_spent.toFixed(),
 	signature: transaction.signature,
 
-	mined_timestamp: transaction.mined_timestamp,
-	mined_block: transaction.mined_block,
+	minedTimestamp: transaction.mined_timestamp,
+	minedBlock: transaction.mined_block,
 });
 
-const exitDataToJson = (lastTx, lastProof, prevTx, prevProof) => {
+//TODO remove slot, get it from lastTx.slot
+const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
 	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
 	let prevTxInclusionProof = prevTx ? prevProof : "0x0";
-	let prevBlock = prevTx ? prevTx.mined_block._id : '0';
+	let prevBlock = prevTx ? prevTx.mined_block : '0';
+	let prevTransactionHash = prevTx ? prevTx.hash : undefined;
 	return {
+		slot,
 		prevTxBytes,
 		exitingTxBytes: getTransactionBytes(lastTx.slot, lastTx.block_spent, new BigNumber(1), lastTx.recipient),
 		prevTxInclusionProof,
 		exitingTxInclusionProof: lastProof,
 		signature: lastTx.signature,
-		blocks: [prevBlock, lastTx.mined_block._id]
+		lastTransactionHash: lastTx.hash,
+		prevTransactionHash,
+		blocks: [prevBlock, lastTx.mined_block]
 	}
 }
+
+
+const challengeDataToJson = (challengingTx, proof) => {
+	return {
+		hash: challengingTx.hash,
+		slot: challengingTx.slot,
+		challengingBlockNumber: challengingTx.mined_block,
+		challengingTransaction: getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
+		proof: proof,
+		signature: challengingTx.signature,
+	}
+}
+
+const zip = (arr1, arr2) => arr1.map((e, i) => [e, arr2[i]])
+
 
 module.exports = {
 	getHighestOcurrence,
@@ -68,5 +89,7 @@ module.exports = {
 	logErr,
 	blockToJson,
 	transactionToJson,
-	exitDataToJson
+	exitDataToJson,
+	challengeDataToJson,
+	zip
 };

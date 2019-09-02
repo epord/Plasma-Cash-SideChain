@@ -4,6 +4,7 @@ const express 					= require('express')
 	, Status 					= require('http-status-codes')
 	, { TransactionService }	= require('../../../services')
 	, { createTransaction } 	= require('../../../services/transaction')
+	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber       			= require('bignumber.js');
 
 debug('registering /api/transactions routes')
@@ -15,12 +16,12 @@ const responseWithStatus = (res) => (err, status) => {
 	return res.status(status.statusCode).json(status.message)
 };
 
-router.get('/:id([A-Fa-f0-9]+)', (req, res, next) => {
+router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 	TransactionService
 		.findById(req.params.id)
 		.exec((err, transaction) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transaction);
+			res.status(Status.OK).json(transactionToJson(transaction));
 		})
 });
 
@@ -29,7 +30,7 @@ router.get('/', (req, res, next) => {
 		.find({})
 		.exec((err, transactions) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transactions);
+			res.status(Status.OK).json(transactions.map(transactionToJson));
 		})
 });
 
@@ -40,7 +41,7 @@ router.get('/', (req, res, next) => {
  *  "blockSpent": int|string,
  *  "owner": string (hex),
  *  "recipient":string (hex),
- *  "hash": string (hex) [ keccak256(uint64(slot), uint256(blockSpent), owner, recipient) ],
+ *  "hash": string (hex) [ keccak256(uint64(slot), uint256(blockSpent), owner, recipient) ], //TODO is this hash correct?
  *  "signature" string (hex) [sig of hash]
  * }
  */

@@ -7,7 +7,8 @@ const recover = (hash, signature) => {
     'GETH',
     'TREZOR'
   ];
-  const signatureMode = SignatureMode[signature[0]];
+  //TODO revise this
+  const signatureMode = 'EIP712';
   let _hash = hash;
   if (signatureMode === 'GETH') {
     _hash = bufferToHex(keccak256("\x19Ethereum Signed Message:\n32", hash));

@@ -3,7 +3,9 @@ const express 					= require('express')
 	, debug 					= require('debug')('app:api:exit')
 	, Status 					= require('http-status-codes')
 	, BigNumber       			= require('bignumber.js')
-	, { getExitData } = require('../../../services/exit');
+	, { getExitData, getSingleData } = require('../../../services/exit')
+	, { TransactionService }  = require( '../../../services')
+	, { getTransactionBytes } = require("../../../utils/cryptoUtils");
 
 debug('registering /api/exit routes')
 
@@ -27,6 +29,14 @@ router.get('/data/:slot([A-Fa-f0-9]+)', (req, res, next) => {
 	}
 
 	getExitData(slot, responseWithStatus(res));
+
+});
+
+router.get('/singleData/:hash([0-9a-zA-z]+)', (req, res, next) => {
+	const { hash } = req.params;
+
+	getSingleData(hash, responseWithStatus(res));
+
 
 });
 

@@ -60,8 +60,9 @@ describe('Transactions Fails', () => {
   beforeEach((done) => {
     async.parallel([
       cb => BlockService.deleteMany({}, cb),
-      cb => TransactionService.deleteMany({}, cb)
-      ], done);
+      cb => TransactionService.deleteMany({}, cb),
+      cb => CoinStateService.deleteMany({}, cb)
+    ], done);
   });
 
   it('If incorrect owner', (done) => {

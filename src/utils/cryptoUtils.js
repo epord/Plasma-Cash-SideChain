@@ -3,7 +3,11 @@ const BigNumber = require('bignumber.js');
 const BN = require('bn.js');
 const SparseMerkleTree = require('./SparseMerkleTree')
 const RLP 				= require('rlp');
-
+const Web3 = require('web3');
+const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
+const CryptoMonsJson = require("../json/CryptoMons.json");
+const RootChainJson = require("../json/RootChain.json");
+const VMCJson = require("../json/ValidatorManagerContract.json");
 
 const generateTransactionHash = (slot, blockSpent, denonimation, recipient) => {
 	if(blockSpent.isZero()) {
@@ -81,11 +85,39 @@ const generateSMTFromTransactions = (transactions) => {
 	return new SparseMerkleTree(64, leaves);
 }
 
+
+const submitBlock = (block, cb) => {
+	const RootChainContract = new web3.eth.Contract(RootChainJson.abi, RootChainJson.networks["5777"].address);
+	web3.eth.getAccounts().then(accounts => {
+		if (!accounts || accounts.length == 0) return cb(err);
+		RootChainContract.methods.submitBlock(block._id.toFixed(), block.root_hash).send({from: accounts[0]}, (err, res) => {
+			if (err) return cb(err);
+			cb();
+		});
+	});
+};
+
+
+const validateCryptoMons = (cb) => {
+	const VMC = new web3.eth.Contract(VMCJson.abi, VMCJson.networks["5777"].address);
+	web3.eth.getAccounts().then(accounts => {
+		if (!accounts || accounts.length == 0) return cb(err);
+		VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]}, (err, res) => {
+			if (err) return cb(err);
+			console.log("Validated contract")
+			cb();
+		});
+	});
+}
+
+
 module.exports = {
 	generateTransactionHash,
 	generateTransaction,
 	generateDepositBlockRootHash,
 	pubToAddress,
 	generateSMTFromTransactions,
-	getTransactionBytes
+	getTransactionBytes,
+	submitBlock,
+	validateCryptoMons
 };

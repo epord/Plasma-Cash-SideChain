@@ -10,8 +10,12 @@ router.use((req, res, next) => {
 });
 
 router.use('/blocks', require('./blocks'));
+router.use('/contracts', require('./contracts'));
 router.use('/transactions', require('./transactions'));
 router.use('/tokens', require('./tokens'));
+router.use('/challenges', require('./challenges'));
+router.use('/hacks', require('./hacks'));
+/// TODO: rename to exits
 router.use('/exit', require('./exit'));
 
 module.exports = router;

@@ -3,12 +3,12 @@ const moment = require('moment')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
     , { BigNumber } = require('bignumber.js')
-    , { TransactionService, BlockService, CoinStateService } = require('./index')
-    , SparseMerkleTree = require('../utils/SparseMerkleTree')
+    , { TransactionService, BlockService, CoinStateService } = require('../services')
+    , { updateOwner }	= require('../services/coinState')
     , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
-    , { isTransactionValid } = require('./transaction')
-		, { blockToJson } = require( "../utils/utils");
+    , { submitBlock } = require('../utils/cryptoUtils')
+    , { blockToJson } = require( "../utils/utils");
 
 
 const blockInterval = new BigNumber(1000);
@@ -42,9 +42,12 @@ const createBlock = (transactions, blockNumber, cb) => {
 					transaction.mined_timestamp = block.timestamp;
 					transaction.mined_block = block.block_number;
 					transaction.save();
+
+					//TODO this callback?
+					updateOwner(transaction.slot, transaction.recipient, (err) => { if(err) console.error(err) })
 				});
 
-				cb(null, { statusCode: 201, message: blockToJson(block) });
+				cb(null, block);
 			});
 		})
 };
@@ -75,45 +78,6 @@ const reduceTransactionsBySlot = (groupedTransactions, transactionsCb) => {
 		transactionsCb(null, results.filter(r => r));
 	});
 
-};
-
-/**
- * Given a set of transactions, will find the first valid one, removem those that finds invalid
- * @param {Set of transactions that share the same Slot} transactions
- * @param {Callback function (error, result)} transactionsCb where result is the first valid transaction, or undefined if none was found
- */
-const getFirstValidTransaction = (transactions, transactionsCb) => {
-	if(transactions.length === 0) return transactionsCb();
-
-	//Gets the first transaction
-	const t = transactions[0];
-
-	isTransactionValid({
-			slot: t.slot,
-			owner: t.owner,
-			recipient: t.recipient,
-			hash: t.hash,
-			blockSpent: t.block_spent,
-			signature: t.signature
-		}, (err, invalidError) => {
-			//If there is a non-validating issue, propagate
-			if(err) { return transactionsCb(err); }
-
-			//If the transaction is not invalid, return to the callback
-			if(!invalidError) {
-				transactionsCb(null, t)
-			} else {
-				//If the transaction is invalid, remove it from the DatabasFfine
-				//Notify somewhere who knows where
-				TransactionService.deleteOne({ _id: t._id }).exec((err) => {
-						if(err) return transactionsCb(err);
-
-						// Continue looking at the rest of the array in a recursive way
-						transactions.shift();
-						getFirstValidTransaction(transactions, transactionsCb)
-				});
-			}
-		})
 };
 
 const mineBlock = (cb) => {
@@ -147,7 +111,15 @@ const mineBlock = (cb) => {
 				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
-			createBlock(transactions, nextNumber, cb);
+			debug('mining')
+			createBlock(transactions, nextNumber, (err, block) => {
+				if(err) return cb(err);
+
+				submitBlock(block, (err)=> {
+					if(err) return cb(err);
+					cb(null, { statusCode: 201, message: blockToJson(block) });
+				})
+			});
 		});
 	});
 };
@@ -175,7 +147,9 @@ const validateAndDeposit = (cb) => {
 	});
 }
 
-const depositBlock = (slot, blockNumber, owner, cb) => {
+const depositBlock = (slot, blockNumber, _owner, cb) => {
+
+	const owner = _owner.toLowerCase();
 
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
@@ -204,8 +178,9 @@ const depositBlock = (slot, blockNumber, owner, cb) => {
 					/// TODO: make atomic
 					CoinStateService.create({
 						_id: slotBN,
-						state: "DEPOSITED"
-					})
+						state: "DEPOSITED",
+						owner: owner
+					});
 
 					TransactionService.create({
 						slot: slotBN,
@@ -261,4 +236,46 @@ module.exports = {
 	validateAndDeposit,
 	getProof,
 	blockInterval
+};
+
+//TODO Clean up this. We had to put it down here due to cyclical dependencies
+const { isTransactionValid } = require('./transaction')
+
+/**
+ * Given a set of transactions, will find the first valid one, removem those that finds invalid
+ * @param {Set of transactions that share the same Slot} transactions
+ * @param {Callback function (error, result)} transactionsCb where result is the first valid transaction, or undefined if none was found
+ */
+const getFirstValidTransaction = (transactions, transactionsCb) => {
+	if(transactions.length === 0) return transactionsCb();
+
+	//Gets the first transaction
+	const t = transactions[0];
+
+	isTransactionValid({
+		slot: t.slot,
+		owner: t.owner,
+		recipient: t.recipient,
+		hash: t.hash,
+		blockSpent: t.block_spent,
+		signature: t.signature
+	}, (err, invalidError) => {
+		//If there is a non-validating issue, propagate
+		if(err) { return transactionsCb(err); }
+
+		//If the transaction is not invalid, return to the callback
+		if(!invalidError) {
+			transactionsCb(null, t)
+		} else {
+			//If the transaction is invalid, remove it from the DatabasFfine
+			//Notify somewhere who knows where
+			TransactionService.deleteOne({ _id: t._id }).exec((err) => {
+				if(err) return transactionsCb(err);
+
+				// Continue looking at the rest of the array in a recursive way
+				transactions.shift();
+				getFirstValidTransaction(transactions, transactionsCb)
+			});
+		}
+	})
 };
