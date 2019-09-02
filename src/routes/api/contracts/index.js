@@ -4,9 +4,9 @@ const express 					= require('express')
 	, Status 					= require('http-status-codes')
 	, BigNumber       			= require('bignumber.js')
 	, { getExitData } = require('../../../services/exit')
-	, CryptoMonsJson = require("../json/CryptoMons.json")
-	, RootChainJson = require("../json/RootChain.json")
-	, ValidatorManagerContractJson = require('../json/ValidatorManagerContract.json')
+	, CryptoMonsJson = require("../../../json/CryptoMons.json")
+	, RootChainJson = require("../../../json/RootChain.json")
+	, ValidatorManagerContractJson = require('../../../json/ValidatorManagerContract.json')
 
 debug('registering /api/contracts routes')
 

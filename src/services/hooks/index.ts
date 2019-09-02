@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
-const CryptoMonsJson = require("./CryptoMons.json");
-const RootChainJson = require("./RootChain.json");
+const CryptoMonsJson = require("../../json/CryptoMons.json");
+const RootChainJson = require("../../json/RootChain.json");
 const BigNumber = require("bignumber.js");
 const _ = require('lodash');
 const { depositBlock }	= require('../block');

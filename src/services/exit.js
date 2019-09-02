@@ -59,7 +59,7 @@ const generateExitData = (slot, lastTransaction, cb) => {
 	})
 }
 
-getSingleData = (hash, cb) => {
+const getSingleData = (hash, cb) => {
 	TransactionService.findById(hash).exec((err, t) => {
 		if(err) return cb(err);
 		if(!t)  return cb({ statusCode: 404, message: 'Transaction not found'});
