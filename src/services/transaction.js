@@ -68,6 +68,7 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 					console.log(pubAddress);
 					if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
 				} catch (e) {
+					console.error(e)
 					return validateTransactionCb(null, 'Invalid Signature');
 				}
 

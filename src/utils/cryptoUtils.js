@@ -89,7 +89,7 @@ const generateSMTFromTransactions = (transactions) => {
 const submitBlock = (block, cb) => {
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi, RootChainJson.networks["5777"].address);
 	web3.eth.getAccounts().then(accounts => {
-		if (!accounts || accounts.length == 0) return cb(err);
+		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
 		RootChainContract.methods.submitBlock(block._id.toFixed(), block.root_hash).send({from: accounts[0]}, (err, res) => {
 			if (err) return cb(err);
 			cb();

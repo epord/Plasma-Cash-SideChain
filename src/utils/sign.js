@@ -16,7 +16,7 @@ const recover = (hash, signature) => {
     _hash = bufferToHex(keccak256("\x19Ethereum Signed Message:\n\x20", hash));
   }
 
-  res = fromRpcSig(signature)
+  let res = fromRpcSig(signature)
   return bufferToHex(ecrecover(toBuffer(_hash), res.v, res.r, res.s));
 };
 
