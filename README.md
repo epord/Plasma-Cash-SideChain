@@ -13,7 +13,7 @@ Run the following commands:
 `npm start`  
 
 -----
-`ganache-cli -p 7545 -i 5777 --gasLimit=0x1fffffffffffff --allowUnlimitedContractSize -e 1000000000`
+`ganache-cli -p 7545 -i 5777 --gasLimit=0x1fffffffffffff --allowUnlimitedContractSize -e 1000000000 -m pf`
 `Setup metamask so it uses localhost 7545 and network id 5777`
 `Copy one of the private keys and import it to Metamask`
 `truffle migrate` - En el repo Plasma-Cash-RootChain
