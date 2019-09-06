@@ -1,10 +1,10 @@
 const { TransactionService } = require('../services');
 const { getProof } = require("../services/block");
+const { getLastMinedTransaction } = require("../services/transaction");
 const { challengeDataToJson } = require("../utils/utils");
 
 const getChallengeAfterData = (slot, exitBlock, cb) => {
-
-	TransactionService.findOne({slot: slot, block_spent: exitBlock}, (err, transaction) => {
+	getLastMinedTransaction({slot: slot, block_spent: exitBlock}, (err, transaction) => {
 
 		if (err) return cb(err);
 		if (!transaction) return cb({ statusCode: 404, message: 'There is no data for a Challenge After for said transaction' });
@@ -19,7 +19,7 @@ const getChallengeAfterData = (slot, exitBlock, cb) => {
 }
 
 const getChallengeBeforeData = (slot, parentBlock, cb) => {
-	TransactionService.findOne({ slot, block_spent: { $lte: parentBlock } }, (err, transaction) => {
+	getLastMinedTransaction({ slot, block_spent: { $lte: parentBlock } }, (err, transaction) => {
 		if (err) return cb(err);
 		if (!transaction) return cb({ statusCode: 404, message: 'There is no data for a Challenge Before for said transaction' });
 

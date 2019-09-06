@@ -58675,7 +58675,7 @@
     }
   },
   "schemaVersion": "3.0.0",
-  "updatedAt": "2019-09-03T19:46:16.299Z",
+  "updatedAt": "2019-09-06T14:56:32.654Z",
   "devdoc": {
     "methods": {
       "challengeBefore(uint64,bytes,bytes,bytes,uint256)": {

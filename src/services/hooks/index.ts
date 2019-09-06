@@ -11,6 +11,9 @@ const { exitSlot, getOwner, resetSlot }	= require('../coinState');
 const debug	= require('debug')('app:api:hooks')
 const { getLastMinedTransaction } = require('../transaction');
 const { TransactionService } = require('../index');
+const { getChallengeAfterData, getChallengeBeforeData } = require("../challenges");
+
+const async = require('async');
 
 interface abiInterface {
 	abiItem: {
@@ -21,6 +24,15 @@ interface abiInterface {
 interface eventResultInterface {
 	data: string;
 	topics: Array<any>
+}
+
+interface exitData {
+	hash: string,
+	slot: BigNumber,
+	challengingBlockNumber: BigNumber,
+	challengingTransaction: string,
+	proof: string,
+	signature: string
 }
 
 type genericCB = ((err: any, result?: any) => void)
@@ -73,8 +85,8 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: event
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iExitStarted, result)
 	debug(`Exit: `,eventObj);
-
-	getOwner(eventObj.slot.toString(), (err: any, owner: { toLowerCase: () => void; }) => {
+	
+	getOwner(eventObj.slot.toString(), (err: any, owner: string) => {
 		if(err) console.error(err);
 		if(owner.toLowerCase() != eventObj.owner.toLowerCase()) {
 			debug(`ERROR: An impostor is trying to Exiting the slot ${eventObj.slot.toString()}`)
@@ -93,8 +105,18 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: event
 				}, (err: any, transaction: any) => { /// TODO: transaction type
 					if (err) return console.error(err);
 					if (transaction) {
-						// Challenge after
-						console.log("challenge after");
+						console.log("Challenging after...");
+						async.waterfall([
+							(next: any) => getChallengeAfterData(slotBN, exitBlockBN, (err: any, status: any) => {
+								next(err, status.message)
+							}),
+							(exitData: exitData, next: any) => {
+								challengeAfter(exitData.slot, exitData.challengingBlockNumber, exitData.challengingTransaction, exitData.proof, exitData.signature, next);
+							}
+						], (err: any) => {
+							if (err) return console.error(err);
+							console.log('Successfully challenged after');
+						})
 					} else {
 						TransactionService.findOne({
 							slot: slotBN,
@@ -102,15 +124,31 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: event
 						}, (err: any, transaction: any) => { /// TODO: transaction type
 							if (err) return console.error(err);
 							if (transaction) {
-								// Challenge Between
-								console.log("challenge between");
-							} else {
-								getLastMinedTransaction({ slot: slotBN, block_spent: { $lte: prevBlockBN } }, (err: any, transaction: any) => {/// TODO: transaction type
+								console.log("Challenging between...");
+								async.waterfall([
+									(next: any) => getChallengeAfterData(slotBN, prevBlockBN, (err: any, status: any) => {
+										next(err, status.message)
+									}),
+									(exitData: exitData, next: any) => {
+										challengeBetween(exitData.slot, exitData.challengingBlockNumber, exitData.challengingTransaction, exitData.proof, exitData.signature, next);
+									}
+								], (err: any) => {
 									if (err) return console.error(err);
-									if (!transaction) return console.error("Corrupted database. Mass exit INMINENT!!")
-									// Challenge Before
-									console.log("challenge before");
+									console.log('Successfully challenged between');
 								})
+							} else {
+								console.log("Challenging before...");
+								async.waterfall([
+									(next: any) => getChallengeBeforeData(slotBN, prevBlockBN, (err: any, status: any) => {
+										next(err, status.message)
+									}),
+									(exitData: exitData, next: any) => {
+										challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.signature, exitData.challengingBlockNumber, next);
+									}
+								], (err: any) => {
+									if (err) return console.error(err);
+									console.log('Successfully challenged before');
+								});
 							}
 						})
 					}
@@ -121,7 +159,7 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: event
 		//TODO Challenge automatically - Add a flag en .env to automatically challenge stuff
 		exitSlot(eventObj.slot.toString(), (err: any) => { if (err) console.error(err) });
 	});
-};
+}
 
 const onFinalizedExit = (iFinalizedExit: abiInterface) => (error: any, result: eventResultInterface) => {
 	if(error) return console.error(error);
@@ -175,6 +213,66 @@ const getExit = (slot: BigNumber, cb: genericCB) => {
 			};
 			cb(null, exitData);
 		});
+	});
+}
+
+const challengeAfter = (slot: BigNumber, challengingBlockNumber: BigNumber, challengingTransaction: string, proof: string, signature: string, cb: genericCB) => {
+	web3.eth.getAccounts().then((accounts: any) => {
+		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
+		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
+
+		RootChainContract.methods.challengeAfter(
+			slot.toFixed(),
+			challengingBlockNumber.toFixed(),
+			challengingTransaction,
+			proof,
+			signature
+			).send({
+				from: accounts[0],
+				gas: 1500000
+			}, cb);
+	});
+}
+
+const challengeBetween = (slot: BigNumber, challengingBlockNumber: BigNumber, challengingTransaction: string, proof: string, signature: string, cb: genericCB) => {
+	web3.eth.getAccounts().then((accounts: any) => {
+		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
+		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
+		RootChainContract.methods.challengeBetween(
+			slot.toFixed(),
+			challengingBlockNumber.toFixed(),
+			challengingTransaction,
+			proof,
+			signature
+		).send({
+			from: accounts[0],
+			gas: 1500000
+		}, cb);
+	});
+}
+
+const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: string, signature: string, blockNumber: BigNumber, cb: genericCB) => {
+	web3.eth.getAccounts().then((accounts: any) => {
+		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
+		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
+		console.log({
+			slot: slot.toFixed(),
+			txBytes,
+			txInclusionProof,
+			signature,
+			bn: blockNumber.toFixed()})
+
+		RootChainContract.methods.challengeBefore(
+			slot.toFixed(),
+			txBytes,
+			txInclusionProof,
+			signature,
+			blockNumber.toFixed()
+		).send({
+			from: accounts[0],
+			value: web3.utils.toWei('0.1', 'ether'),
+			gas: 1500000
+		}, cb);
 	});
 }
 

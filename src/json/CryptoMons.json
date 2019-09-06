@@ -3389,7 +3389,7 @@
     }
   },
   "schemaVersion": "3.0.0",
-  "updatedAt": "2019-09-03T19:46:16.255Z",
+  "updatedAt": "2019-09-06T14:56:32.625Z",
   "devdoc": {
     "methods": {
       "approve(address,uint256)": {
