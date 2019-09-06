@@ -1,7 +1,7 @@
 const EthUtils	= require('ethereumjs-util');
 const BigNumber = require('bignumber.js');
 const BN = require('bn.js');
-const SparseMerkleTree = require('./SparseMerkleTree')
+const {SparseMerkleTree} = require('./SparseMerkleTree')
 const RLP 				= require('rlp');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
