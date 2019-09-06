@@ -81,83 +81,91 @@ const onDeposit = (iDeposit: abiInterface) => (error: any, result: eventResultIn
 	depositBlock(slotBN, blockNumberBN, from, (err: any) => { console.error(err); });
 };
 
+//TODO: refactor this function to make it more readable
 const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iExitStarted, result)
 	debug(`Exit: `,eventObj);
-	
-	getOwner(eventObj.slot.toString(), (err: any, owner: string) => {
-		if(err) console.error(err);
-		if(owner.toLowerCase() != eventObj.owner.toLowerCase()) {
-			debug(`ERROR: An impostor is trying to Exiting the slot ${eventObj.slot.toString()}`)
-			const slotBN = new BigNumber(eventObj.slot.toString());
 
-			getExit(slotBN, (err: any, exitData: any) => {
-				if (err) return console.error(err)
-				const { prevBlock, exitBlock } = exitData;
+		exitSlot(eventObj.slot.toString(), (err: any) => { if (err) console.error(err) });
 
-				const exitBlockBN = new BigNumber(exitBlock);
-				const prevBlockBN = new BigNumber(prevBlock);
+		getOwner(eventObj.slot.toString(), (err: any, owner: string) => {
+			if(err) console.error(err);
+			if(owner.toLowerCase() != eventObj.owner.toLowerCase()) {
+				debug(`ERROR: An impostor is trying to Exiting the slot ${eventObj.slot.toString()}`)
 
-				TransactionService.findOne({
-					slot: slotBN,
-					block_spent: exitBlockBN,
-				}, (err: any, transaction: any) => { /// TODO: transaction type
-					if (err) return console.error(err);
-					if (transaction) {
-						console.log("Challenging after...");
-						async.waterfall([
-							(next: any) => getChallengeAfterData(slotBN, exitBlockBN, (err: any, status: any) => {
-								next(err, status.message)
-							}),
-							(exitData: exitData, next: any) => {
-								challengeAfter(exitData.slot, exitData.challengingBlockNumber, exitData.challengingTransaction, exitData.proof, exitData.signature, next);
-							}
-						], (err: any) => {
-							if (err) return console.error(err);
-							console.log('Successfully challenged after');
-						})
-					} else {
+				/// TODO: change env variable (boolean)
+				if (process.env.AUTO_CHALLENGE != 'false') {
+
+					const slotBN = new BigNumber(eventObj.slot.toString());
+
+					getExit(slotBN, (err: any, exitData: any) => {
+						if (err) return console.error(err)
+						const { prevBlock, exitBlock } = exitData;
+
+						const exitBlockBN = new BigNumber(exitBlock);
+						const prevBlockBN = new BigNumber(prevBlock);
+
 						TransactionService.findOne({
 							slot: slotBN,
-							block_spent: prevBlockBN,
+							block_spent: exitBlockBN,
 						}, (err: any, transaction: any) => { /// TODO: transaction type
 							if (err) return console.error(err);
 							if (transaction) {
-								console.log("Challenging between...");
+								console.log("Challenging after...");
 								async.waterfall([
-									(next: any) => getChallengeAfterData(slotBN, prevBlockBN, (err: any, status: any) => {
+									(next: any) => getChallengeAfterData(slotBN, exitBlockBN, (err: any, status: any) => {
 										next(err, status.message)
 									}),
 									(exitData: exitData, next: any) => {
-										challengeBetween(exitData.slot, exitData.challengingBlockNumber, exitData.challengingTransaction, exitData.proof, exitData.signature, next);
+										challengeAfter(exitData.slot, exitData.challengingBlockNumber, exitData.challengingTransaction, exitData.proof, exitData.signature, next);
 									}
 								], (err: any) => {
 									if (err) return console.error(err);
-									console.log('Successfully challenged between');
+									console.log('Successfully challenged after');
+									resetSlot(eventObj.slot.toString(), (err: any) => { if (err) console.error(err) });
 								})
 							} else {
-								console.log("Challenging before...");
-								async.waterfall([
-									(next: any) => getChallengeBeforeData(slotBN, prevBlockBN, (err: any, status: any) => {
-										next(err, status.message)
-									}),
-									(exitData: exitData, next: any) => {
-										challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.signature, exitData.challengingBlockNumber, next);
-									}
-								], (err: any) => {
+								TransactionService.findOne({
+									slot: slotBN,
+									block_spent: prevBlockBN,
+								}, (err: any, transaction: any) => { /// TODO: transaction type
 									if (err) return console.error(err);
-									console.log('Successfully challenged before');
-								});
+									if (transaction) {
+										console.log("Challenging between...");
+										async.waterfall([
+											(next: any) => getChallengeAfterData(slotBN, prevBlockBN, (err: any, status: any) => {
+												next(err, status.message)
+											}),
+											(exitData: exitData, next: any) => {
+												challengeBetween(exitData.slot, exitData.challengingBlockNumber, exitData.challengingTransaction, exitData.proof, exitData.signature, next);
+											}
+										], (err: any) => {
+											if (err) return console.error(err);
+											console.log('Successfully challenged between');
+											resetSlot(eventObj.slot.toString(), (err: any) => { if (err) console.error(err) });
+
+										})
+									} else {
+										console.log("Challenging before...");
+										async.waterfall([
+											(next: any) => getChallengeBeforeData(slotBN, prevBlockBN, (err: any, status: any) => {
+												next(err, status.message)
+											}),
+											(exitData: exitData, next: any) => {
+												challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.signature, exitData.challengingBlockNumber, next);
+											}
+										], (err: any) => {
+											if (err) return console.error(err);
+											console.log('Successfully challenged before');
+										});
+									}
+								})
 							}
 						})
-					}
-				})
-			})
-		}
-
-		//TODO Challenge automatically - Add a flag en .env to automatically challenge stuff
-		exitSlot(eventObj.slot.toString(), (err: any) => { if (err) console.error(err) });
+					})
+				}
+			}
 	});
 }
 
@@ -255,12 +263,6 @@ const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: str
 	web3.eth.getAccounts().then((accounts: any) => {
 		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
 		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
-		console.log({
-			slot: slot.toFixed(),
-			txBytes,
-			txInclusionProof,
-			signature,
-			bn: blockNumber.toFixed()})
 
 		RootChainContract.methods.challengeBefore(
 			slot.toFixed(),

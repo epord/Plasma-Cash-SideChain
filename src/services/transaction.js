@@ -1,10 +1,10 @@
-const { recover }            					= require('../utils/sign')
-	, { TransactionService, CoinStateService }	= require('./index')
-	, { generateTransactionHash,
-		pubToAddress }						= require('../utils/cryptoUtils')
-	, { transactionToJson, zip }						= require('../utils/utils')
-	, async = require('async')
-	, { BigNumber }       					= require('bignumber.js');
+const { recover } = require('../utils/sign')
+	, { TransactionService, CoinStateService, BlockService } = require('./index')
+	, { generateTransactionHash, pubToAddress } = require('../utils/cryptoUtils')
+	, { transactionToJson, zip } = require('../utils/utils')
+	, { BigNumber } = require('bignumber.js')
+	, { getProof } = require('./block')
+	, async = require('async');
 
 const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
 	const slot = new BigNumber(_slot);
@@ -15,12 +15,12 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 	const signature = _signature.toLowerCase();
 
 
-	if(slot.isNaN()) 	return cb({statusCode: 400, message: 'Invalid slot'});
-	if(blockSpent.isNaN()) 	return cb({statusCode: 400, message: 'Invalid blockSpent'});
+	if (slot.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot' });
+	if (blockSpent.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockSpent' });
 
-	isTransactionValid({slot, owner, recipient, hash, blockSpent, signature}, (err, invalidError) => {
+	isTransactionValid({ slot, owner, recipient, hash, blockSpent, signature }, (err, invalidError) => {
 		if (err) return cb(err);
-		if (invalidError) return cb({statusCode: 400, message: invalidError} );
+		if (invalidError) return cb({ statusCode: 400, message: invalidError });
 
 		TransactionService.create({
 			slot: slot,
@@ -30,7 +30,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 			block_spent: blockSpent,
 			signature
 		}, (err, t) => {
-			if(err) return cb(err)
+			if (err) return cb(err)
 			cb(null, { statusCode: 201, message: transactionToJson(t) })
 		});
 	})
@@ -44,46 +44,43 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 const isTransactionValid = (transaction, validateTransactionCb) => {
 	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
-		getLastMinedTransaction({ slot: slot }, (err, lastTransaction) => {
+	getLastMinedTransaction({ slot: slot }, (err, lastTransaction) => {
 
-			if (err) return validateTransactionCb(err);
-			if (!lastTransaction) return validateTransactionCb(null, 'Slot is not in side chain');
+		if (err) return validateTransactionCb(err);
+		if (!lastTransaction) return validateTransactionCb(null, 'Slot is not in side chain');
 
-			lastTransaction.populate("mined_block", (err, lastTransaction) => {
-				const { mined_block } = lastTransaction;
-				if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
+		lastTransaction.populate("mined_block", (err, lastTransaction) => {
+			const { mined_block } = lastTransaction;
+			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
-				if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
+			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-				const calculatedHash = generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
+			const calculatedHash = generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
 
-				console.log(calculatedHash);
+			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
-				if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
+			if (lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
-				if(lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
+			try {
+				const pubAddress = pubToAddress(recover(hash, signature));
+				if (owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
+			} catch (e) {
+				console.error(e)
+				return validateTransactionCb(null, 'Invalid Signature');
+			}
 
-				try {
-					const pubAddress = pubToAddress(recover(hash, signature));
-					console.log(pubAddress);
-					if(owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
-				} catch (e) {
-					console.error(e)
-					return validateTransactionCb(null, 'Invalid Signature');
+			CoinStateService.findById(slot, (err, coinState) => {
+				if (err) return validateTransactionCb(err);
+
+				if (coinState.state != "DEPOSITED") {
+					return validateTransactionCb(null, "Coin state is not DEPOSITED");
+				} else {
+					return validateTransactionCb();
 				}
-
-				CoinStateService.findById(slot, (err, coinState) => {
-					if (err) return validateTransactionCb(err);
-
-					if(coinState.state != "DEPOSITED") {
-						return validateTransactionCb(null, "Coin state is not DEPOSITED");
-					} else {
-						return validateTransactionCb();
-					}
 			})
 
 
-			})
+		})
 
 
 	})
@@ -92,13 +89,13 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 const getLastMinedTransaction = (filter, cb) => {
 	filter.mined_block = { $ne: null }
 	TransactionService
-	.findOne(filter)
-	.sort({mined_block: -1})
-	.collation({locale: "en_US", numericOrdering: true})
-	.exec((err, transaction) => {
-		if (err) return cb(err);
-		cb(null, transaction);
-	});
+		.findOne(filter)
+		.sort({ mined_block: -1 })
+		.collation({ locale: "en_US", numericOrdering: true })
+		.exec((err, transaction) => {
+			if (err) return cb(err);
+			cb(null, transaction);
+		});
 };
 
 module.exports = {
@@ -107,7 +104,7 @@ module.exports = {
 	getLastMinedTransaction
 };
 
-//TODO
+//TODO: change this require in mid-file
 const { getExitDataForBlock } = require('./exit')
 
 const getHistory = (slot, cb) => {
@@ -115,21 +112,93 @@ const getHistory = (slot, cb) => {
 	filter.mined_block = { $ne: null };
 	TransactionService
 		.find(filter)
-		.sort({mined_block: -1})
-		.collation({locale: "en_US", numericOrdering: true})
+		.sort({ mined_block: -1 })
+		.collation({ locale: "en_US", numericOrdering: true })
 		.exec((err, transactions) => {
 			if (err) return cb(err);
 
 			let proofRetrievers = transactions.map((t) => (cb) => getExitDataForBlock(slot, t.mined_block, cb));
 			async.parallel(proofRetrievers, (err, exitDatas) => {
-				if(err) return cb(err);
+				if (err) return cb(err);
 
 				cb(null, zip(transactions, exitDatas).map((pair) => {
-						return { transaction: transactionToJson(pair[0]), exitData: pair[1].message }
-					})
+					return { transaction: transactionToJson(pair[0]), exitData: pair[1].message }
+				})
 				);
 			})
 		});
 };
 
+/**
+ * Gets all blocks since slot's deposit and the proof for the coin in each of them
+ */
+const getHistoryProof = (slot, done) => {
+	const slotBN = new BigNumber(slot);
+	async.waterfall([
+		next => {
+			TransactionService.findOne({
+				slot: slotBN,
+				block_spent: '0' // deposit
+			}, next)
+		},
+		(depositTransaction, next) => {
+			if (!depositTransaction) return next('The slot has never been deposited.');
+
+			async.parallel({
+				minedTransactions: cb => {
+					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } })
+						.select("_id signature")
+						.exec(cb);
+				},
+				depositBlock: cb => BlockService.findById(depositTransaction.mined_block, cb),
+				historyBlocks: cb => {
+					BlockService.aggregate([
+						{
+							$project: {
+								_idString: { $toString: "$_id" },
+								_id: true,
+								transactions: true
+							}
+						}, {
+							$match: {
+								$and: [
+									{ _idString: /^[0-9]*000$/ },
+									{ _id: { $gt: depositTransaction.mined_block.toFixed() } }
+								]
+							}
+						}
+					])
+						.collation({ locale: "en_US", numericOrdering: true })
+						.exec(cb);
+
+				}
+			}, (err, { minedTransactions, depositBlock, historyBlocks }) => {
+				if (err) return next(err);
+
+				const blocks = [depositBlock, ...historyBlocks];
+
+				async.parallel(blocks.map(b => cb => getProof(slot, b._id, cb)), (err, proofs) => {
+					if (err) return next(err);
+
+					const history = {}
+
+					zip(blocks, proofs).forEach(e => {
+						const transaction = minedTransactions.find(t => e[0].transactions.includes(t._id));
+						const data = { proof: e[1] }
+						if (transaction) {
+							data.transactionId = transaction._id;
+							data.signature = transaction.signature;
+						}
+
+						history[e[0]._id] = data;
+					})
+			
+					next(null, history);
+				})
+			});
+		}
+	], done);
+}
+
 module.exports.getHistory = getHistory
+module.exports.getHistoryProof = getHistoryProof

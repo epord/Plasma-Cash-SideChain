@@ -21,7 +21,7 @@
       }
     },
     "debug": {
-      "command": "node --inspect-brk=9229 app.js",
+      "command": "node --inspect-brk=9229 dist/src/app.js",
       "env": {
         "NODE_ENV": "development",
         "DEBUG": "app:*"

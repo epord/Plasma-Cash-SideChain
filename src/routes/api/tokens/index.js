@@ -2,7 +2,7 @@ const express = require('express')
 	, router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens')
 	, Status = require('http-status-codes')
-	, { getLastMinedTransaction, getHistory } = require('../../../services/transaction')
+	, { getLastMinedTransaction, getHistory, getHistoryProof } = require('../../../services/transaction')
 	, { getOwnedTokens } = require('../../../services/coinState')
 	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber = require('bignumber.js');
@@ -55,9 +55,18 @@ router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {
 	const { id } = req.params;
 	getHistory(id, (err, history) => {
 		if(err) return responseWithStatus(res)(err);
-		return responseWithStatus(res)(null, {statusCode: 200, message: { history: history }})
+		return responseWithStatus(res)(null, {statusCode: 200, message: { history }})
 	});
 });
+
+router.get('/:id([0-9a-zA-Z]+)/history-proof', (req, res, next) => {
+	const { id } = req.params;
+	getHistoryProof(id, (err, history) => {
+		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err); // TODO: add responseWithStatus when migrating to TS
+		return responseWithStatus(res)(null, {statusCode: 200, message: { history }})
+	})
+
+})
 
 
 

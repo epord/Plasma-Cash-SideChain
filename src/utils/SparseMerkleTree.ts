@@ -46,9 +46,6 @@ export class SparseMerkleTree {
 
         for (let level = 0; level < depth; level++) {
             nextLevel = new Map();
-
-
-
             for(let [slot, hash] of treeLevel) {
                 halfIndex = new BN(slot).div(new BN(2)).toString();
                 if (new BN(slot).mod(new BN(2)).isZero()) {
@@ -77,7 +74,8 @@ export class SparseMerkleTree {
             siblingIndex = index.mod(new BN(2)).isZero() ? index.add(new BN(1)) : index.sub(new BN(1));
             index = index.div(new BN(2));
 
-            siblingHash = this.tree[level].get(siblingIndex.toString());
+
+            siblingHash = this.tree[level] ? this.tree[level].get(siblingIndex.toString()) : undefined;
             if (siblingHash) {
                 proof += siblingHash.replace('0x', '');
                 proofBits = proofBits.bincn(level);
