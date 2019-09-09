@@ -49,12 +49,12 @@ const generateExitData = (slot, lastTransaction, cb) => {
 					if (err) return cb(err)
 					if (!prevProof) return cb({ statusCode: 500, message: 'Could not create Proof for the previous transaction' });
 
-					cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof, slot) });
+					cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof) });
 				});
 			});
 
 		} else {
-			cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, null, null, slot) });
+			cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, null, null) });
 		}
 	})
 }
@@ -68,7 +68,7 @@ const getSingleData = (hash, cb) => {
 		getProof(t.slot, t.mined_block, (err, proof) => {
 			if(err) return cb(err);
 
-			let exitingBytes = getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
+			let exitingBytes = getTransactionBytes(t.slot, t.block_spent, t.recipient);
 
 			const exitData = {
 				slot: t.slot,

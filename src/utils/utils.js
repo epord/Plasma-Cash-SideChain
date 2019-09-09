@@ -49,24 +49,24 @@ const transactionToJson = (transaction) => ({
 	minedBlock: transaction.mined_block,
 });
 
-//TODO remove slot, get it from lastTx.slot
-const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
-	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
-	let prevTxInclusionProof = prevTx ? prevProof : "0x0";
-	let prevBlock = prevTx ? prevTx.mined_block : '0';
+const exitDataToJson = (lastTx, lastProof, prevTx, prevProof) => {
+	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
+	let prevTxInclusionProof = prevTx ? prevProof : undefined;
+	let prevBlock = prevTx ? prevTx.mined_block : undefined;
 	let prevTransactionHash = prevTx ? prevTx.hash : undefined;
 	return {
-		slot,
+		slot: lastTx.slot,
 		prevTxBytes,
-		exitingTxBytes: getTransactionBytes(lastTx.slot, lastTx.block_spent, new BigNumber(1), lastTx.recipient),
+		exitingTxBytes: getTransactionBytes(lastTx.slot, lastTx.block_spent, lastTx.recipient),
 		prevTxInclusionProof,
 		exitingTxInclusionProof: lastProof,
 		signature: lastTx.signature,
 		lastTransactionHash: lastTx.hash,
 		prevTransactionHash,
-		blocks: [prevBlock, lastTx.mined_block]
+		prevBlock: prevBlock,
+		exitingBlock: lastTx.mined_block
 	}
-}
+};
 
 
 const challengeDataToJson = (challengingTx, proof) => {
@@ -74,7 +74,7 @@ const challengeDataToJson = (challengingTx, proof) => {
 		hash: challengingTx.hash,
 		slot: challengingTx.slot,
 		challengingBlockNumber: challengingTx.mined_block,
-		challengingTransaction: getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
+		challengingTransaction: getTransactionBytes(challengingTx.slot, challengingTx.block_spent, challengingTx.recipient),
 		proof: proof,
 		signature: challengingTx.signature,
 	}

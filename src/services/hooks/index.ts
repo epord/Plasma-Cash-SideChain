@@ -153,7 +153,7 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: event
 												next(err, status.message)
 											}),
 											(exitData: exitData, next: any) => {
-												challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.signature, exitData.challengingBlockNumber, next);
+												challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.challengingBlockNumber, next);
 											}
 										], (err: any) => {
 											if (err) return console.error(err);
@@ -231,11 +231,11 @@ const challengeAfter = (slot: BigNumber, challengingBlockNumber: BigNumber, chal
 
 		RootChainContract.methods.challengeAfter(
 			slot.toFixed(),
-			challengingBlockNumber.toFixed(),
 			challengingTransaction,
 			proof,
-			signature
-			).send({
+			signature,
+			challengingBlockNumber.toFixed(),
+		).send({
 				from: accounts[0],
 				gas: 1500000
 			}, cb);
@@ -248,10 +248,10 @@ const challengeBetween = (slot: BigNumber, challengingBlockNumber: BigNumber, ch
 		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
 		RootChainContract.methods.challengeBetween(
 			slot.toFixed(),
-			challengingBlockNumber.toFixed(),
 			challengingTransaction,
 			proof,
-			signature
+			signature,
+			challengingBlockNumber.toFixed()
 		).send({
 			from: accounts[0],
 			gas: 1500000
@@ -259,7 +259,7 @@ const challengeBetween = (slot: BigNumber, challengingBlockNumber: BigNumber, ch
 	});
 }
 
-const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: string, signature: string, blockNumber: BigNumber, cb: genericCB) => {
+const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: string, blockNumber: BigNumber, cb: genericCB) => {
 	web3.eth.getAccounts().then((accounts: any) => {
 		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
 		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
@@ -268,7 +268,6 @@ const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: str
 			slot.toFixed(),
 			txBytes,
 			txInclusionProof,
-			signature,
 			blockNumber.toFixed()
 		).send({
 			from: accounts[0],

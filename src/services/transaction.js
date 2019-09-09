@@ -55,7 +55,7 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 
 			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-			const calculatedHash = generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
+			const calculatedHash = generateTransactionHash(slot, blockSpent, recipient);
 
 			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 

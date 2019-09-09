@@ -9,19 +9,18 @@ const CryptoMonsJson = require("../json/CryptoMons.json");
 const RootChainJson = require("../json/RootChain.json");
 const VMCJson = require("../json/ValidatorManagerContract.json");
 
-const generateTransactionHash = (slot, blockSpent, denonimation, recipient) => {
+const generateTransactionHash = (slot, blockSpent, recipient) => {
 	if(blockSpent.isZero()) {
 		return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8))) //uint64 little endian
 	} else {
-		return EthUtils.bufferToHex(EthUtils.keccak256(getTransactionBytes(slot, blockSpent, denonimation, recipient)))
+		return EthUtils.bufferToHex(EthUtils.keccak256(getTransactionBytes(slot, blockSpent, recipient)))
 	}
 };
 
-const getTransactionBytes = (slot, blockSpent, denomination, recipient) => {
+const getTransactionBytes = (slot, blockSpent, recipient) => {
 	const params = [
 			EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 256/8), 			// uint256 little endian
 			EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
-			EthUtils.setLengthLeft(new BN(denomination.toFixed()).toBuffer(), 256/8),	// uint256 little endian
 			EthUtils.toBuffer(recipient),																						// must start with 0x
 	];
 
@@ -53,7 +52,7 @@ const generateTransaction = (slot, owner, recipient, blockSpent, privateKey) => 
 	//TODO migrate slot and blockSpent to BigNumber
 	const slotBN = new BigNumber(slot);
 	const blockSpentBN = new BigNumber(blockSpent);
-	const hash = generateTransactionHash(slotBN, blockSpentBN, new BigNumber(1), recipient);
+	const hash = generateTransactionHash(slotBN, blockSpentBN, recipient);
 	const signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(privateKey));
 
 	// This method simulates eth-sign RPC method
@@ -76,7 +75,6 @@ const generateSMTFromTransactions = (transactions) => {
 		map[value.slot] = generateTransactionHash(
 			value.slot,
 			value.block_spent,
-			new BigNumber(1),
 			value.recipient
 		);
 		return map;
