@@ -1,9 +1,11 @@
+import {CryptoUtils} from "../utils/CryptoUtils";
+
 const { recover } = require('../utils/sign')
 	, { TransactionService, CoinStateService, BlockService } = require('./index')
 	, { generateTransactionHash, pubToAddress } = require('../utils/cryptoUtils')
 	, { transactionToJson, zip } = require('../utils/utils')
 	, { BigNumber } = require('bignumber.js')
-	, { getProof } = require('./block')
+	, { getProof } = require('../services/block.js')
 	, async = require('async');
 
 const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
@@ -55,14 +57,14 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 
 			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-			const calculatedHash = generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
+			const calculatedHash = CryptoUtils.generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
 
 			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
 			if (lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
 			try {
-				const pubAddress = pubToAddress(recover(hash, signature));
+				const pubAddress = CryptoUtils.pubToAddress(recover(hash, signature));
 				if (owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
 			} catch (e) {
 				console.error(e)

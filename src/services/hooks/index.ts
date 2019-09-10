@@ -6,10 +6,10 @@ import { BigNumber } from 'bignumber.js';
 import BN from 'bn.js';
 
 const _ = require('lodash');
-const { depositBlock }	= require('../block');
+const { depositBlock }	= require('../../services/block.js');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
 const debug	= require('debug')('app:api:hooks')
-const { getLastMinedTransaction } = require('../transaction');
+const { getLastMinedTransaction } = require('../../services/transaction.js');
 const { TransactionService } = require('../index');
 const { getChallengeAfterData, getChallengeBeforeData } = require("../challenges");
 

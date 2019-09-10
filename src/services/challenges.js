@@ -1,6 +1,6 @@
 const { TransactionService } = require('../services');
-const { getProof } = require("../services/block");
-const { getLastMinedTransaction } = require("../services/transaction");
+const { getProof } = require("../services/block.js");
+const { getLastMinedTransaction } = require("../services/transaction.js");
 const { challengeDataToJson } = require("../utils/utils");
 
 const getChallengeAfterData = (slot, exitBlock, cb) => {

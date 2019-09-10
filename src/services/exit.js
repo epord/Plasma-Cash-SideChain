@@ -1,9 +1,11 @@
+import {CryptoUtils} from "../utils/CryptoUtils";
+
 const BigNumber = require("bignumber.js")
 , { exitDataToJson } = require('../utils/utils')
 , { getTransactionBytes } = require('../utils/cryptoUtils')
-, { getLastMinedTransaction} = require('./transaction')
+, { getLastMinedTransaction} = require('../services/transaction.js')
 , { TransactionService } = require('../services')
-, { blockInterval, getProof } = require('./block');
+, { blockInterval, getProof } = require('../services/block.js');
 
 const getExitDataForBlock = (slot, block, cb) => {
 
@@ -68,7 +70,7 @@ const getSingleData = (hash, cb) => {
 		getProof(t.slot, t.mined_block, (err, proof) => {
 			if(err) return cb(err);
 
-			let exitingBytes = getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
+			let exitingBytes = CryptoUtils.getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
 
 			const exitData = {
 				slot: t.slot,

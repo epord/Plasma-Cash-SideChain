@@ -1,3 +1,5 @@
+import {CryptoUtils} from "../src/utils/CryptoUtils";
+
 const { app } = require('../src/server')
     , request = require('supertest')(app)
     , mongo = require('../src/mongo')
@@ -17,7 +19,7 @@ const _privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe
 const _slot = "1";
 const _blockNumber = "2";
 
-const _transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
+const _transaction = CryptoUtils.generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
 
 const addDeposit = (slot, owner, blockNumber) => {
     return jsonPost(depositURL).send({
@@ -70,7 +72,7 @@ describe('Transactions Fails', () => {
     const notRealPrivateKey = '0x97ae3b77c061e6cb62e9a80e619880c79ce42c82ad904b36899a367594066282';
 
     addDeposit(_slot, _owner, _blockNumber).then(_ => {
-        const transaction = generateTransaction(_slot, notRealOwner, _recipient, _blockNumber, notRealPrivateKey);
+        const transaction = CryptoUtils.generateTransaction(_slot, notRealOwner, _recipient, _blockNumber, notRealPrivateKey);
         jsonPost(transactionURL).send(transaction).expect(400).then(()=> done());
       }
     );
@@ -88,7 +90,7 @@ describe('Transactions Fails', () => {
 
   it('If signature is malformed', (done) => {
     addDeposit(_slot, _owner, _blockNumber).then ( _ => {
-      const transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
+      const transaction = CryptoUtils.generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
       transaction.signature = '0x1';
       jsonPost(transactionURL).send(transaction).expect(400).then(_=> done())
     });
@@ -96,7 +98,7 @@ describe('Transactions Fails', () => {
 
   it('If signature is invalid', (done) => {
     addDeposit(_slot, _owner, _blockNumber).then ( _ => {
-      const transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
+      const transaction = CryptoUtils.generateTransaction(_slot, _owner, _recipient, _blockNumber, _privateKey);
       transaction.signature = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
       jsonPost(transactionURL).send(transaction).expect(400).then(_=> done())
     });
@@ -105,7 +107,7 @@ describe('Transactions Fails', () => {
   it('If signature is not correct', (done) => {
     addDeposit(_slot, _owner, _blockNumber).then ( _ => {
       const notRealPrivateKey = '0x97ae3b77c061e6cb62e9a80e619880c79ce42c82ad904b36899a367594066282';
-      const transaction = generateTransaction(_slot, _owner, _recipient, _blockNumber, notRealPrivateKey);
+      const transaction = CryptoUtils.generateTransaction(_slot, _owner, _recipient, _blockNumber, notRealPrivateKey);
       jsonPost(transactionURL).send(transaction).expect(400).then(_=> done())
     });
   });

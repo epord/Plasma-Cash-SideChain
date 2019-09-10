@@ -3,7 +3,7 @@ const express 					= require('express')
 	, debug 					= require('debug')('app:api:transactions')
 	, Status 					= require('http-status-codes')
 	, { TransactionService }	= require('../../../services')
-	, { createTransaction } 	= require('../../../services/transaction')
+	, { createTransaction } 	= require('../../../services/transaction.js')
 	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber       			= require('bignumber.js');
 

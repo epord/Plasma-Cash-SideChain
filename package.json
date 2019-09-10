@@ -8,13 +8,29 @@
   "private": true,
   "main": "dist/app.js",
   "scripts": {
+    "compile": "better-npm-run compile",
     "test": "jest --runInBand --verbose",
     "start": "better-npm-run start",
-    "debug": "better-npm-run debug"
+    "debug": "better-npm-run debug",
+    "justrun": "better-npm-run justrun"
   },
   "betterScripts": {
     "start": {
       "command": "tsc && copyfiles src/**/*.json dist/ && node dist/src/app.js",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "app:*"
+      }
+    },
+    "compile": {
+      "command": "tsc && copyfiles src/**/*.json dist/",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "app:*"
+      }
+    },
+    "justrun": {
+      "command": "node dist/src/app.js",
       "env": {
         "NODE_ENV": "development",
         "DEBUG": "app:*"

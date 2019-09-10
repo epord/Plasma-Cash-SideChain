@@ -1,7 +1,8 @@
+import {CryptoUtils} from "./utils/CryptoUtils";
+
 const dotenv 		= require('dotenv')
     , async 		= require('async')
-    , cryptoUtils = require("./utils/cryptoUtils")
-    , { mineBlock }	= require('./services/block')
+    , { mineBlock }	= require('./services/block.js')
     , _ 		= require('lodash');
 
 import {init as initMongo} from "./mongo";
@@ -16,7 +17,7 @@ async.waterfall([
     (cb: any) => initMongo(cb),
     (cb: any) => initServer(cb),
     (cb: any) => initHooks(cb),
-    (cb: any) => cryptoUtils.validateCryptoMons(cb),
+    (cb: any) => CryptoUtils.validateCryptoMons(cb),
     (cb: any) => {
         setInterval(() => {
             mineBlock(_.noop)

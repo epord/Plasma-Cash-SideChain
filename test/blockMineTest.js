@@ -1,3 +1,5 @@
+import {CryptoUtils} from "../src/utils/CryptoUtils";
+
 const { app } = require('../src/server'),
   request = require('supertest')(app),
   mongo = require('../src/mongo'),
@@ -18,7 +20,7 @@ describe('Mining Works', () => {
   const privateKey = '0x379717fa635d3f8b6f6e2ba65440600ed28812ef34edede5420a1befe4d0979d';
 
   const addTransaction = (slot, blockNumber, cb) => {
-    const transaction = generateTransaction(slot, owner, recipient, blockNumber, privateKey);
+    const transaction = CryptoUtils.generateTransaction(slot, owner, recipient, blockNumber, privateKey);
 
     jsonPost(depositURL).send({
       "slot": slot,

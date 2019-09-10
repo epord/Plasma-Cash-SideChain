@@ -6,7 +6,7 @@ const express 			= require('express')
 , BigNumber					= require("bignumber.js")
 , { BlockService } 	= require('../../../services/index.js')
 , { blockToJson } = require('../../../utils/utils')
-, { mineBlock, depositBlock, getProof }	= require('../../../services/block');
+, { mineBlock, depositBlock, getProof }	= require('../../../services/block.js');
 
 debug('registering /api/blocks routes');
 

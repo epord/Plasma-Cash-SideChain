@@ -1,3 +1,5 @@
+import {CryptoUtils} from "../src/utils/CryptoUtils";
+
 const { app } = require('../src/server')
     , request = require('supertest')(app)
     , mongo = require('../src/mongo')
@@ -62,7 +64,7 @@ describe('Token Owners', () => {
     async.waterfall([
       next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
       next => {
-        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
+        const transaction = CryptoUtils.generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => jsonPost(mineURL).expect(201).then(() => next()),
@@ -81,7 +83,7 @@ describe('Token Owners', () => {
     async.waterfall([
       next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
       next => {
-        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
+        const transaction = CryptoUtils.generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => {
@@ -99,7 +101,7 @@ describe('Token Owners', () => {
     async.waterfall([
       next => addDeposit(_slot, Alice, _blockNumber).then(() => next()),
       next => {
-        const transaction = generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
+        const transaction = CryptoUtils.generateTransaction(_slot, Alice, Bob, _blockNumber, AlicePK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => jsonPost(mineURL).expect(201).then((ans) => {
@@ -107,7 +109,7 @@ describe('Token Owners', () => {
         next(null, minedBlockNumber)
       }),
       (minedBlockNumber, next) => {
-        const transaction = generateTransaction(_slot, Bob, Carl, minedBlockNumber, BobPK);
+        const transaction = CryptoUtils.generateTransaction(_slot, Bob, Carl, minedBlockNumber, BobPK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => jsonPost(mineURL).expect(201).then(() => next()),
@@ -131,11 +133,11 @@ describe('Token Owners', () => {
       next => addDeposit(slot1, Alice, depositBlockNumber1).expect(201).then(() => next()),
       next => addDeposit(slot2, Bob, depositBlockNumber2).expect(201).then(() => next()),
       next => {
-        const transaction = generateTransaction(slot1, Alice, Carl, depositBlockNumber1, AlicePK);
+        const transaction = CryptoUtils.generateTransaction(slot1, Alice, Carl, depositBlockNumber1, AlicePK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => {
-        const transaction = generateTransaction(slot2, Bob, Carl, depositBlockNumber2, BobPK);
+        const transaction = CryptoUtils.generateTransaction(slot2, Bob, Carl, depositBlockNumber2, BobPK);
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next())
       },
       next => jsonPost(mineURL).expect(201).then(() => next()),

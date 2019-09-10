@@ -1,3 +1,5 @@
+import {CryptoUtils} from "./CryptoUtils";
+
 const { getTransactionBytes } = require('./cryptoUtils');
 const BigNumber					= require("bignumber.js")
 
@@ -51,14 +53,14 @@ const transactionToJson = (transaction) => ({
 
 //TODO remove slot, get it from lastTx.slot
 const exitDataToJson = (lastTx, lastProof, prevTx, prevProof, slot) => {
-	let prevTxBytes = prevTx ? getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
+	let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
 	let prevTxInclusionProof = prevTx ? prevProof : "0x0";
 	let prevBlock = prevTx ? prevTx.mined_block : '0';
 	let prevTransactionHash = prevTx ? prevTx.hash : undefined;
 	return {
 		slot,
 		prevTxBytes,
-		exitingTxBytes: getTransactionBytes(lastTx.slot, lastTx.block_spent, new BigNumber(1), lastTx.recipient),
+		exitingTxBytes: CryptoUtils.getTransactionBytes(lastTx.slot, lastTx.block_spent, new BigNumber(1), lastTx.recipient),
 		prevTxInclusionProof,
 		exitingTxInclusionProof: lastProof,
 		signature: lastTx.signature,
@@ -74,7 +76,7 @@ const challengeDataToJson = (challengingTx, proof) => {
 		hash: challengingTx.hash,
 		slot: challengingTx.slot,
 		challengingBlockNumber: challengingTx.mined_block,
-		challengingTransaction: getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
+		challengingTransaction: CryptoUtils.getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
 		proof: proof,
 		signature: challengingTx.signature,
 	}

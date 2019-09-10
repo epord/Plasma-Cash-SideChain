@@ -1,3 +1,5 @@
+import {CryptoUtils} from "../utils/CryptoUtils";
+
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
     , async = require('async')
@@ -21,7 +23,7 @@ const createBlock = (transactions, blockNumber, cb) => {
 	if(maxSlotCount > 1) return cb({ statusCode: 500, message: "Trying to mine 2 slots at once"});
 
 
-	const sparseMerkleTree = generateSMTFromTransactions(transactions);
+	const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(transactions);
 	const rootHash = sparseMerkleTree.root;
 
 	if(!rootHash) return cb({statusCode: 500, message: "Problem calculating merkle root hash"});
@@ -115,7 +117,7 @@ const mineBlock = (cb) => {
 			createBlock(transactions, nextNumber, (err, block) => {
 				if(err) return cb(err);
 
-				submitBlock(block, (err)=> {
+                CryptoUtils.submitBlock(block, (err)=> {
 					if(err) return cb(err);
 					cb(null, { statusCode: 201, message: blockToJson(block) });
 				})
@@ -157,12 +159,12 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 	const blockNumberBN = new BigNumber(blockNumber);
 	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockNumber'});
 
-	const rootHash = generateDepositBlockRootHash(slotBN);
+	const rootHash = CryptoUtils.generateDepositBlockRootHash(slotBN);
 
 	const blockSpent = new BigNumber(0);
 	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
 
-	const hash = generateTransactionHash(slotBN, blockSpent, new BigNumber(1), owner);
+	const hash = CryptoUtils.generateTransactionHash(slotBN, blockSpent, new BigNumber(1), owner);
 	const timestamp = Date.now();
 
 	BlockService.findById(blockNumberBN)
@@ -222,7 +224,7 @@ const getProof = (slot, blockNumber, cb) => {
 	.exec((err, block) => {
 		if (err) return cb(err);
 
-		const sparseMerkleTree = generateSMTFromTransactions(block.transactions);
+		const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.transactions);
 
 		const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
 		cb(null, proof);
@@ -239,7 +241,7 @@ module.exports = {
 };
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
-const { isTransactionValid } = require('./transaction')
+const { isTransactionValid } = require('../services/transaction.js')
 
 /**
  * Given a set of transactions, will find the first valid one, removem those that finds invalid
