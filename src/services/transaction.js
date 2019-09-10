@@ -1,6 +1,6 @@
 const { recover } = require('../utils/sign')
 	, { TransactionService, CoinStateService, BlockService } = require('./index')
-	, { generateTransactionHash, pubToAddress } = require('../utils/cryptoUtils')
+	, { generateTransactionHash, pubToAddress, getTransactionBytes } = require('../utils/cryptoUtils')
 	, { transactionToJson, zip } = require('../utils/utils')
 	, { BigNumber } = require('bignumber.js')
 	, { getProof } = require('./block')
@@ -147,7 +147,6 @@ const getHistoryProof = (slot, done) => {
 			async.parallel({
 				minedTransactions: cb => {
 					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } })
-						.select("_id signature")
 						.exec(cb);
 				},
 				depositBlock: cb => BlockService.findById(depositTransaction.mined_block, cb),
@@ -186,13 +185,13 @@ const getHistoryProof = (slot, done) => {
 						const transaction = minedTransactions.find(t => e[0].transactions.includes(t._id));
 						const data = { proof: e[1] }
 						if (transaction) {
-							data.transactionId = transaction._id;
+							data.transactionBytes = getTransactionBytes(transaction.slot, transaction.block_spent, transaction.recipient);
 							data.signature = transaction.signature;
 						}
 
 						history[e[0]._id] = data;
 					})
-			
+
 					next(null, history);
 				})
 			});

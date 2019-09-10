@@ -74,7 +74,6 @@ export class SparseMerkleTree {
             siblingIndex = index.mod(new BN(2)).isZero() ? index.add(new BN(1)) : index.sub(new BN(1));
             index = index.div(new BN(2));
 
-
             siblingHash = this.tree[level] ? this.tree[level].get(siblingIndex.toString()) : undefined;
             if (siblingHash) {
                 proof += siblingHash.replace('0x', '');
