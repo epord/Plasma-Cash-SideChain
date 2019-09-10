@@ -1,4 +1,4 @@
-#WIP
+# WIP
 This is a WIP project on a Token-based Plasma Cash Implementations. 
 This repo corresponds to API and Side-Chain in the 3-repo project.
 
