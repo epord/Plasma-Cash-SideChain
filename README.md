@@ -1,39 +1,33 @@
-## Install
-Install MongoDB using port `dbport` (default is `27017`), and create a database with name `dbname`.
+#WIP
+This is a WIP project on a Token-based Plasma Cash Implementations. 
+This repo corresponds to API and Side-Chain in the 3-repo project.
 
-Create the file *.env* in the root directory and add the following lines:  
-PORT=8082  
-MONGO_URL=localhost  
-MONGO_PORT=`dbport`  
-MONGO_DB_NAME=`dbname`
-BLOCKCHAIN_WS_URL = ws://localhost:7545
+API Side Chain     - https://github.com/epord/Plasma-Cash-SideChain
 
-Run the following commands:  
-`npm install`  
-`npm start`  
+Front End Client   - https://github.com/epord/CryptoMons-client
 
------
-`ganache-cli -p 7545 -i 5777 --gasLimit=0x1fffffffffffff --allowUnlimitedContractSize -e 1000000000 -m pf`
-`Setup metamask so it uses localhost 7545 and network id 5777`
-`Copy one of the private keys and import it to Metamask`
-`truffle migrate` - En el repo Plasma-Cash-RootChain
-`Go to Remix and paste all the liteInterfaces (Remove the I from the beggining of their names)`
-`Copy the migrated address into Remix`
-`Buy a CryptoMon with the 0.01 ether`
+Ethereum Contracts - https://github.com/epord/Plasma-Cash-RootChain
 
+Migration to Typescript is being developed on.
 
+# How to Run
 
-`npm install -g remixd`
-`remixd -s <absolute-path> --remix-ide https://remix.ethereum.org`
+## Requirements
+1. Install MongoDB using port `dbport` (default is `27017`), and create a database with name `dbname`.
+2. Create the file `.env` in the root directory and add the following lines:  
+    ```
+    PORT=8082                               \\ Port of the API
+    MONGO_URL=localhost                     \\ Database URL
+    MONGO_PORT=`dbport`                     \\ Database Port
+    MONGO_DB_NAME=`dbname`                  \\ Database Name
+    BLOCKCHAIN_WS_URL = ws://localhost:7545 \\ Blockchain WebSocket URL 
+    AUTO_CHALLENGE = false                  \\ Flag for plasma-challenging the automatically
+    ```
+3. Make sure to check [How to run the blockchain](https://github.com/epord/Plasma-Cash-RootChain) and follow the readme
 
+## Run
+1. Make sure the Blockchain is running, follow the readme in  [this repo](https://github.com/epord/Plasma-Cash-RootChain)
+2. `npm install`  
+3. `npm start`
+4. To interact with the API check [How to run the client](https://github.com/epord/CryptoMons-client) and follow the readme  
 
-## Usefull commands
-
-- Fast-forward time (30 days):
-```curl -H "Content-Type: application/json" -X POST --data         '{"id":1337,"jsonrpc":"2.0","method":"evm_increaseTime","params":[2592000]}' http://localhost:7545```
-- Mine block in ganache
-```curl -H "Content-Type: application/json" -X POST --data         '{"id":1337,"jsonrpc":"2.0","method":"evm_mine","params":[]}'         http://localhost:7545```
-- Get latest mined block information:
-```web3.eth.getBlock("latest").then(console.log)```
-- Usefull ganache commands:
-```https://github.com/trufflesuite/ganache-cli#implemented-methods```
