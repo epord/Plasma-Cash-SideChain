@@ -68,6 +68,12 @@ const onDebug = (iDebug: abiInterface) => (error: any, result: eventResultInterf
 	debug(`Debug: ${eventObj.message}`)
 };
 
+const onWithdrew = (iWithdrew: abiInterface) => (error: any, result: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iWithdrew, result);
+	debug(`Withdrew: ${eventObj.message}`)
+};
+
 const onDeposit = (iDeposit: abiInterface) => (error: any, result: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iDeposit, result);
@@ -153,7 +159,7 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result: event
 												next(err, status.message)
 											}),
 											(exitData: exitData, next: any) => {
-												challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.signature, exitData.challengingBlockNumber, next);
+												challengeBefore(exitData.slot, exitData.challengingTransaction, exitData.proof, exitData.challengingBlockNumber, next);
 											}
 										], (err: any) => {
 											if (err) return console.error(err);
@@ -231,11 +237,11 @@ const challengeAfter = (slot: BigNumber, challengingBlockNumber: BigNumber, chal
 
 		RootChainContract.methods.challengeAfter(
 			slot.toFixed(),
-			challengingBlockNumber.toFixed(),
 			challengingTransaction,
 			proof,
-			signature
-			).send({
+			signature,
+			challengingBlockNumber.toFixed(),
+		).send({
 				from: accounts[0],
 				gas: 1500000
 			}, cb);
@@ -248,10 +254,10 @@ const challengeBetween = (slot: BigNumber, challengingBlockNumber: BigNumber, ch
 		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
 		RootChainContract.methods.challengeBetween(
 			slot.toFixed(),
-			challengingBlockNumber.toFixed(),
 			challengingTransaction,
 			proof,
-			signature
+			signature,
+			challengingBlockNumber.toFixed()
 		).send({
 			from: accounts[0],
 			gas: 1500000
@@ -259,7 +265,7 @@ const challengeBetween = (slot: BigNumber, challengingBlockNumber: BigNumber, ch
 	});
 }
 
-const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: string, signature: string, blockNumber: BigNumber, cb: genericCB) => {
+const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: string, blockNumber: BigNumber, cb: genericCB) => {
 	web3.eth.getAccounts().then((accounts: any) => {
 		if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
 		const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
@@ -268,7 +274,6 @@ const challengeBefore = (slot: BigNumber, txBytes: string, txInclusionProof: str
 			slot.toFixed(),
 			txBytes,
 			txInclusionProof,
-			signature,
 			blockNumber.toFixed()
 		).send({
 			from: accounts[0],
@@ -298,10 +303,13 @@ export function init(cb: () => void) {
 	subscribeLogEvent(RootChainContract, iChallengedExit, onChallengedExit(iChallengedExit));
 
 	const iRespondedExitChallenge = getEventInterface(RootChainContract, 'RespondedExitChallenge');
-	subscribeLogEvent(RootChainContract, iRespondedExitChallenge, onRespondedExitChallenge(iChallengedExit));
+	subscribeLogEvent(RootChainContract, iRespondedExitChallenge, onRespondedExitChallenge(iRespondedExitChallenge));
 
 	const iCoinReset = getEventInterface(RootChainContract, 'CoinReset');
 	subscribeLogEvent(RootChainContract, iCoinReset, onCoinReset(iCoinReset));
+
+	const iWithdrew = getEventInterface(RootChainContract, 'Withdrew');
+	subscribeLogEvent(RootChainContract, iCoinReset, onWithdrew(iWithdrew));
 
 	//CryptoMon
 	const CryptoMonContract = new web3.eth.Contract(CryptoMonsJson.abi,CryptoMonsJson.networks["5777"].address);

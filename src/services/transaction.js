@@ -3,9 +3,8 @@ import {Utils} from "../utils/Utils";
 
 const { recover } = require('../utils/sign')
 	, { TransactionService, CoinStateService, BlockService } = require('./index')
-	, { generateTransactionHash, pubToAddress } = require('../utils/cryptoUtils')
 	, { BigNumber } = require('bignumber.js')
-	, { getProof } = require('../services/block.js')
+	, { getProof } = require('./block')
 	, async = require('async');
 
 const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
@@ -57,7 +56,7 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 
 			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-			const calculatedHash = CryptoUtils.generateTransactionHash(slot, blockSpent, new BigNumber(1), recipient);
+			const calculatedHash = CryptoUtils.generateTransactionHash(slot, blockSpent, recipient);
 
 			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
@@ -150,7 +149,6 @@ const getHistoryProof = (slot, done) => {
 			async.parallel({
 				minedTransactions: cb => {
 					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } })
-						.select("_id signature")
 						.exec(cb);
 				},
 				depositBlock: cb => BlockService.findById(depositTransaction.mined_block, cb),
@@ -183,20 +181,21 @@ const getHistoryProof = (slot, done) => {
 				async.parallel(blocks.map(b => cb => getProof(slot, b._id, cb)), (err, proofs) => {
 					if (err) return next(err);
 
-					const history = {}
+					const history = {};
 
 					// TODO: Test if zip works like this
 					Utils.zip(blocks, proofs).forEach(e => {
 						const transaction = minedTransactions.find(t => e[0].transactions.includes(t._id));
 						const data = { proof: e[1] }
 						if (transaction) {
-							data.transactionId = transaction._id;
+							data.hash = transaction._id;
+							data.transactionBytes = getTransactionBytes(transaction.slot, transaction.block_spent, transaction.recipient);
 							data.signature = transaction.signature;
 						}
 
 						history[e[0]._id] = data;
-					})
-			
+					});
+
 					next(null, history);
 				})
 			});

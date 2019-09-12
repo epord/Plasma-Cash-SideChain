@@ -97,7 +97,7 @@ router.post('/transactions/create', (req, res, next) => {
 
 					let blockJSON =  Utils.blockToJson(block);
 					blockJSON.transactions = [t];
-					let exitingBytes = CryptoUtils.getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
+					let exitingBytes = CryptoUtils.getTransactionBytes(t.slot, t.block_spent, t.recipient);
 
 					const message = {
 						block: blockJSON,

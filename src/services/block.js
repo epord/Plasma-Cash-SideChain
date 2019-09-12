@@ -7,9 +7,7 @@ const moment = require('moment')
     , EthUtils = require('ethereumjs-util')
     , { BigNumber } = require('bignumber.js')
     , { TransactionService, BlockService, CoinStateService } = require('../services')
-    , { updateOwner }	= require('../services/coinState')
-    , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
-    , { submitBlock } = require('../utils/cryptoUtils');
+    , { updateOwner }	= require('../services/coinState');
 
 
 const blockInterval = new BigNumber(1000);
@@ -112,8 +110,8 @@ const mineBlock = (cb) => {
 				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
-			debug('mining')
 			createBlock(transactions, nextNumber, (err, block) => {
+				debug(`mining ${block}`)
 				if(err) return cb(err);
 
                 CryptoUtils.submitBlock(block, (err)=> {
@@ -163,7 +161,7 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 	const blockSpent = new BigNumber(0);
 	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
 
-	const hash = CryptoUtils.generateTransactionHash(slotBN, blockSpent, new BigNumber(1), owner);
+	const hash = CryptoUtils.generateTransactionHash(slotBN, blockSpent, owner);
 	const timestamp = Date.now();
 
 	BlockService.findById(blockNumberBN)
@@ -240,7 +238,7 @@ module.exports = {
 };
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
-const { isTransactionValid } = require('../services/transaction.js')
+const { isTransactionValid } = require('./transaction')
 
 /**
  * Given a set of transactions, will find the first valid one, removem those that finds invalid
