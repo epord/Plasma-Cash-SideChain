@@ -179,18 +179,19 @@ const getHistoryProof = (slot, done) => {
 				async.parallel(blocks.map(b => cb => getProof(slot, b._id, cb)), (err, proofs) => {
 					if (err) return next(err);
 
-					const history = {}
+					const history = {};
 
 					zip(blocks, proofs).forEach(e => {
 						const transaction = minedTransactions.find(t => e[0].transactions.includes(t._id));
 						const data = { proof: e[1] }
 						if (transaction) {
+							data.hash 						= transaction.hash;
 							data.transactionBytes = getTransactionBytes(transaction.slot, transaction.block_spent, transaction.recipient);
 							data.signature = transaction.signature;
 						}
 
 						history[e[0]._id] = data;
-					})
+					});
 
 					next(null, history);
 				})

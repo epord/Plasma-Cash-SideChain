@@ -22,7 +22,7 @@ Migration to Typescript is being developed on.
     MONGO_DB_NAME=`dbname`                  \\ Database Name
     BLOCKCHAIN_WS_URL = ws://localhost:7545 \\ Blockchain WebSocket URL 
     AUTO_CHALLENGE = false                  \\ Flag for plasma-challenging the automatically
-    ```
+    ``` 
 3. Make sure to check [How to run the blockchain](https://github.com/epord/Plasma-Cash-RootChain) and follow the readme
 
 ## Run

@@ -111,8 +111,8 @@ const mineBlock = (cb) => {
 				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
-			debug('mining')
 			createBlock(transactions, nextNumber, (err, block) => {
+				debug(`mining ${block}`)
 				if(err) return cb(err);
 
 				submitBlock(block, (err)=> {

@@ -68,6 +68,12 @@ const onDebug = (iDebug: abiInterface) => (error: any, result: eventResultInterf
 	debug(`Debug: ${eventObj.message}`)
 };
 
+const onWithdrew = (iWithdrew: abiInterface) => (error: any, result: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iWithdrew, result);
+	debug(`Withdrew: ${eventObj.message}`)
+};
+
 const onDeposit = (iDeposit: abiInterface) => (error: any, result: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iDeposit, result);
@@ -297,10 +303,13 @@ export function init(cb: () => void) {
 	subscribeLogEvent(RootChainContract, iChallengedExit, onChallengedExit(iChallengedExit));
 
 	const iRespondedExitChallenge = getEventInterface(RootChainContract, 'RespondedExitChallenge');
-	subscribeLogEvent(RootChainContract, iRespondedExitChallenge, onRespondedExitChallenge(iChallengedExit));
+	subscribeLogEvent(RootChainContract, iRespondedExitChallenge, onRespondedExitChallenge(iRespondedExitChallenge));
 
 	const iCoinReset = getEventInterface(RootChainContract, 'CoinReset');
 	subscribeLogEvent(RootChainContract, iCoinReset, onCoinReset(iCoinReset));
+
+	const iWithdrew = getEventInterface(RootChainContract, 'Withdrew');
+	subscribeLogEvent(RootChainContract, iCoinReset, onWithdrew(iWithdrew));
 
 	//CryptoMon
 	const CryptoMonContract = new web3.eth.Contract(CryptoMonsJson.abi,CryptoMonsJson.networks["5777"].address);
