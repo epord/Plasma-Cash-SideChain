@@ -1,10 +1,11 @@
+import {Utils} from "../../../utils/Utils";
+
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:transactions')
 	, Status 					= require('http-status-codes')
 	, { TransactionService }	= require('../../../services')
 	, { createTransaction } 	= require('../../../services/transaction.js')
-	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber       			= require('bignumber.js');
 
 debug('registering /api/transactions routes')
@@ -21,7 +22,7 @@ router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 		.findById(req.params.id)
 		.exec((err, transaction) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transactionToJson(transaction));
+			res.status(Status.OK).json(Utils.transactionToJson(transaction));
 		})
 });
 
@@ -30,7 +31,7 @@ router.get('/', (req, res, next) => {
 		.find({})
 		.exec((err, transactions) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transactions.map(transactionToJson));
+			res.status(Status.OK).json(transactions.map(Utils.transactionToJson));
 		})
 });
 

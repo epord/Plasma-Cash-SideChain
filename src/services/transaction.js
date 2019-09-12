@@ -1,9 +1,9 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
+import {Utils} from "../utils/Utils";
 
 const { recover } = require('../utils/sign')
 	, { TransactionService, CoinStateService, BlockService } = require('./index')
 	, { generateTransactionHash, pubToAddress } = require('../utils/cryptoUtils')
-	, { transactionToJson, zip } = require('../utils/utils')
 	, { BigNumber } = require('bignumber.js')
 	, { getProof } = require('../services/block.js')
 	, async = require('async');
@@ -33,7 +33,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 			signature
 		}, (err, t) => {
 			if (err) return cb(err)
-			cb(null, { statusCode: 201, message: transactionToJson(t) })
+			cb(null, { statusCode: 201, message: Utils.transactionToJson(t) })
 		});
 	})
 };
@@ -123,8 +123,9 @@ const getHistory = (slot, cb) => {
 			async.parallel(proofRetrievers, (err, exitDatas) => {
 				if (err) return cb(err);
 
-				cb(null, zip(transactions, exitDatas).map((pair) => {
-					return { transaction: transactionToJson(pair[0]), exitData: pair[1].message }
+				// TODO: Test if zip works like this
+				cb(null, Utils.zip(transactions, exitDatas).map((pair) => {
+					return { transaction: Utils.transactionToJson(pair[0]), exitData: pair[1].message }
 				})
 				);
 			})
@@ -184,7 +185,8 @@ const getHistoryProof = (slot, done) => {
 
 					const history = {}
 
-					zip(blocks, proofs).forEach(e => {
+					// TODO: Test if zip works like this
+					Utils.zip(blocks, proofs).forEach(e => {
 						const transaction = minedTransactions.find(t => e[0].transactions.includes(t._id));
 						const data = { proof: e[1] }
 						if (transaction) {

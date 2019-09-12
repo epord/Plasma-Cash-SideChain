@@ -1,6 +1,6 @@
 import {CryptoUtils} from "../../../utils/CryptoUtils";
+import {Utils} from "../../../utils/Utils";
 
-const  {blockToJson}  = require( "../../../utils/utils");
 const  {blockInterval}  = require( "../../../services/block.js");
 const  {generateSMTFromTransactions, getTransactionBytes, submitBlock}  = require( "../../../utils/cryptoUtils");
 const  { BlockService }  = require( '../../../services');
@@ -95,7 +95,7 @@ router.post('/transactions/create', (req, res, next) => {
                 CryptoUtils.submitBlock(block, (err) => {
 					if(err) return responseWithStatus(res)(err) //TODO rollback block creation
 
-					let blockJSON =  blockToJson(block);
+					let blockJSON =  Utils.blockToJson(block);
 					blockJSON.transactions = [t];
 					let exitingBytes = CryptoUtils.getTransactionBytes(t.slot, t.block_spent, new BigNumber(1), t.recipient);
 

@@ -5,7 +5,6 @@ import {BlockMdl} from "../models/BlockMdl";
 import {SparseMerkleTree} from "./SparseMerkleTree";
 import EthUtils = require("ethereumjs-util");
 import RLP = require('rlp');
-// import Web3 = require("web3");
 import CryptoMonsJson = require("../json/CryptoMons.json");
 import RootChainJson = require("../json/RootChain.json");
 import VMCJson = require("../json/ValidatorManagerContract.json");
@@ -53,7 +52,7 @@ export class CryptoUtils {
         return EthUtils.bufferToHex(EthUtils.pubToAddress(EthUtils.toBuffer(publicKey)));
     }
 
-    // TODO: Solo se usa para Tests
+    // Only used for testing.
     public static generateTransaction(slot: BigNumber, owner: BigNumber, recipient: string, blockSpent: BigNumber, privateKey: string) {
         //TODO migrate slot and blockSpent to BigNumber
         const slotBN = new BigNumber(slot);

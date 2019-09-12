@@ -1,4 +1,5 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
+import {Utils} from "../utils/Utils";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
@@ -7,10 +8,8 @@ const moment = require('moment')
     , { BigNumber } = require('bignumber.js')
     , { TransactionService, BlockService, CoinStateService } = require('../services')
     , { updateOwner }	= require('../services/coinState')
-    , { getHighestOcurrence, groupBy } = require('../utils/utils')
     , { generateDepositBlockRootHash, generateTransactionHash, generateSMTFromTransactions } = require('../utils/cryptoUtils')
-    , { submitBlock } = require('../utils/cryptoUtils')
-    , { blockToJson } = require( "../utils/utils");
+    , { submitBlock } = require('../utils/cryptoUtils');
 
 
 const blockInterval = new BigNumber(1000);
@@ -19,7 +18,7 @@ const blockInterval = new BigNumber(1000);
 const createBlock = (transactions, blockNumber, cb) => {
 	const timestamp = moment.now();
 
-	const maxSlotCount = getHighestOcurrence(transactions.map(t => t.slot));
+	const maxSlotCount = Utils.getHighestOccurrence(transactions.map(t => t.slot));
 	if(maxSlotCount > 1) return cb({ statusCode: 500, message: "Trying to mine 2 slots at once"});
 
 
@@ -100,7 +99,7 @@ const mineBlock = (cb) => {
 		if (err) return cb(err);
 
 		const { lastBlock, transactions } = results;
-		const groupedTransactions = groupBy(transactions, "slot");
+		const groupedTransactions = Utils.groupTransactionsBySlot(transactions);
 		reduceTransactionsBySlot(Object.values(groupedTransactions), (err, transactions) => {
 
 			if(err) return cb(err);
@@ -119,7 +118,7 @@ const mineBlock = (cb) => {
 
                 CryptoUtils.submitBlock(block, (err)=> {
 					if(err) return cb(err);
-					cb(null, { statusCode: 201, message: blockToJson(block) });
+					cb(null, { statusCode: 201, message: Utils.blockToJson(block) });
 				})
 			});
 		});
@@ -203,7 +202,7 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 							transactions: [t]
 						}, (err, block) => {
 							if(err) return cb(err);
-							cb(null, {statusCode: 201, message: blockToJson(block)})
+							cb(null, {statusCode: 201, message: Utils.blockToJson(block)})
 						});
 					});
 				});

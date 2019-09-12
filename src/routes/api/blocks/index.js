@@ -1,3 +1,5 @@
+import {Utils} from "../../../utils/Utils";
+
 const express 			= require('express')
 , router 						= express.Router({ mergeParams: true })
 , debug 						= require('debug')('app:api:blocks')
@@ -5,7 +7,6 @@ const express 			= require('express')
 , async							= require('async')
 , BigNumber					= require("bignumber.js")
 , { BlockService } 	= require('../../../services/index.js')
-, { blockToJson } = require('../../../utils/utils')
 , { mineBlock, depositBlock, getProof }	= require('../../../services/block.js');
 
 debug('registering /api/blocks routes');
@@ -27,7 +28,7 @@ router.get('/:block_number([0-9]+)', (req, res, next) => {
 		.findById(req.params.block_number)
 		.exec((err, block) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(blockToJson(block));
+			res.status(Status.OK).json(Utils.blockToJson(block));
 		})
 });
 
@@ -36,7 +37,8 @@ router.get('/', (req, res, next) => {
 		.find({})
 		.exec((err, blocks) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(blocks.map(blockToJson));
+			//TODO: Test if this works. Before it was passed as lambda.
+			res.status(Status.OK).json(blocks.map(Utils.blockToJson));
 		})
 });
 

@@ -1,7 +1,8 @@
+import {Utils} from "../utils/Utils";
+
 const { TransactionService } = require('../services');
 const { getProof } = require("../services/block.js");
 const { getLastMinedTransaction } = require("../services/transaction.js");
-const { challengeDataToJson } = require("../utils/utils");
 
 const getChallengeAfterData = (slot, exitBlock, cb) => {
 	getLastMinedTransaction({slot: slot, block_spent: exitBlock}, (err, transaction) => {
@@ -13,7 +14,7 @@ const getChallengeAfterData = (slot, exitBlock, cb) => {
 			if (err) return cb(err)
 			if (!proof) return cb({ statusCode: 500, message: 'Could not create Proof for the previous transaction' });
 
-			cb(null, {statusCode: 200, message: challengeDataToJson(transaction, proof)})
+			cb(null, {statusCode: 200, message: Utils.challengeDataToJson(transaction, proof)})
 		});
 	});
 }
@@ -27,7 +28,7 @@ const getChallengeBeforeData = (slot, parentBlock, cb) => {
 			if (err) return cb(err)
 			if (!proof) return cb({ statusCode: 500, message: 'Could not create Proof for the previous transaction' });
 
-			cb(null, {statusCode: 200, message: challengeDataToJson(transaction, proof)})
+			cb(null, {statusCode: 200, message: Utils.challengeDataToJson(transaction, proof)})
 		});
 	})
 }

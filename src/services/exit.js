@@ -1,7 +1,7 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
+import {Utils} from "../utils/Utils";
 
 const BigNumber = require("bignumber.js")
-, { exitDataToJson } = require('../utils/utils')
 , { getTransactionBytes } = require('../utils/cryptoUtils')
 , { getLastMinedTransaction} = require('../services/transaction.js')
 , { TransactionService } = require('../services')
@@ -51,12 +51,12 @@ const generateExitData = (slot, lastTransaction, cb) => {
 					if (err) return cb(err)
 					if (!prevProof) return cb({ statusCode: 500, message: 'Could not create Proof for the previous transaction' });
 
-					cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof, slot) });
+					cb(null, { statusCode: 200, message: Utils.exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof, slot) });
 				});
 			});
 
 		} else {
-			cb(null, { statusCode: 200, message: exitDataToJson(lastTransaction, lastProof, null, null, slot) });
+			cb(null, { statusCode: 200, message: Utils.exitDataToJson(lastTransaction, lastProof, null, null, slot) });
 		}
 	})
 }

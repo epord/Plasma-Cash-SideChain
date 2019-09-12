@@ -1,10 +1,11 @@
+import {Utils} from "../../../utils/Utils";
+
 const express = require('express')
 	, router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens')
 	, Status = require('http-status-codes')
 	, { getLastMinedTransaction, getHistory, getHistoryProof } = require('../../../services/transaction.js')
 	, { getOwnedTokens } = require('../../../services/coinState')
-	, { transactionToJson } = require("../../../utils/utils")
 	, BigNumber = require('bignumber.js');
 
 debug('registering /api/tokens routes')
@@ -21,7 +22,7 @@ router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req, res, next) => {
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 		if (!transaction) return res.status(Status.NOT_FOUND).json({});
-		res.status(Status.OK).json(transactionToJson(transaction));
+		res.status(Status.OK).json(Utils.transactionToJson(transaction));
 	});
 });
 
