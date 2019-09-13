@@ -10,9 +10,9 @@
   "scripts": {
     "compile": "better-npm-run compile",
     "test": "jest --runInBand --verbose",
-    "start": "better-npm-run start",
+    "start": "better-npm-run compile && better-npm-run run",
     "debug": "better-npm-run debug",
-    "justrun": "better-npm-run justrun"
+    "run": "better-npm-run run"
   },
   "betterScripts": {
     "start": {
@@ -29,7 +29,7 @@
         "DEBUG": "app:*"
       }
     },
-    "justrun": {
+    "run": {
       "command": "node dist/src/app.js",
       "env": {
         "NODE_ENV": "development",
