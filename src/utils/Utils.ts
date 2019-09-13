@@ -64,21 +64,22 @@ export class Utils {
     }
 
 //TODO remove slot, get it from lastTx.slot
-    public static exitDataToJson(lastTx: TransactionMdl, lastProof: string, prevTx: TransactionMdl, prevProof: string, slot: BigNumber) {
-        let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, new BigNumber(1), prevTx.recipient) : "0x0";
-        let prevTxInclusionProof = prevTx ? prevProof : "0x0";
-        let prevBlock = prevTx ? prevTx.mined_block : '0';
+    public static exitDataToJson(lastTx: TransactionMdl, lastProof: string, prevTx: TransactionMdl, prevProof: string) {
+        let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
+        let prevTxInclusionProof = prevTx ? prevProof : undefined;
+        let prevBlock = prevTx ? prevTx.mined_block : undefined;
         let prevTransactionHash = prevTx ? prevTx._id : undefined;
         return {
-            slot,
+            slot: lastTx.slot,
             prevTxBytes,
-            exitingTxBytes: CryptoUtils.getTransactionBytes(lastTx.slot, lastTx.block_spent, new BigNumber(1), lastTx.recipient),
+            exitingTxBytes: CryptoUtils.getTransactionBytes(lastTx.slot, lastTx.block_spent, lastTx.recipient),
             prevTxInclusionProof,
             exitingTxInclusionProof: lastProof,
             signature: lastTx.signature,
             lastTransactionHash: lastTx._id,
             prevTransactionHash,
-            blocks: [prevBlock, lastTx.mined_block]
+            prevBlock: prevBlock,
+            exitingBlock: lastTx.mined_block
         }
     }
 
@@ -88,7 +89,7 @@ export class Utils {
             hash: challengingTx._id,
             slot: challengingTx.slot,
             challengingBlockNumber: challengingTx.mined_block,
-            challengingTransaction: CryptoUtils.getTransactionBytes(challengingTx.slot, challengingTx.block_spent, new BigNumber(1), challengingTx.recipient),
+            challengingTransaction: CryptoUtils.getTransactionBytes(challengingTx.slot, challengingTx.block_spent, challengingTx.recipient),
             proof: proof,
             signature: challengingTx.signature,
         }

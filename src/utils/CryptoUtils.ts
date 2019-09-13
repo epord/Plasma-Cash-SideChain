@@ -14,19 +14,18 @@ const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLO
 
 export class CryptoUtils {
 
-    public static generateTransactionHash(slot: BigNumber, blockSpent: BigNumber, denomination: BigNumber, recipient: string): string {
+    public static generateTransactionHash(slot: BigNumber, blockSpent: BigNumber, recipient: string): string {
         if(blockSpent.isZero()) {
             return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 64/8))) //uint64 little endian
         } else {
-            return EthUtils.bufferToHex(EthUtils.keccak256(this.getTransactionBytes(slot, blockSpent, denomination, recipient)))
+            return EthUtils.bufferToHex(EthUtils.keccak256(this.getTransactionBytes(slot, blockSpent, recipient)))
         }
     }
 
-    public static getTransactionBytes(slot: BigNumber, blockSpent: BigNumber, denomination: BigNumber, recipient: string): string  {
+    public static getTransactionBytes(slot: BigNumber, blockSpent: BigNumber, recipient: string): string  {
         let params = [
             EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 256/8), 			// uint256 little endian
             EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
-            EthUtils.setLengthLeft(new BN(denomination.toFixed()).toBuffer(), 256/8),	// uint256 little endian
             EthUtils.toBuffer(recipient),																						// must start with 0x
         ];
 
@@ -57,7 +56,7 @@ export class CryptoUtils {
         //TODO migrate slot and blockSpent to BigNumber
         const slotBN = new BigNumber(slot);
         const blockSpentBN = new BigNumber(blockSpent);
-        const hash = this.generateTransactionHash(slotBN, blockSpentBN, new BigNumber(1), recipient);
+        const hash = this.generateTransactionHash(slotBN, blockSpentBN, recipient);
         const signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(privateKey));
 
         // This method simulates eth-sign RPC method
@@ -80,7 +79,7 @@ export class CryptoUtils {
         transactions.forEach(value => {
             //TODO: Ver aca porque dice que en realidad un BigNumber no puede usarse como índice. Qué pasaba con JS? Por qué funcionaba?
             // Casi seguro que hace un toString
-            leaves.set(value.slot.toString(), this.generateTransactionHash(value.slot, value.block_spent, new BigNumber(1), value.recipient));
+            leaves.set(value.slot.toString(), this.generateTransactionHash(value.slot, value.block_spent, value.recipient));
         });
 
         return new SparseMerkleTree(64, leaves);
@@ -110,7 +109,7 @@ export class CryptoUtils {
             if (!accounts || accounts.length == 0) return cb();
             VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]}, (err: Error, res: Response) => {
                 if (err) return cb(err);
-                console.log("Validated contract")
+                console.log("Validated contract");
                 cb();
             });
         });
