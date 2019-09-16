@@ -20,7 +20,9 @@ async.waterfall([
     (cb: any) => CryptoUtils.validateCryptoMons(cb),
     (cb: any) => {
         setInterval(() => {
-            mineBlock(_.noop)
+            mineBlock((err: any) => {
+                if (err) console.error(err)
+            });
         }, 20000);
         cb();
     }
