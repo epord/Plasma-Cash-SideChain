@@ -61,7 +61,7 @@ const createBlock = (transactions, blockNumber, cb) => {
  */
 const reduceTransactionsBySlot = (groupedTransactions, transactionsCb) => {
 
-	//Generate a paralel job for each group of transactions
+	// Generate a parallel job for each group of transactions
 	const jobs = groupedTransactions.map(group => {
 		return (transactionsCb) => {
 			getFirstValidTransaction(group, (err, t) => {
@@ -98,7 +98,7 @@ const mineBlock = (cb) => {
 
 		const { lastBlock, transactions } = results;
 		const groupedTransactions = Utils.groupTransactionsBySlot(transactions);
-		reduceTransactionsBySlot(Object.values(groupedTransactions), (err, transactions) => {
+		reduceTransactionsBySlot(Array.from(groupedTransactions.values()), (err, transactions) => {
 
 			if(err) return cb(err);
 
@@ -114,7 +114,7 @@ const mineBlock = (cb) => {
 				debug(`mining ${block}`)
 				if(err) return cb(err);
 
-                CryptoUtils.submitBlock(block, (err)=> {
+        CryptoUtils.submitBlock(block, (err)=> {
 					if(err) return cb(err);
 					cb(null, { statusCode: 201, message: Utils.blockToJson(block) });
 				})
