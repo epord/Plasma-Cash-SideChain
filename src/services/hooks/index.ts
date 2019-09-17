@@ -1,3 +1,5 @@
+import {depositBlock} from "../block";
+
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
 const CryptoMonsJson = require("../../json/CryptoMons.json");
@@ -7,7 +9,6 @@ import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
 
 const _ = require('lodash');
-const { depositBlock }	= require('../../services/block.js');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
 const debug	= require('debug')('app:api:hooks')
 const { TransactionService } = require('../index');
@@ -78,10 +79,7 @@ const onDeposit = (iDeposit: abiInterface) => (error: any, result?: eventResultI
 
 	const { slot, blockNumber, from } = eventObj;
 
-	const slotBN = new BigNumber(slot.toString());
-	const blockNumberBN = new BigNumber(blockNumber.toString());
-
-	depositBlock(slotBN, blockNumberBN, from, (err: any) => { console.error(err); });
+	depositBlock(slot.toString(), blockNumber.toString(), from, (err: any) => { console.error(err); });
 };
 
 const onExitStarted = (iExitStarted: abiInterface) => (error: any, result?: eventResultInterface) => {

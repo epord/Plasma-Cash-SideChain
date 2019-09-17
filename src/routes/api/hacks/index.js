@@ -1,7 +1,7 @@
 import {CryptoUtils} from "../../../utils/CryptoUtils";
 import {Utils} from "../../../utils/Utils";
+import {blockInterval} from "../../../services/block";
 
-const  {blockInterval}  = require( "../../../services/block.js");
 const  { BlockService }  = require( '../../../services');
 
 const express 					= require('express')

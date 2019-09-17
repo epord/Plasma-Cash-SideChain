@@ -4,11 +4,11 @@ import {CallBack} from "../utils/TypeDef";
 import {Transaction} from "../models/Transaction";
 import BigNumber from "bignumber.js";
 import {Block} from "../models/Block";
+import {getProof} from "./block";
 
 
 const { recover } = require('../utils/sign')
 	, { TransactionService, CoinStateService, BlockService } = require('./index')
-	, { getProof } = require('./block')
 	, async = require('async');
 
 interface TransactionData {
@@ -20,15 +20,22 @@ interface TransactionData {
 	signature: string
 }
 
-const createTransaction = (_slot: string, _owner: string, _recipient: string, _hash: string, _blockSpent: string, _signature: string,
-						   cb: CallBack<any>) => {
+export const createTransaction = (
+		_slot: string,
+		_owner: string,
+		_recipient: string,
+		_hash: string,
+		_blockSpent: string,
+		_signature: string,
+		cb: CallBack<any>
+	) => {
+
 	const slot = new BigNumber(_slot);
 	const owner = _owner.toLowerCase();
 	const recipient = _recipient.toLowerCase();
 	const hash = _hash.toLowerCase();
 	const blockSpent = new BigNumber(_blockSpent);
 	const signature = _signature.toLowerCase();
-
 
 	if (slot.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot' });
 	if (blockSpent.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockSpent' });
@@ -103,7 +110,7 @@ export const isTransactionValid = (transaction: TransactionData, validateTransac
 	})
 };
 
-const getLastMinedTransaction = (filter: any, cb: CallBack<Transaction>) => {
+export const getLastMinedTransaction = (filter: any, cb: CallBack<Transaction>) => {
 	filter.mined_block = { $ne: null }
 	TransactionService
 		.findOne(filter)
@@ -115,16 +122,11 @@ const getLastMinedTransaction = (filter: any, cb: CallBack<Transaction>) => {
 		});
 };
 
-module.exports = {
-	createTransaction,
-	isTransactionValid,
-	getLastMinedTransaction
-};
 
 //TODO: change this require in mid-file
 const { getExitDataForBlock } = require('./exit')
 
-const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
+export const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
 	let filter: any = { slot: slot };
 	filter.mined_block = { $ne: null };
 	TransactionService
@@ -151,8 +153,10 @@ const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
 /**
  * Gets all blocks since slot's deposit and the proof for the coin in each of them
  */
-const getHistoryProof = (slot: string, done: CallBack<any>) => {
+export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) done({status: 400, message: "Invalid Slot"});
+
 	async.waterfall([
 		(next: CallBack<Transaction>) => {
 			TransactionService.findOne({
@@ -164,10 +168,8 @@ const getHistoryProof = (slot: string, done: CallBack<any>) => {
 			if (!depositTransaction) return next('The slot has never been deposited.');
 
 			async.parallel({
-				minedTransactions: (cb: CallBack<Transaction[]>) => {
-					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } })
-						.exec(cb);
-				},
+				minedTransactions: (cb: CallBack<Transaction[]>) =>
+					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } }).exec(cb),
 				depositBlock: (cb: CallBack<Block>) => BlockService.findById(depositTransaction.mined_block, cb),
 				historyBlocks: (cb: CallBack<Block[]>) => {
 					BlockService.aggregate([
@@ -175,6 +177,7 @@ const getHistoryProof = (slot: string, done: CallBack<any>) => {
 							$project: {
 								_idString: { $toString: "$_id" },
 								_id: true,
+								block_number: "$_id",
 								transactions: true
 							}
 						}, {
@@ -196,7 +199,7 @@ const getHistoryProof = (slot: string, done: CallBack<any>) => {
 
 				const blocks = [depositBlock, ...historyBlocks];
 
-				async.parallel(blocks.map(b => (cb: CallBack<string>) => getProof(slot, b.block_number, cb)),
+				async.parallel(blocks.map(b => (cb: CallBack<string>) => getProof(slot, b.block_number.toString(), cb)),
 					(err: any, proofs: string[]) => {
 						if (err) return next(err);
 
@@ -219,7 +222,7 @@ const getHistoryProof = (slot: string, done: CallBack<any>) => {
 								data.signature = transaction.signature;
 							}
 
-							history[e[0].block_number.toFixed()] = data;
+							history[e[0].block_number.toString()] = data;
 						});
 
 						next(null, history);
@@ -227,7 +230,4 @@ const getHistoryProof = (slot: string, done: CallBack<any>) => {
 				});
 			}
 	], done);
-}
-
-module.exports.getHistory = getHistory
-module.exports.getHistoryProof = getHistoryProof
+};

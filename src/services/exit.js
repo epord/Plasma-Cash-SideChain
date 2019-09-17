@@ -1,10 +1,11 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
+import {getLastMinedTransaction} from "./transaction";
+import {blockInterval, getProof} from "./block";
+import * as Status from "http-status-codes";
 
 const BigNumber = require("bignumber.js")
-, { getLastMinedTransaction} = require('./transaction')
 , { TransactionService } = require('../services')
-, { blockInterval, getProof } = require('./block');
 
 const getExitDataForBlock = (slot, block, cb) => {
 
@@ -87,6 +88,6 @@ const getSingleData = (hash, cb) => {
 
 module.exports = {
 	getExitData,
-	getExitDataForBlock,
-	getSingleData
+	getSingleData,
+	getExitDataForBlock
 }

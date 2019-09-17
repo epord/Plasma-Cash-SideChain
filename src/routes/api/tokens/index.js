@@ -1,10 +1,10 @@
 import {Utils} from "../../../utils/Utils";
+import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
 
 const express = require('express')
 	, router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens')
 	, Status = require('http-status-codes')
-	, { getLastMinedTransaction, getHistory, getHistoryProof } = require('../../../services/transaction.js')
 	, { getOwnedTokens } = require('../../../services/coinState')
 	, BigNumber = require('bignumber.js');
 

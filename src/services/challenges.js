@@ -1,8 +1,8 @@
 import {Utils} from "../utils/Utils";
+import {getLastMinedTransaction} from "./transaction";
+import {getProof} from "./block";
 
 const { TransactionService } = require('../services');
-const { getProof } = require("../services/block.js");
-const { getLastMinedTransaction } = require("../services/transaction.js");
 
 const getChallengeAfterData = (slot, exitBlock, cb) => {
 	getLastMinedTransaction({slot: slot, block_spent: exitBlock}, (err, transaction) => {

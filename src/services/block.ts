@@ -13,10 +13,10 @@ const moment = require('moment')
     , { updateOwner }	= require('../services/coinState');
 
 
-const blockInterval = new BigNumber(1000);
+export const blockInterval = new BigNumber(1000);
 
 // private function
-const createBlock = (transactions: Transaction[], blockNumber: BigNumber | string, cb: CallBack<any>) => {
+export const createBlock = (transactions: Transaction[], blockNumber: BigNumber | string, cb: CallBack<any>) => {
 	const timestamp = moment.now();
 
 	const maxSlotCount = Utils.getHighestOccurrence(transactions.map(t => t.slot));
@@ -80,7 +80,7 @@ const reduceTransactionsBySlot = (groupedTransactions: Map<string, Transaction[]
 
 };
 
-const mineBlock = (cb: CallBack<any>) => {
+export const mineBlock = (cb: CallBack<any>) => {
 	async.parallel({
 		lastBlock: (callback: CallBack<Block>) => {
 			BlockService
@@ -125,7 +125,7 @@ const mineBlock = (cb: CallBack<any>) => {
 	});
 };
 
-const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<any>) => {
+export const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<any>) => {
 
 	const owner = _owner.toLowerCase();
 
@@ -186,7 +186,7 @@ const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: Cal
 		});
 };
 
-const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) => {
+export const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) => {
 
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
@@ -205,14 +205,6 @@ const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) => {
 		const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
 		cb(null, proof);
 	})
-};
-
-module.exports = {
-	createBlock,
-	mineBlock,
-	depositBlock,
-	getProof,
-	blockInterval
 };
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies

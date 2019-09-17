@@ -2,12 +2,12 @@ import {CryptoUtils} from "./utils/CryptoUtils";
 
 const dotenv 		= require('dotenv')
     , async 		= require('async')
-    , { mineBlock }	= require('./services/block.js')
     , _ 		= require('lodash');
 
 import {init as initMongo} from "./mongo";
 import {init as initServer} from "./server";
 import {init as initHooks} from "./services/hooks";
+import {mineBlock} from "./services/block";
 
 
 dotenv.config();

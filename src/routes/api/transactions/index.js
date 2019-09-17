@@ -1,11 +1,11 @@
 import {Utils} from "../../../utils/Utils";
+import {createTransaction} from "../../../services/transaction";
 
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:transactions')
 	, Status 					= require('http-status-codes')
 	, { TransactionService }	= require('../../../services')
-	, { createTransaction } 	= require('../../../services/transaction.js')
 	, BigNumber       			= require('bignumber.js');
 
 debug('registering /api/transactions routes')

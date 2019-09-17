@@ -10,7 +10,6 @@ const TransactionService = mongoose.model('Transaction', TransactionModel, 'tran
 
 BlockModel.virtual('block_number').get(function() { return this._id });
 BlockModel.virtual('Transactions').get(function() { return this.transactions });
-BlockModel.virtual('Block_number').get(function() { return this._id });
 const BlockService = mongoose.model('Block', BlockModel, 'blocks');
 
 CoinStateModel.virtual('slot').get(function() { return this._id });
