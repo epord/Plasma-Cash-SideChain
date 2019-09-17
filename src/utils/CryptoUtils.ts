@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import BigNumber from "bignumber.js";
-import {Transaction} from "../models/Transaction";
-import {Block} from "../models/Block";
+import {ITransaction} from "../models/TransactionInterface";
+import {IBlock} from "../models/BlockInterface";
 import {SparseMerkleTree} from "./SparseMerkleTree";
 import EthUtils = require("ethereumjs-util");
 import RLP = require('rlp');
@@ -69,7 +69,7 @@ export class CryptoUtils {
     }
 
 
-    public static generateSMTFromTransactions(transactions: Array<Transaction>) {
+    public static generateSMTFromTransactions(transactions: Array<ITransaction>) {
         let leaves = new Map<string, string>();
         transactions.forEach(value => {
             //TODO: Ver aca porque dice que en realidad un BigNumber no puede usarse como índice. Qué pasaba con JS? Por qué funcionaba?
@@ -81,7 +81,7 @@ export class CryptoUtils {
     }
 
 
-    public static submitBlock(block: Block, cb: Function) {
+    public static submitBlock(block: IBlock, cb: Function) {
         if(process.env.BLOCKCHAINLESS) return cb();
         // TODO: Ver si con el ts ignore funciona
         // @ts-ignore

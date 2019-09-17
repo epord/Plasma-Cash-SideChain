@@ -1,9 +1,9 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
 import {CallBack} from "../utils/TypeDef";
-import {Transaction} from "../models/Transaction";
+import {ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
-import {Block} from "../models/Block";
+import {IBlock} from "../models/BlockInterface";
 import {getProof} from "./block";
 
 
@@ -51,7 +51,7 @@ export const createTransaction = (
 			_id: hash,
 			block_spent: blockSpent,
 			signature
-		}, (err: any, t: Transaction) => {
+		}, (err: any, t: ITransaction) => {
 			if (err) return cb(err)
 			cb(null, { statusCode: 201, message: Utils.transactionToJson(t) })
 		});
@@ -66,7 +66,7 @@ export const createTransaction = (
 export const isTransactionValid = (transaction: TransactionData, validateTransactionCb: CallBack<string>) => {
 	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
-	getLastMinedTransaction({ slot: slot }, (err: any, result?: Transaction) => {
+	getLastMinedTransaction({ slot: slot }, (err: any, result?: ITransaction) => {
 
 		if (err) return validateTransactionCb(err);
 		let lastTransaction = result;
@@ -110,13 +110,13 @@ export const isTransactionValid = (transaction: TransactionData, validateTransac
 	})
 };
 
-export const getLastMinedTransaction = (filter: any, cb: CallBack<Transaction>) => {
+export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>) => {
 	filter.mined_block = { $ne: null }
 	TransactionService
 		.findOne(filter)
 		.sort({ mined_block: -1 })
 		.collation({ locale: "en_US", numericOrdering: true })
-		.exec((err:any, transaction: Transaction) => {
+		.exec((err:any, transaction: ITransaction) => {
 			if (err) return cb(err);
 			cb(null, transaction);
 		});
@@ -133,10 +133,10 @@ export const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
 		.find(filter)
 		.sort({ mined_block: -1 })
 		.collation({ locale: "en_US", numericOrdering: true })
-		.exec((err: any, transactions: Transaction[]) => {
+		.exec((err: any, transactions: ITransaction[]) => {
 			if (err) return cb(err);
 
-			let proofRetrievers = transactions.map((t: Transaction) =>
+			let proofRetrievers = transactions.map((t: ITransaction) =>
 				(cb: CallBack<any>) => getExitDataForBlock(slot, t.mined_block, cb));
 			async.parallel(proofRetrievers, (err: any, exitDatas: any) => {
 				if (err) return cb(err);
@@ -158,20 +158,20 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 	if(slotBN.isNaN()) done({status: 400, message: "Invalid Slot"});
 
 	async.waterfall([
-		(next: CallBack<Transaction>) => {
+		(next: CallBack<ITransaction>) => {
 			TransactionService.findOne({
 				slot: slotBN,
 				block_spent: '0' // deposit
 			}, next)
 		},
-		(depositTransaction: Transaction, next: CallBack<any>) => {
+		(depositTransaction: ITransaction, next: CallBack<any>) => {
 			if (!depositTransaction) return next('The slot has never been deposited.');
 
 			async.parallel({
-				minedTransactions: (cb: CallBack<Transaction[]>) =>
+				minedTransactions: (cb: CallBack<ITransaction[]>) =>
 					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } }).exec(cb),
-				depositBlock: (cb: CallBack<Block>) => BlockService.findById(depositTransaction.mined_block, cb),
-				historyBlocks: (cb: CallBack<Block[]>) => {
+				depositBlock: (cb: CallBack<IBlock>) => BlockService.findById(depositTransaction.mined_block, cb),
+				historyBlocks: (cb: CallBack<IBlock[]>) => {
 					BlockService.aggregate([
 						{
 							$project: {
@@ -193,7 +193,7 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 						.exec(cb);
 
 				}
-			}, (err: any, res: { minedTransactions: Transaction[], depositBlock: Block, historyBlocks: Block[] }) => {
+			}, (err: any, res: { minedTransactions: ITransaction[], depositBlock: IBlock, historyBlocks: IBlock[] }) => {
 				const { minedTransactions, depositBlock, historyBlocks } = res;
 				if (err) return next(err);
 

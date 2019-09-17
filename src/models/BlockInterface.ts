@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
-import {Transaction} from "./Transaction";
+import {ITransaction} from "./TransactionInterface";
 import {CallBack} from "../utils/TypeDef";
 
-export interface Block {
+export interface IBlock {
 
     block_number: BigNumber;
 
@@ -11,8 +11,8 @@ export interface Block {
     timestamp: Date;
 
     transactions: Array<string>;
-    Transactions: Array<Transaction>;
+    Transactions: Array<ITransaction>;
 
     save: () => void;
-    populate: (field: string, cb: CallBack<Block>) => void;
+    populate: (field: string, cb: CallBack<IBlock>) => void;
 }

@@ -1,6 +1,6 @@
 import {CryptoUtils} from "./CryptoUtils";
-import {Block} from "../models/Block";
-import {Transaction} from "../models/Transaction";
+import {IBlock} from "../models/BlockInterface";
+import {ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
 
 
@@ -24,17 +24,17 @@ export class Utils {
         return max;
     }
 
-    public static groupTransactionsBySlot(arr: Array<Transaction>): Map<string, Array<Transaction>> {
-        return arr.reduce((result: Map<string, Array<Transaction>>, e: Transaction) => {
+    public static groupTransactionsBySlot(arr: Array<ITransaction>): Map<string, Array<ITransaction>> {
+        return arr.reduce((result: Map<string, Array<ITransaction>>, e: ITransaction) => {
             if (!result.get(e.slot.toFixed())) {
-                result.set(e.slot.toFixed(), new Array<Transaction>());
+                result.set(e.slot.toFixed(), new Array<ITransaction>());
             }
             result.get(e.slot.toFixed())!.push(e);
             return result;
-        }, new Map<string, Array<Transaction>>())
+        }, new Map<string, Array<ITransaction>>())
     }
 
-    public static blockToJson(block: Block): Object {
+    public static blockToJson(block: IBlock): Object {
         return {
             blockNumber: block.block_number.toFixed(),
             rootHash: block.root_hash,
@@ -44,7 +44,7 @@ export class Utils {
         }
     }
 
-    public static transactionToJson(transaction: Transaction): Object {
+    public static transactionToJson(transaction: ITransaction): Object {
         return {
             slot: transaction.slot.toFixed(),
             owner: transaction.owner,
@@ -60,7 +60,7 @@ export class Utils {
     }
 
 //TODO remove slot, get it from lastTx.slot
-    public static exitDataToJson(lastTx: Transaction, lastProof: string, prevTx: Transaction, prevProof: string) {
+    public static exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string) {
         let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
         let prevTxInclusionProof = prevTx ? prevProof : undefined;
         let prevBlock = prevTx ? prevTx.mined_block : undefined;
@@ -80,7 +80,7 @@ export class Utils {
     }
 
 
-    public static challengeDataToJson(challengingTx: Transaction, proof: string) {
+    public static challengeDataToJson(challengingTx: ITransaction, proof: string) {
         return {
             hash: challengingTx.hash,
             slot: challengingTx.slot,

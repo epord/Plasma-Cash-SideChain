@@ -2,8 +2,8 @@ import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
 import BigNumber from "bignumber.js";
 import {CallBack} from "../utils/TypeDef";
-import {Transaction} from "../models/Transaction";
-import {Block} from "../models/Block";
+import {ITransaction} from "../models/TransactionInterface";
+import {IBlock} from "../models/BlockInterface";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
@@ -16,7 +16,7 @@ const moment = require('moment')
 export const blockInterval = new BigNumber(1000);
 
 // private function
-export const createBlock = (transactions: Transaction[], blockNumber: BigNumber | string, cb: CallBack<any>) => {
+export const createBlock = (transactions: ITransaction[], blockNumber: BigNumber | string, cb: CallBack<any>) => {
 	const timestamp = moment.now();
 
 	const maxSlotCount = Utils.getHighestOccurrence(transactions.map(t => t.slot));
@@ -32,14 +32,14 @@ export const createBlock = (transactions: Transaction[], blockNumber: BigNumber 
 		timestamp,
 		root_hash: rootHash,
 		transactions: transactions.map(t => t.hash)
-	}, (err: any, block: Block) => {
+	}, (err: any, block: IBlock) => {
 			if(err) return cb(err);
 
-			block.populate("transactions", (err: any, block?: Block) => {
+			block.populate("transactions", (err: any, block?: IBlock) => {
 				//TODO rollback
 				if(err) return cb(err);
 
-				block!.Transactions.forEach((transaction: Transaction) => {
+				block!.Transactions.forEach((transaction: ITransaction) => {
 					transaction.mined_timestamp = block!.timestamp;
 					transaction.mined_block = block!.block_number;
 					transaction.save();
@@ -61,11 +61,11 @@ export const createBlock = (transactions: Transaction[], blockNumber: BigNumber 
  * @param {Array of set of transactions with common Slot} groupedTransactions
  * @param transactionsCb CallBack function, where result is the final set of transactions to be added
  */
-const reduceTransactionsBySlot = (groupedTransactions: Map<string, Transaction[]>, transactionsCb: CallBack<Transaction[]>) => {
+const reduceTransactionsBySlot = (groupedTransactions: Map<string, ITransaction[]>, transactionsCb: CallBack<ITransaction[]>) => {
 	//Generate a paralel job for each group of transactions
 	const jobs = Array.from(groupedTransactions.values()).map(group => {
-		return (transactionCb: CallBack<Transaction>) => {
-			getFirstValidTransaction(group, (err: any, t?: Transaction) => {
+		return (transactionCb: CallBack<ITransaction>) => {
+			getFirstValidTransaction(group, (err: any, t?: ITransaction) => {
 				if(err) return transactionCb(err);
 				if(t) return transactionCb(null, t!);
 				return transactionCb(null);
@@ -73,7 +73,7 @@ const reduceTransactionsBySlot = (groupedTransactions: Map<string, Transaction[]
 		}
 	});
 
-	async.parallel(jobs, (err: any, results: Transaction[]) => {
+	async.parallel(jobs, (err: any, results: ITransaction[]) => {
 		if (err) return transactionsCb(err);
 		transactionsCb(null, results.filter(r => r));
 	});
@@ -82,19 +82,19 @@ const reduceTransactionsBySlot = (groupedTransactions: Map<string, Transaction[]
 
 export const mineBlock = (cb: CallBack<any>) => {
 	async.parallel({
-		lastBlock: (callback: CallBack<Block>) => {
+		lastBlock: (callback: CallBack<IBlock>) => {
 			BlockService
 				.findOne({})
 				.sort({_id: -1})
 				.collation({locale: "en_US", numericOrdering: true})
 				.exec(callback);
 		},
-		transactions: (callback: CallBack<Transaction[]>) => {
+		transactions: (callback: CallBack<ITransaction[]>) => {
 			TransactionService
 			.find({ mined_block: null })
 			.exec(callback);
 		}
-	}, (err: any, results: {lastBlock: Block, transactions: Transaction[]}) => {
+	}, (err: any, results: {lastBlock: IBlock, transactions: ITransaction[]}) => {
 		if (err) return cb(err);
 
 		const { lastBlock, transactions } = results;
@@ -144,12 +144,12 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 	const timestamp = Date.now();
 
 	BlockService.findById(blockNumberBN)
-		.exec((err: any, block: CallBack<Block>) => {
+		.exec((err: any, block: CallBack<IBlock>) => {
 			if(err) return cb(err);
 			if(block) return cb({statusCode: 409, message: "Block number already deposited"});
 
 			TransactionService.findOne({ slot: slotBN })
-				.exec((err: any, transaction: Transaction) => {
+				.exec((err: any, transaction: ITransaction) => {
 					if (err) return cb(err);
 					if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"});
 
@@ -169,7 +169,7 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 						mined: true,
 						mined_block: blockNumberBN,
 						mined_timestamp: timestamp
-					}, (err: any, t: Transaction) => {
+					}, (err: any, t: ITransaction) => {
 						if(err) return cb(err);
 
 						BlockService.create({
@@ -177,7 +177,7 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 							timestamp,
 							root_hash: rootHash,
 							transactions: [t]
-						}, (err: any, block: Block) => {
+						}, (err: any, block: IBlock) => {
 							if(err) return cb(err);
 							cb(null, {statusCode: 201, message: Utils.blockToJson(block)})
 						});
@@ -197,7 +197,7 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) =
 	BlockService
 	.findById(blockNumberBN)
 	.populate("transactions")
-	.exec((err: any, block: Block) => {
+	.exec((err: any, block: IBlock) => {
 		if (err) return cb(err);
 
 		const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.Transactions);
@@ -215,7 +215,7 @@ import { isTransactionValid } from'./transaction';
  * @param {Set of transactions that share the same Slot} transactions
  * @param {Callback function (error, result)} transactionsCb where result is the first valid transaction, or undefined if none was found
  */
-const getFirstValidTransaction = (transactions: Transaction[], transactionsCb: CallBack<Transaction>) => {
+const getFirstValidTransaction = (transactions: ITransaction[], transactionsCb: CallBack<ITransaction>) => {
 	if(transactions.length === 0) return transactionsCb(null);
 
 	//Gets the first transaction
