@@ -1,11 +1,12 @@
-import {CryptoUtils} from "../src/utils/CryptoUtils";
+require('dotenv').config();
+process.env.BLOCKCHAINLESS = true;
+import { app } from "../src/server"
 
-const { app } = require('../src/server')
-    , request = require('supertest')(app)
+import {CryptoUtils} from "../src/utils/CryptoUtils";
+const request = require('supertest')(app)
     , mongo = require('../src/mongo')
     , dotenv = require('dotenv')
     , async = require('async')
-    , { generateTransaction} = require('../src/utils/cryptoUtils')
     , { BlockService, TransactionService, CoinStateService } = require('../src/services');
 
 

@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import BigNumber from "bignumber.js";
-import {TransactionMdl} from "../models/TransactionMdl";
-import {BlockMdl} from "../models/BlockMdl";
+import {Transaction} from "../models/Transaction";
+import {Block} from "../models/Block";
 import {SparseMerkleTree} from "./SparseMerkleTree";
 import EthUtils = require("ethereumjs-util");
 import RLP = require('rlp');
@@ -38,13 +38,8 @@ export class CryptoUtils {
         )
     }
 
-    private static keccak256(args: number[]): string {
-        let params: Uint8Array[] = [];
-        args.forEach((arg) => {
-            params.push(new Uint8Array(arg));
-        });
-
-        return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(params))));
+    private static keccak256(...args: Uint8Array[]): string {
+        return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(args))));
     }
 
     public static pubToAddress(publicKey: string) {
@@ -74,7 +69,7 @@ export class CryptoUtils {
     }
 
 
-    public static generateSMTFromTransactions(transactions: Array<TransactionMdl>) {
+    public static generateSMTFromTransactions(transactions: Array<Transaction>) {
         let leaves = new Map<string, string>();
         transactions.forEach(value => {
             //TODO: Ver aca porque dice que en realidad un BigNumber no puede usarse como índice. Qué pasaba con JS? Por qué funcionaba?
@@ -86,13 +81,14 @@ export class CryptoUtils {
     }
 
 
-    public static submitBlock(block: BlockMdl, cb: Function) {
+    public static submitBlock(block: Block, cb: Function) {
+        if(process.env.BLOCKCHAINLESS) return cb();
         // TODO: Ver si con el ts ignore funciona
         // @ts-ignore
         const RootChainContract = new web3.eth.Contract(RootChainJson.abi, RootChainJson.networks["5777"].address);
         web3.eth.getAccounts().then((accounts: string[]) => {
             if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
-            RootChainContract.methods.submitBlock(block._id.toFixed(), block.root_hash).send({from: accounts[0]}, (err: Error, res: Response) => {
+            RootChainContract.methods.submitBlock(block.block_number.toFixed(), block.root_hash).send({from: accounts[0]}, (err: Error, res: Response) => {
                 if (err) return cb(err);
                 cb();
             });

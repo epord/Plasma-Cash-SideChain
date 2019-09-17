@@ -19,6 +19,7 @@ async.waterfall([
     (cb: any) => initHooks(cb),
     (cb: any) => CryptoUtils.validateCryptoMons(cb),
     (cb: any) => {
+        if(process.env.BLOCKCHAINLESS) return cb();
         setInterval(() => {
             mineBlock((err: any) => {
                 if (err) console.error(err)

@@ -1,6 +1,6 @@
 import {CryptoUtils} from "./CryptoUtils";
-import {BlockMdl} from "../models/BlockMdl";
-import {TransactionMdl} from "../models/TransactionMdl";
+import {Block} from "../models/Block";
+import {Transaction} from "../models/Transaction";
 import BigNumber from "bignumber.js";
 
 
@@ -24,21 +24,17 @@ export class Utils {
         return max;
     }
 
-    // TODO: Change groupBy only usage for groupTransactionsBySlot when migrating this TS.
-    public static groupTransactionsBySlot(arr: Array<TransactionMdl>): Map<BigNumber, Array<TransactionMdl>> {
-        return arr.reduce((result: Map<BigNumber, Array<TransactionMdl>>, e: TransactionMdl) => {
-            if (result.get(e.slot) == undefined) {
-                result.set(e.slot, new Array<TransactionMdl>());
+    public static groupTransactionsBySlot(arr: Array<Transaction>): Map<string, Array<Transaction>> {
+        return arr.reduce((result: Map<string, Array<Transaction>>, e: Transaction) => {
+            if (!result.get(e.slot.toFixed())) {
+                result.set(e.slot.toFixed(), new Array<Transaction>());
             }
-            result.get(e.slot)!.push(e);
+            result.get(e.slot.toFixed())!.push(e);
             return result;
-        }, new Map<BigNumber, Array<TransactionMdl>>())
+        }, new Map<string, Array<Transaction>>())
     }
 
-    // TODO: I think this is never used.
-    // public static logErr(err) { if (err) console.log(err) }
-
-    public static blockToJson(block: BlockMdl): Object {
+    public static blockToJson(block: Block): Object {
         return {
             blockNumber: block.block_number.toFixed(),
             rootHash: block.root_hash,
@@ -48,13 +44,13 @@ export class Utils {
         }
     }
 
-    public static transactionToJson(transaction: TransactionMdl): Object {
+    public static transactionToJson(transaction: Transaction): Object {
         return {
             slot: transaction.slot.toFixed(),
             owner: transaction.owner,
             recipient: transaction.recipient,
             //TODO: This was .hash instead of ._id. See if it still works.
-            hash: transaction._id,
+            hash: transaction.hash,
             blockSpent: transaction.block_spent.toFixed(),
             signature: transaction.signature,
 
@@ -64,11 +60,11 @@ export class Utils {
     }
 
 //TODO remove slot, get it from lastTx.slot
-    public static exitDataToJson(lastTx: TransactionMdl, lastProof: string, prevTx: TransactionMdl, prevProof: string) {
+    public static exitDataToJson(lastTx: Transaction, lastProof: string, prevTx: Transaction, prevProof: string) {
         let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
         let prevTxInclusionProof = prevTx ? prevProof : undefined;
         let prevBlock = prevTx ? prevTx.mined_block : undefined;
-        let prevTransactionHash = prevTx ? prevTx._id : undefined;
+        let prevTransactionHash = prevTx ? prevTx.hash : undefined;
         return {
             slot: lastTx.slot,
             prevTxBytes,
@@ -76,7 +72,7 @@ export class Utils {
             prevTxInclusionProof,
             exitingTxInclusionProof: lastProof,
             signature: lastTx.signature,
-            lastTransactionHash: lastTx._id,
+            lastTransactionHash: lastTx.hash,
             prevTransactionHash,
             prevBlock: prevBlock,
             exitingBlock: lastTx.mined_block
@@ -84,9 +80,9 @@ export class Utils {
     }
 
 
-    public static challengeDataToJson(challengingTx: TransactionMdl, proof: string) {
+    public static challengeDataToJson(challengingTx: Transaction, proof: string) {
         return {
-            hash: challengingTx._id,
+            hash: challengingTx.hash,
             slot: challengingTx.slot,
             challengingBlockNumber: challengingTx.mined_block,
             challengingTransaction: CryptoUtils.getTransactionBytes(challengingTx.slot, challengingTx.block_spent, challengingTx.recipient),
@@ -95,7 +91,11 @@ export class Utils {
         }
     }
 
-    public static zip(arr1: [], arr2: []) {
-        arr1.map((e, i) => [e, arr2[i]])
+    public static zip<T,U>(arr1: T[], arr2: U[]): ([T, U])[]{
+        return arr1.map((value, index) => [value, arr2[index]]);
+    }
+
+    public static errorCB(err: any) {
+        if(err) console.error(err)
     }
 }

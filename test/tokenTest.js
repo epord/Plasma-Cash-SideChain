@@ -1,11 +1,13 @@
+require('dotenv').config();
+process.env.BLOCKCHAINLESS = true;
+import { app } from "../src/server"
+
 import {CryptoUtils} from "../src/utils/CryptoUtils";
 
-const { app } = require('../src/server')
-    , request = require('supertest')(app)
+const request = require('supertest')(app)
     , mongo = require('../src/mongo')
     , dotenv = require('dotenv')
     , async = require('async')
-    , { generateTransaction} = require('../src/utils/cryptoUtils')
     , _ = require('lodash')
     , { BlockService, TransactionService, CoinStateService } = require('../src/services');
 
@@ -53,7 +55,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(_slot))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner).toBe(Alice.toLowerCase());
+          expect(response.body.lastOwner).toBe(Alice.toLowerCase());
           next();
         })
       }
@@ -72,7 +74,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(_slot))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe(Bob.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe(Bob.toLowerCase());
           next();
         })
       }
@@ -90,7 +92,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(_slot))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe(Alice.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe(Alice.toLowerCase());
           next();
         })
       }
@@ -105,7 +107,7 @@ describe('Token Owners', () => {
         jsonPost(transactionURL).send(transaction).expect(201).then(() => next());
       },
       next => jsonPost(mineURL).expect(201).then((ans) => {
-        const minedBlockNumber = JSON.parse(ans.res.text).block_number;
+        const minedBlockNumber = JSON.parse(ans.res.text).blockNumber;
         next(null, minedBlockNumber)
       }),
       (minedBlockNumber, next) => {
@@ -117,7 +119,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(_slot))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe(Carl.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe(Carl.toLowerCase());
           next();
         })
       }
@@ -145,7 +147,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(slot1))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe(Carl.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe(Carl.toLowerCase());
           next();
         })
       },
@@ -153,7 +155,7 @@ describe('Token Owners', () => {
         jsonGet(lastSlotOwnerURL(slot2))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe(Carl.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe(Carl.toLowerCase());
           next();
         })
       }

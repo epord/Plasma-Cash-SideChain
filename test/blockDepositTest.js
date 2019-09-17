@@ -1,9 +1,10 @@
-const { app } = require('../src/server'),
-  request = require('supertest')(app),
+require('dotenv').config();
+process.env.BLOCKCHAINLESS = true;
+import { app } from "../src/server"
+
+const  request = require('supertest')(app),
   mongo = require('../src/mongo'),
   async = require('async'),
-  dotenv 		= require('dotenv'),
-  { generateTransaction } = require("../src/utils/cryptoUtils"),
   EthUtils	= require('ethereumjs-util'),
   BN = require('bn.js'),
   { BlockService, TransactionService, CoinStateService } = require('../src/services');
@@ -19,7 +20,6 @@ const lastSlotOwnerURL = slot => `/api/tokens/${slot}/last-owner`;
 describe('Deposit Works', () => {
 
   beforeAll(() => {
-    dotenv.config();
     mongo.init(() => {});
   });
 
@@ -54,15 +54,15 @@ describe('Deposit Works', () => {
       }).expect(201)
 
       .then( response => {
-        expect(response.body.block_number).toBe(blockNumber);
+        expect(response.body.blockNumber).toBe(blockNumber);
         expect(response.body.transactions[0].slot).toBe(slot);
 
-        return request.get("/api/blocks/" + response.body.block_number)
+        return request.get("/api/blocks/" + response.body.blockNumber)
           .expect(200)
 
           .then((response) => {
             expect(response.body.transactions.length).toBe(1);
-            expect(response.body.root_hash).toBe(rootHash);
+            expect(response.body.rootHash).toBe(rootHash);
             done()
           })
       });
@@ -88,7 +88,7 @@ describe('Deposit Works', () => {
           .expect(200)
           .then( response => {
             expect(response.body.length).toBe(2);
-            const blockNumbers = response.body.map(b => b.block_number).sort();
+            const blockNumbers = response.body.map(b => b.blockNumber).sort();
             expect(blockNumbers[0]).toBe("2");
             expect(blockNumbers[1]).toBe("3");
             done();
@@ -117,7 +117,7 @@ describe('Deposit Works', () => {
               .expect(200)
               .then( response => {
                 expect(response.body.length).toBe(2);
-                const blockNumbers = response.body.map(b => b.block_number).sort();
+                const blockNumbers = response.body.map(b => b.blockNumber).sort();
                 expect(blockNumbers[0]).toBe("3");
                 expect(blockNumbers[1]).toBe("5");
                 done();
@@ -152,7 +152,7 @@ describe('Deposit Works', () => {
         jsonGet(lastSlotOwnerURL(123))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe('0xf62c9Df4c6eC38b9232831548d354BB6A67985eD'.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe('0xf62c9Df4c6eC38b9232831548d354BB6A67985eD'.toLowerCase());
           next();
         })
       },
@@ -160,7 +160,7 @@ describe('Deposit Works', () => {
         jsonGet(lastSlotOwnerURL(124))
         .expect(200)
         .then(response => {
-          expect(response.body.last_owner.toLowerCase()).toBe('0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E'.toLowerCase());
+          expect(response.body.lastOwner.toLowerCase()).toBe('0x6893aD12e1fCD46aB2df0De632D54Eef82FAc13E'.toLowerCase());
           next();
         })
       },
@@ -172,7 +172,6 @@ describe('Deposit Works', () => {
 describe('Deposit Fails', () => {
 
   beforeAll(() => {
-    dotenv.config();
     mongo.init(() => {});
   });
 

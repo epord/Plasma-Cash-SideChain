@@ -1,10 +1,12 @@
 import BigNumber from "bignumber.js";
+import {CallBack} from "../utils/TypeDef";
+import {Block} from "./Block";
 
-export interface TransactionMdl {
+export interface Transaction {
     /**
      * Hash of the transaction
      */
-    _id: string;
+    hash: string;
 
     slot: BigNumber;
 
@@ -24,8 +26,12 @@ export interface TransactionMdl {
      * Block which includes this transaction
      */
     mined_block: BigNumber;
+    Mined_Block: Block;
 
     mined_timestamp: Date;
 
     signature: string;
+
+    save: () => void;
+    populate: (field: string, cb: CallBack<Transaction>) => void;
 }

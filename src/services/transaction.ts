@@ -1,13 +1,27 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
+import {CallBack} from "../utils/TypeDef";
+import {Transaction} from "../models/Transaction";
+import BigNumber from "bignumber.js";
+import {Block} from "../models/Block";
+
 
 const { recover } = require('../utils/sign')
 	, { TransactionService, CoinStateService, BlockService } = require('./index')
-	, { BigNumber } = require('bignumber.js')
 	, { getProof } = require('./block')
 	, async = require('async');
 
-const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signature, cb) => {
+interface TransactionData {
+	slot: BigNumber,
+	owner: string,
+	recipient: string,
+	hash: string,
+	blockSpent: BigNumber,
+	signature: string
+}
+
+const createTransaction = (_slot: string, _owner: string, _recipient: string, _hash: string, _blockSpent: string, _signature: string,
+						   cb: CallBack<any>) => {
 	const slot = new BigNumber(_slot);
 	const owner = _owner.toLowerCase();
 	const recipient = _recipient.toLowerCase();
@@ -30,7 +44,7 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
 			_id: hash,
 			block_spent: blockSpent,
 			signature
-		}, (err, t) => {
+		}, (err: any, t: Transaction) => {
 			if (err) return cb(err)
 			cb(null, { statusCode: 201, message: Utils.transactionToJson(t) })
 		});
@@ -42,25 +56,27 @@ const createTransaction = (_slot, _owner, _recipient, _hash, _blockSpent, _signa
  * @param {(err, invalidErr) => void } validateTransactionCb where err is a non-validating error, invalidErr is a validating error.
  * Callback being call without parameters means the transaction is valid
  */
-const isTransactionValid = (transaction, validateTransactionCb) => {
+export const isTransactionValid = (transaction: TransactionData, validateTransactionCb: CallBack<string>) => {
 	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
-	getLastMinedTransaction({ slot: slot }, (err, lastTransaction) => {
+	getLastMinedTransaction({ slot: slot }, (err: any, result?: Transaction) => {
 
 		if (err) return validateTransactionCb(err);
+		let lastTransaction = result;
 		if (!lastTransaction) return validateTransactionCb(null, 'Slot is not in side chain');
 
 		lastTransaction.populate("mined_block", (err, lastTransaction) => {
-			const { mined_block } = lastTransaction;
+			let mined_block = lastTransaction!.Mined_Block;
+
 			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
-			if (!mined_block.block_number.eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
+			if (!(mined_block.block_number as BigNumber).eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
 			const calculatedHash = CryptoUtils.generateTransactionHash(slot, blockSpent, recipient);
 
 			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
-			if (lastTransaction.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
+			if (lastTransaction!.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
 			try {
 				const pubAddress = CryptoUtils.pubToAddress(recover(hash, signature));
@@ -70,13 +86,13 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 				return validateTransactionCb(null, 'Invalid Signature');
 			}
 
-			CoinStateService.findById(slot, (err, coinState) => {
+			CoinStateService.findById(slot, (err: any, coinState: any) => {
 				if (err) return validateTransactionCb(err);
 
 				if (coinState.state != "DEPOSITED") {
 					return validateTransactionCb(null, "Coin state is not DEPOSITED");
 				} else {
-					return validateTransactionCb();
+					return validateTransactionCb(null);
 				}
 			})
 
@@ -87,13 +103,13 @@ const isTransactionValid = (transaction, validateTransactionCb) => {
 	})
 };
 
-const getLastMinedTransaction = (filter, cb) => {
+const getLastMinedTransaction = (filter: any, cb: CallBack<Transaction>) => {
 	filter.mined_block = { $ne: null }
 	TransactionService
 		.findOne(filter)
 		.sort({ mined_block: -1 })
 		.collation({ locale: "en_US", numericOrdering: true })
-		.exec((err, transaction) => {
+		.exec((err:any, transaction: Transaction) => {
 			if (err) return cb(err);
 			cb(null, transaction);
 		});
@@ -108,22 +124,23 @@ module.exports = {
 //TODO: change this require in mid-file
 const { getExitDataForBlock } = require('./exit')
 
-const getHistory = (slot, cb) => {
-	let filter = { slot: slot };
+const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
+	let filter: any = { slot: slot };
 	filter.mined_block = { $ne: null };
 	TransactionService
 		.find(filter)
 		.sort({ mined_block: -1 })
 		.collation({ locale: "en_US", numericOrdering: true })
-		.exec((err, transactions) => {
+		.exec((err: any, transactions: Transaction[]) => {
 			if (err) return cb(err);
 
-			let proofRetrievers = transactions.map((t) => (cb) => getExitDataForBlock(slot, t.mined_block, cb));
-			async.parallel(proofRetrievers, (err, exitDatas) => {
+			let proofRetrievers = transactions.map((t: Transaction) =>
+				(cb: CallBack<any>) => getExitDataForBlock(slot, t.mined_block, cb));
+			async.parallel(proofRetrievers, (err: any, exitDatas: any) => {
 				if (err) return cb(err);
 
 				// TODO: Test if zip works like this
-				cb(null, Utils.zip(transactions, exitDatas).map((pair) => {
+				cb(null, Utils.zip(transactions, exitDatas).map((pair: [any, any]) => {
 					return { transaction: Utils.transactionToJson(pair[0]), exitData: pair[1].message }
 				})
 				);
@@ -134,25 +151,25 @@ const getHistory = (slot, cb) => {
 /**
  * Gets all blocks since slot's deposit and the proof for the coin in each of them
  */
-const getHistoryProof = (slot, done) => {
+const getHistoryProof = (slot: string, done: CallBack<any>) => {
 	const slotBN = new BigNumber(slot);
 	async.waterfall([
-		next => {
+		(next: CallBack<Transaction>) => {
 			TransactionService.findOne({
 				slot: slotBN,
 				block_spent: '0' // deposit
 			}, next)
 		},
-		(depositTransaction, next) => {
+		(depositTransaction: Transaction, next: CallBack<any>) => {
 			if (!depositTransaction) return next('The slot has never been deposited.');
 
 			async.parallel({
-				minedTransactions: cb => {
+				minedTransactions: (cb: CallBack<Transaction[]>) => {
 					TransactionService.find({ slot: slotBN, mined_block: { $ne: null } })
 						.exec(cb);
 				},
-				depositBlock: cb => BlockService.findById(depositTransaction.mined_block, cb),
-				historyBlocks: cb => {
+				depositBlock: (cb: CallBack<Block>) => BlockService.findById(depositTransaction.mined_block, cb),
+				historyBlocks: (cb: CallBack<Block[]>) => {
 					BlockService.aggregate([
 						{
 							$project: {
@@ -173,33 +190,42 @@ const getHistoryProof = (slot, done) => {
 						.exec(cb);
 
 				}
-			}, (err, { minedTransactions, depositBlock, historyBlocks }) => {
+			}, (err: any, res: { minedTransactions: Transaction[], depositBlock: Block, historyBlocks: Block[] }) => {
+				const { minedTransactions, depositBlock, historyBlocks } = res;
 				if (err) return next(err);
 
 				const blocks = [depositBlock, ...historyBlocks];
 
-				async.parallel(blocks.map(b => cb => getProof(slot, b._id, cb)), (err, proofs) => {
-					if (err) return next(err);
+				async.parallel(blocks.map(b => (cb: CallBack<string>) => getProof(slot, b.block_number, cb)),
+					(err: any, proofs: string[]) => {
+						if (err) return next(err);
 
-					const history = {};
+						const history: any = {};
 
-					// TODO: Test if zip works like this
-					Utils.zip(blocks, proofs).forEach(e => {
-						const transaction = minedTransactions.find(t => e[0].transactions.includes(t._id));
-						const data = { proof: e[1] }
-						if (transaction) {
-							data.hash = transaction._id;
-							data.transactionBytes = getTransactionBytes(transaction.slot, transaction.block_spent, transaction.recipient);
-							data.signature = transaction.signature;
-						}
+						// TODO: Test if zip works like this
+						Utils.zip(blocks, proofs).forEach(e => {
+							const transaction = minedTransactions.find(
+								t => (e[0].transactions as Array<string>).includes(t.hash)
+							);
 
-						history[e[0]._id] = data;
-					});
+							const data: any = { proof: e[1] };
+							if (transaction) {
+								data.hash = transaction.hash;
+								data.transactionBytes = CryptoUtils.getTransactionBytes(
+									transaction.slot,
+									transaction.block_spent,
+									transaction.recipient
+								);
+								data.signature = transaction.signature;
+							}
 
-					next(null, history);
-				})
-			});
-		}
+							history[e[0].block_number.toFixed()] = data;
+						});
+
+						next(null, history);
+					})
+				});
+			}
 	], done);
 }
 

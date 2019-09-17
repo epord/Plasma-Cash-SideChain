@@ -1,11 +1,14 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
+import BigNumber from "bignumber.js";
+import {CallBack} from "../utils/TypeDef";
+import {Transaction} from "../models/Transaction";
+import {Block} from "../models/Block";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
-    , { BigNumber } = require('bignumber.js')
     , { TransactionService, BlockService, CoinStateService } = require('../services')
     , { updateOwner }	= require('../services/coinState');
 
@@ -13,12 +16,11 @@ const moment = require('moment')
 const blockInterval = new BigNumber(1000);
 
 // private function
-const createBlock = (transactions, blockNumber, cb) => {
+const createBlock = (transactions: Transaction[], blockNumber: BigNumber | string, cb: CallBack<any>) => {
 	const timestamp = moment.now();
 
 	const maxSlotCount = Utils.getHighestOccurrence(transactions.map(t => t.slot));
 	if(maxSlotCount > 1) return cb({ statusCode: 500, message: "Trying to mine 2 slots at once"});
-
 
 	const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(transactions);
 	const rootHash = sparseMerkleTree.root;
@@ -30,20 +32,20 @@ const createBlock = (transactions, blockNumber, cb) => {
 		timestamp,
 		root_hash: rootHash,
 		transactions: transactions.map(t => t.hash)
-	}, (err, block) => {
+	}, (err: any, block: Block) => {
 			if(err) return cb(err);
 
-			block.populate("transactions", (err, block) => {
+			block.populate("transactions", (err: any, block?: Block) => {
 				//TODO rollback
 				if(err) return cb(err);
 
-				block.transactions.forEach(transaction => {
-					transaction.mined_timestamp = block.timestamp;
-					transaction.mined_block = block.block_number;
+				block!.Transactions.forEach((transaction: Transaction) => {
+					transaction.mined_timestamp = block!.timestamp;
+					transaction.mined_block = block!.block_number;
 					transaction.save();
 
 					//TODO this callback?
-					updateOwner(transaction.slot, transaction.recipient, (err) => { if(err) console.error(err) })
+					updateOwner(transaction.slot, transaction.recipient, Utils.errorCB)
 				});
 
 				cb(null, block);
@@ -57,48 +59,47 @@ const createBlock = (transactions, blockNumber, cb) => {
  * find invalid in the process
  *
  * @param {Array of set of transactions with common Slot} groupedTransactions
- * @param {(error, result) => void} transactionsCb CallBack function, where result is the final set of transactions to be added
+ * @param transactionsCb CallBack function, where result is the final set of transactions to be added
  */
-const reduceTransactionsBySlot = (groupedTransactions, transactionsCb) => {
-
-	// Generate a parallel job for each group of transactions
-	const jobs = groupedTransactions.map(group => {
-		return (transactionsCb) => {
-			getFirstValidTransaction(group, (err, t) => {
-				if(err) return transactionsCb(err);
-				if(t) return transactionsCb(null, t);
-				return transactionsCb();
+const reduceTransactionsBySlot = (groupedTransactions: Map<string, Transaction[]>, transactionsCb: CallBack<Transaction[]>) => {
+	//Generate a paralel job for each group of transactions
+	const jobs = Array.from(groupedTransactions.values()).map(group => {
+		return (transactionCb: CallBack<Transaction>) => {
+			getFirstValidTransaction(group, (err: any, t?: Transaction) => {
+				if(err) return transactionCb(err);
+				if(t) return transactionCb(null, t!);
+				return transactionCb(null);
 			})
 		}
 	});
 
-	async.parallel(jobs, (err, results) => {
+	async.parallel(jobs, (err: any, results: Transaction[]) => {
 		if (err) return transactionsCb(err);
 		transactionsCb(null, results.filter(r => r));
 	});
 
 };
 
-const mineBlock = (cb) => {
+const mineBlock = (cb: CallBack<any>) => {
 	async.parallel({
-		lastBlock: callback => {
+		lastBlock: (callback: CallBack<Block>) => {
 			BlockService
 				.findOne({})
 				.sort({_id: -1})
 				.collation({locale: "en_US", numericOrdering: true})
 				.exec(callback);
 		},
-		transactions: callback => {
+		transactions: (callback: CallBack<Transaction[]>) => {
 			TransactionService
 			.find({ mined_block: null })
 			.exec(callback);
 		}
-	}, (err, results) => {
+	}, (err: any, results: {lastBlock: Block, transactions: Transaction[]}) => {
 		if (err) return cb(err);
 
 		const { lastBlock, transactions } = results;
 		const groupedTransactions = Utils.groupTransactionsBySlot(transactions);
-		reduceTransactionsBySlot(Array.from(groupedTransactions.values()), (err, transactions) => {
+		reduceTransactionsBySlot(groupedTransactions, (err, transactions) => {
 
 			if(err) return cb(err);
 
@@ -106,15 +107,16 @@ const mineBlock = (cb) => {
 			if(!lastBlock) {
 				nextNumber = blockInterval;
 			} else {
-				const rest = lastBlock.block_number.mod(blockInterval);
-				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
+				const lastBN = lastBlock.block_number;
+				const rest = lastBN.mod(blockInterval);
+				nextNumber = lastBN.minus(rest).plus(blockInterval);
 			}
 
-			createBlock(transactions, nextNumber, (err, block) => {
-				debug(`mining ${block}`)
+			createBlock(transactions!, nextNumber, (err, block) => {
+				debug(`mining ${block}`);
 				if(err) return cb(err);
 
-        CryptoUtils.submitBlock(block, (err)=> {
+                CryptoUtils.submitBlock(block, (err: any)=> {
 					if(err) return cb(err);
 					cb(null, { statusCode: 201, message: Utils.blockToJson(block) });
 				})
@@ -123,30 +125,7 @@ const mineBlock = (cb) => {
 	});
 };
 
-const validateAndDeposit = (cb) => {
-	const { slot, blockNumber, owner } = req.body;
-
-	if (slot == undefined || !owner || blockNumber == undefined) {
-		return cb('Missing parameter');
-	}
-
-	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) {
-		return cb('Invalid Slot');
-	}
-
-	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) {
-		return cb('Invalid BlockNumber');
-	}
-
-	depositBlock(slotBN, blockNumberBN, owner, (err, status) => {
-			if(err) return cb(err);
-			cb();
-	});
-}
-
-const depositBlock = (slot, blockNumber, _owner, cb) => {
+const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<any>) => {
 
 	const owner = _owner.toLowerCase();
 
@@ -165,12 +144,12 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 	const timestamp = Date.now();
 
 	BlockService.findById(blockNumberBN)
-		.exec((err, block) => {
+		.exec((err: any, block: CallBack<Block>) => {
 			if(err) return cb(err);
 			if(block) return cb({statusCode: 409, message: "Block number already deposited"});
 
 			TransactionService.findOne({ slot: slotBN })
-				.exec((err, transaction) => {
+				.exec((err: any, transaction: Transaction) => {
 					if (err) return cb(err);
 					if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"});
 
@@ -190,7 +169,7 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 						mined: true,
 						mined_block: blockNumberBN,
 						mined_timestamp: timestamp
-					}, (err, t) => {
+					}, (err: any, t: Transaction) => {
 						if(err) return cb(err);
 
 						BlockService.create({
@@ -198,7 +177,7 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 							timestamp,
 							root_hash: rootHash,
 							transactions: [t]
-						}, (err, block) => {
+						}, (err: any, block: Block) => {
 							if(err) return cb(err);
 							cb(null, {statusCode: 201, message: Utils.blockToJson(block)})
 						});
@@ -207,7 +186,7 @@ const depositBlock = (slot, blockNumber, _owner, cb) => {
 		});
 };
 
-const getProof = (slot, blockNumber, cb) => {
+const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) => {
 
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
@@ -218,35 +197,34 @@ const getProof = (slot, blockNumber, cb) => {
 	BlockService
 	.findById(blockNumberBN)
 	.populate("transactions")
-	.exec((err, block) => {
+	.exec((err: any, block: Block) => {
 		if (err) return cb(err);
 
-		const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.transactions);
+		const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.Transactions);
 
 		const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
 		cb(null, proof);
 	})
-}
+};
 
 module.exports = {
 	createBlock,
 	mineBlock,
 	depositBlock,
-	validateAndDeposit,
 	getProof,
 	blockInterval
 };
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
-const { isTransactionValid } = require('./transaction')
+import { isTransactionValid } from'./transaction';
 
 /**
  * Given a set of transactions, will find the first valid one, removem those that finds invalid
  * @param {Set of transactions that share the same Slot} transactions
  * @param {Callback function (error, result)} transactionsCb where result is the first valid transaction, or undefined if none was found
  */
-const getFirstValidTransaction = (transactions, transactionsCb) => {
-	if(transactions.length === 0) return transactionsCb();
+const getFirstValidTransaction = (transactions: Transaction[], transactionsCb: CallBack<Transaction>) => {
+	if(transactions.length === 0) return transactionsCb(null);
 
 	//Gets the first transaction
 	const t = transactions[0];
@@ -258,7 +236,7 @@ const getFirstValidTransaction = (transactions, transactionsCb) => {
 		hash: t.hash,
 		blockSpent: t.block_spent,
 		signature: t.signature
-	}, (err, invalidError) => {
+	}, (err: any, invalidError: any) => {
 		//If there is a non-validating issue, propagate
 		if(err) { return transactionsCb(err); }
 
@@ -268,7 +246,7 @@ const getFirstValidTransaction = (transactions, transactionsCb) => {
 		} else {
 			//If the transaction is invalid, remove it from the DatabasFfine
 			//Notify somewhere who knows where
-			TransactionService.deleteOne({ _id: t._id }).exec((err) => {
+			TransactionService.deleteOne({ _id: t.hash }).exec((err: any) => {
 				if(err) return transactionsCb(err);
 
 				// Continue looking at the rest of the array in a recursive way

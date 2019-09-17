@@ -1,15 +1,11 @@
 {
   "name": "cryptomon-plasma-sidechain",
-  "jest": {
-    "testEnvironment": "node",
-    "testRegex": "/test/.*.js$"
-  },
   "version": "1.0.0",
   "private": true,
   "main": "dist/app.js",
   "scripts": {
     "compile": "better-npm-run compile",
-    "test": "jest --runInBand --verbose",
+    "test": "better-npm-run test",
     "start": "better-npm-run compile && better-npm-run run",
     "debug": "better-npm-run debug",
     "run": "better-npm-run run"
@@ -24,6 +20,13 @@
     },
     "compile": {
       "command": "tsc && copyfiles src/**/*.json dist/",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "app:*"
+      }
+    },
+    "test": {
+      "command": "tsc && jest --runInBand --verbose",
       "env": {
         "NODE_ENV": "development",
         "DEBUG": "app:*"
@@ -71,9 +74,11 @@
     "web3-eth-accounts": "1.0.0-beta.52"
   },
   "devDependencies": {
-    "jest": "^24.8.0",
+    "@types/jest": "^24.0.18",
+    "jest": "^24.9.0",
     "supertest": "^4.0.2",
+    "ts-jest": "^24.1.0",
     "tslint": "^5.18.0",
-    "typescript": "^3.5.3"
+    "typescript": "^3.6.3"
   }
 }

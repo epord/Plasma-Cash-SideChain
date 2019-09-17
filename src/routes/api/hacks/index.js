@@ -2,7 +2,6 @@ import {CryptoUtils} from "../../../utils/CryptoUtils";
 import {Utils} from "../../../utils/Utils";
 
 const  {blockInterval}  = require( "../../../services/block.js");
-const  {generateSMTFromTransactions, getTransactionBytes, submitBlock}  = require( "../../../utils/cryptoUtils");
 const  { BlockService }  = require( '../../../services');
 
 const express 					= require('express')

@@ -1,11 +1,12 @@
-import {CryptoUtils} from "../src/utils/CryptoUtils";
+require('dotenv').config();
+process.env.BLOCKCHAINLESS = true;
+import { app } from "../src/server"
 
-const { app } = require('../src/server'),
-  request = require('supertest')(app),
+import {CryptoUtils} from "../src/utils/CryptoUtils";
+const request = require('supertest')(app),
   mongo = require('../src/mongo'),
   async = require('async'),
   dotenv 		= require('dotenv'),
-  { generateTransaction } = require("../src/utils/cryptoUtils"),
   { BlockService, TransactionService, CoinStateService } = require('../src/services');
 
 const jsonPost = (url) => request.post(url).set('Content-type', "application/json");
@@ -30,6 +31,7 @@ describe('Mining Works', () => {
       .then(_ => {
         jsonPost(transactionURL)
           .send(transaction)
+          .expect(201)
           .then(cb)
       });
   };
@@ -51,10 +53,10 @@ describe('Mining Works', () => {
     return request.post(mineURL)
       .expect(201)
       .then(response =>
-        request.get("/api/blocks/" + response.body.block_number)
+        request.get("/api/blocks/" + response.body.blockNumber)
           .expect(200).then((response) => {
           expect(response.body.transactions.length).toBe(0);
-          expect(response.body.block_number).toBe("1000");
+          expect(response.body.blockNumber).toBe("1000");
           done()
         })
       )
@@ -89,12 +91,12 @@ describe('Mining Works', () => {
       .expect(201)
       .then(response => {
         expect(response.body.transactions.length).toBe(0);
-        expect(response.body.block_number).toBe("1000");
+        expect(response.body.blockNumber).toBe("1000");
         request.post(mineURL)
           .expect(201)
           .then(response => {
             expect(response.body.transactions.length).toBe(0);
-            expect(response.body.block_number).toBe("2000");
+            expect(response.body.blockNumber).toBe("2000");
             done()
           });
       });
@@ -107,14 +109,14 @@ describe('Mining Works', () => {
         .then(response => {
           expect(response.body.transactions.length).toBe(1);
           expect(response.body.transactions[0].slot).toBe("1");
-          expect(response.body.block_number).toBe("1000");
+          expect(response.body.blockNumber).toBe("1000");
           addTransaction(2, 3, _ => {
             request.post(mineURL)
               .expect(201)
               .then(response => {
                 expect(response.body.transactions.length).toBe(1);
                 expect(response.body.transactions[0].slot).toBe("2");
-                expect(response.body.block_number).toBe("2000");
+                expect(response.body.blockNumber).toBe("2000");
                 done()
               });
           });
@@ -129,28 +131,28 @@ describe('Mining Works', () => {
         .then(response => {
           expect(response.body.transactions.length).toBe(1);
           expect(response.body.transactions[0].slot).toBe("1");
-          expect(response.body.block_number).toBe("1000");
+          expect(response.body.blockNumber).toBe("1000");
           addTransaction(2, 3, _ => {
             request.post(mineURL)
               .expect(201)
               .then(response => {
                 expect(response.body.transactions.length).toBe(1);
                 expect(response.body.transactions[0].slot).toBe("2");
-                expect(response.body.block_number).toBe("2000");
+                expect(response.body.blockNumber).toBe("2000");
                 addTransaction(3, 1001, _ => {
                   request.post(mineURL)
                     .expect(201)
                     .then(response => {
                       expect(response.body.transactions.length).toBe(1);
                       expect(response.body.transactions[0].slot).toBe("3");
-                      expect(response.body.block_number).toBe("3000");
+                      expect(response.body.blockNumber).toBe("3000");
                       addTransaction(4, 5001, _ => {
                         request.post(mineURL)
                           .expect(201)
                           .then(response => {
                             expect(response.body.transactions.length).toBe(1);
                             expect(response.body.transactions[0].slot).toBe("4");
-                            expect(response.body.block_number).toBe("6000");
+                            expect(response.body.blockNumber).toBe("6000");
                             done()
                           });
                       });
@@ -169,14 +171,14 @@ describe('Mining Works', () => {
         .then(response => {
           expect(response.body.transactions.length).toBe(1);
           expect(response.body.transactions[0].slot).toBe("1");
-          expect(response.body.block_number).toBe("1000");
+          expect(response.body.blockNumber).toBe("1000");
           addTransaction(2, 7500, _ => {
             request.post(mineURL)
               .expect(201)
               .then(response => {
                 expect(response.body.transactions.length).toBe(1);
                 expect(response.body.transactions[0].slot).toBe("2");
-                expect(response.body.block_number).toBe("8000");
+                expect(response.body.blockNumber).toBe("8000");
                 done();
               });
           });

@@ -5,7 +5,6 @@ const express 					= require('express')
 	, BigNumber       			= require('bignumber.js')
 	, { getExitData, getSingleData } = require('../../../services/exit')
 	, { TransactionService }  = require( '../../../services')
-	, { getTransactionBytes } = require("../../../utils/cryptoUtils");
 
 debug('registering /api/exit routes')
 

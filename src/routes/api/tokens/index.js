@@ -32,7 +32,7 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 		if (!transaction) return res.status(Status.NOT_FOUND).json({});
-		res.status(Status.OK).json({ last_owner: transaction.recipient });
+		res.status(Status.OK).json({ lastOwner: transaction.recipient });
 	});
 });
 
