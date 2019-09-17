@@ -43,7 +43,6 @@ app.use(function (req: any, res: { setHeader: { (arg0: string, arg1: string): vo
 });
 app.use('/api', routes.api);
 
-//TODO: Ver tipo de cb
 export function init(cb: () => void) {
     let server = app.listen(process.env.PORT || 8000, () => {
         let host = server.address().address;
@@ -54,4 +53,4 @@ export function init(cb: () => void) {
     })
 }
 
-module.exports = { app }
+module.exports.app = app

@@ -82,7 +82,7 @@ export const isTransactionValid = (transaction: TransactionData, validateTransac
 				const pubAddress = CryptoUtils.pubToAddress(recover(hash, signature));
 				if (owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
 			} catch (e) {
-				console.error(e)
+				console.error(e.message);
 				return validateTransactionCb(null, 'Invalid Signature');
 			}
 
