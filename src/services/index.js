@@ -1,6 +1,3 @@
-
-/// TODO: ver como explortar correctamente
-
 const { TransactionModel, BlockModel, CoinStateModel } 	= require('../models')
 			, mongoose												= require('mongoose');
 

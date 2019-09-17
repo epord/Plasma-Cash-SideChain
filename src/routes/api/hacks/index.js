@@ -12,13 +12,6 @@ const express 					= require('express')
 
 debug('registering /api/hacks routes')
 
-const responseWithStatus = (res) => (err, status) => {
-	if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-	if (err && err.statusCode) return res.status(err.statusCode).json(err.message);
-	if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
-	return res.status(status.statusCode).json(status.message)
-};
-
 /**
  * Creates an Unchecked Transaction
  * {
@@ -58,7 +51,7 @@ router.post('/transactions/create', (req, res, next) => {
 		.sort({_id: -1})
 		.collation({locale: "en_US", numericOrdering: true})
 		.exec((err, lastBlock) => {
-			if(err) return responseWithStatus(res)(err);
+			if(err) return Utils.responseWithStatus(res)(err);
 
 			let nextNumber;
 			if(!lastBlock) {
@@ -88,11 +81,11 @@ router.post('/transactions/create', (req, res, next) => {
 				_id: nextNumber,
 				timestamp,
 				root_hash: rootHash,
-				transactions: [] //TODO create empty block cause we dont want no corrupted transactions in our DB
+				transactions: [] //Creating empty block cause we dont want no corrupted transactions in our DB
 			}, (err, block) => {
-				if(err) return responseWithStatus(res)(err);
+				if(err) return Utils.responseWithStatus(res)(err);
                 CryptoUtils.submitBlock(block, (err) => {
-					if(err) return responseWithStatus(res)(err) //TODO rollback block creation
+					if(err) return Utils.responseWithStatus(res)(err) //TODO rollback block creation
 
 					let blockJSON =  Utils.blockToJson(block);
 					blockJSON.transactions = [t];
@@ -110,7 +103,7 @@ router.post('/transactions/create', (req, res, next) => {
 						}
 					};
 
-					return responseWithStatus(res)(null, {statusCode: 201, message: message})
+					return Utils.responseWithStatus(res)(null, {statusCode: 201, result: message})
 				});
 			});
 		});

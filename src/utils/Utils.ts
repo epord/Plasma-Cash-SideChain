@@ -2,7 +2,9 @@ import {CryptoUtils} from "./CryptoUtils";
 import {IBlock} from "../models/BlockInterface";
 import {ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
-
+import {ApiResponse} from "./TypeDef";
+import Status from 'http-status-codes';
+const debug = require('debug')('app:api:Utils')
 
 export class Utils {
 
@@ -39,7 +41,6 @@ export class Utils {
             blockNumber: block.block_number.toFixed(),
             rootHash: block.root_hash,
             timestamp: block.timestamp,
-            //TODO check if transactions are populated or not
             transactions: block.transactions
         }
     }
@@ -49,7 +50,6 @@ export class Utils {
             slot: transaction.slot.toFixed(),
             owner: transaction.owner,
             recipient: transaction.recipient,
-            //TODO: This was .hash instead of ._id. See if it still works.
             hash: transaction.hash,
             blockSpent: transaction.block_spent.toFixed(),
             signature: transaction.signature,
@@ -59,7 +59,6 @@ export class Utils {
         }
     }
 
-//TODO remove slot, get it from lastTx.slot
     public static exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string) {
         let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
         let prevTxInclusionProof = prevTx ? prevProof : undefined;
@@ -97,5 +96,26 @@ export class Utils {
 
     public static errorCB(err: any) {
         if(err) console.error(err)
+    }
+
+    public static logError(err: any | ApiResponse<any>) {
+        if (err && !err.statusCode)
+            return debug("ERROR: " + err);
+        if (err && err.statusCode && err.error)
+            return debug("ERROR: " + err.error);
+    };
+
+    public static responseWithStatus<T>(res: any, mapper?: (_: T) => string | Object) {
+        return (err: any, status: ApiResponse<T>)  => {
+            Utils.logError(err);
+            if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+            if (err && err.statusCode) return res.status(err.statusCode).json(err.error);
+            if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
+            if(mapper) {
+                return res.status(status.statusCode).json(mapper(status.result!))
+            } else {
+                return res.status(status.statusCode).json(status.result)
+            }
+        };
     }
 }

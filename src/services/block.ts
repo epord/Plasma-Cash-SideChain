@@ -1,7 +1,7 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
 import BigNumber from "bignumber.js";
-import {CallBack} from "../utils/TypeDef";
+import {ApiResponse, CallBack} from "../utils/TypeDef";
 import {ITransaction} from "../models/TransactionInterface";
 import {IBlock} from "../models/BlockInterface";
 
@@ -20,12 +20,12 @@ export const createBlock = (transactions: ITransaction[], blockNumber: BigNumber
 	const timestamp = moment.now();
 
 	const maxSlotCount = Utils.getHighestOccurrence(transactions.map(t => t.slot));
-	if(maxSlotCount > 1) return cb({ statusCode: 500, message: "Trying to mine 2 slots at once"});
+	if(maxSlotCount > 1) return cb({ statusCode: 500, error: "Trying to mine 2 slots at once"});
 
 	const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(transactions);
 	const rootHash = sparseMerkleTree.root;
 
-	if(!rootHash) return cb({statusCode: 500, message: "Problem calculating merkle root hash"});
+	if(!rootHash) return cb({statusCode: 500, error: "Problem calculating merkle root hash"});
 
 	BlockService.create({
 		_id: blockNumber,
@@ -78,7 +78,7 @@ const reduceTransactionsBySlot = (groupedTransactions: Map<string, ITransaction[
 
 };
 
-export const mineBlock = (cb: CallBack<any>) => {
+export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 	async.parallel({
 		lastBlock: (callback: CallBack<IBlock>) => {
 			BlockService
@@ -116,22 +116,22 @@ export const mineBlock = (cb: CallBack<any>) => {
 
                 CryptoUtils.submitBlock(block, (err: any)=> {
 					if(err) return cb(err);
-					cb(null, { statusCode: 201, message: Utils.blockToJson(block) });
+					cb(null, { statusCode: 201, result: block });
 				})
 			});
 		});
 	});
 };
 
-export const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<any>) => {
+export const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<ApiResponse<IBlock>>) => {
 
 	const owner = _owner.toLowerCase();
 
 	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
+	if(slotBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
 
 	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockNumber'});
+	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
 
 	const rootHash = CryptoUtils.generateDepositBlockRootHash(slotBN);
 
@@ -149,7 +149,7 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 			TransactionService.findOne({ slot: slotBN })
 				.exec((err: any, transaction: ITransaction) => {
 					if (err) return cb(err);
-					if (transaction) return cb({ statusCode: 400, message: "The transaction already exists"});
+					if (transaction) return cb({ statusCode: 400, error: "The transaction already exists"});
 
 					/// TODO: make atomic
 					CoinStateService.create({
@@ -177,20 +177,20 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 							transactions: [t]
 						}, (err: any, block: IBlock) => {
 							if(err) return cb(err);
-							cb(null, {statusCode: 201, message: Utils.blockToJson(block)})
+							cb(null, {statusCode: 201, result: block})
 						});
 					});
 				});
 		});
 };
 
-export const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) => {
+export const getProof = (slot: string, blockNumber: string, cb: CallBack<ApiResponse<string>>) => {
 
 	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot'});
+	if(slotBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
 
 	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockNumber'});
+	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
 
 	BlockService
 	.findById(blockNumberBN)
@@ -201,7 +201,7 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<any>) =
 		const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.Transactions);
 
 		const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
-		cb(null, proof);
+		cb(null, { statusCode: 200, result: proof });
 	})
 };
 

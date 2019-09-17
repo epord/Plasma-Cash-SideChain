@@ -1,3 +1,5 @@
+import {Utils} from "../../../utils/Utils";
+
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:challenges')
@@ -6,13 +8,6 @@ const express 					= require('express')
 	, Status 					= require('http-status-codes');
 
 debug('registering /api/challenges routes')
-
-const responseWithStatus = (res) => (err, status) => {
-	if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-	if (err && err.statusCode) return res.status(err.statusCode).json(err.message);
-	if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
-	return res.status(status.statusCode).json(status.message)
-};
 
 /**
  * slot
@@ -39,7 +34,7 @@ router.get('/after/', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid slot');
 	}
 
-	getChallengeAfterData(slotBN, exitBlockBN, responseWithStatus(res));
+	getChallengeAfterData(slotBN, exitBlockBN, Utils.responseWithStatus(res));
 
 });
 
@@ -68,7 +63,7 @@ router.get('/before', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid slot');
 	}
 
-	getChallengeBeforeData(slotBN, parentBlockBN, responseWithStatus(res));
+	getChallengeBeforeData(slotBN, parentBlockBN, Utils.responseWithStatus(res));
 
 });
 

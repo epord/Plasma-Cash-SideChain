@@ -10,13 +10,6 @@ const express = require('express')
 
 debug('registering /api/tokens routes')
 
-const responseWithStatus = (res) => (err, status) => {
-	if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-	if (err && err.statusCode) return res.status(err.statusCode).json(err.message);
-	if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
-	return res.status(status.statusCode).json(status.message)
-};
-
 router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req, res, next) => {
 	const { id } = req.params;
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
@@ -26,7 +19,7 @@ router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req, res, next) => {
 	});
 });
 
-//TODO esto es bastante hack
+//Test only
 router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 	const { id } = req.params;
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
@@ -46,25 +39,19 @@ router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
 
 	const onlyExitingTokens = exiting === 'true';
 
-  getOwnedTokens(owner, onlyExitingTokens, (err, slots) => {
-      if(err) return responseWithStatus(res)(err);
-      return responseWithStatus(res)(null, {statusCode: 200, message: slots})
-  });
+  getOwnedTokens(owner, onlyExitingTokens, Utils.responseWithStatus(res));
 });
 
 router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {
 	const { id } = req.params;
-	getHistory(id, (err, history) => {
-		if(err) return responseWithStatus(res)(err);
-		return responseWithStatus(res)(null, {statusCode: 200, message: { history }})
-	});
+	getHistory(id, Utils.responseWithStatus(res));
 });
 
 router.get('/:id([0-9a-zA-Z]+)/history-proof', (req, res, next) => {
 	const { id } = req.params;
 	getHistoryProof(id, (err, history) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err); // TODO: add responseWithStatus when migrating to TS
-		return responseWithStatus(res)(null, {statusCode: 200, message: { history }})
+		return Utils.responseWithStatus(res)(null, {statusCode: 200, result: { history }})
 	})
 
 })

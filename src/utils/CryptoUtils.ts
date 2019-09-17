@@ -27,6 +27,7 @@ export class CryptoUtils {
 
     public static getTransactionBytes(slot: BigNumber, blockSpent: BigNumber, recipient: string): string  {
         let params = [
+            //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
             EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 256/8), 			// uint256 little endian
             EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
             EthUtils.toBuffer(recipient),																						// must start with 0x

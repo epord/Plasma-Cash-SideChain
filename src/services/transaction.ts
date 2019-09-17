@@ -1,6 +1,6 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
-import {CallBack} from "../utils/TypeDef";
+import {ApiResponse, CallBack} from "../utils/TypeDef";
 import {ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
 import {IBlock} from "../models/BlockInterface";
@@ -27,7 +27,7 @@ export const createTransaction = (
 		_hash: string,
 		_blockSpent: string,
 		_signature: string,
-		cb: CallBack<any>
+		cb: CallBack<ApiResponse<ITransaction>>
 	) => {
 
 	const slot = new BigNumber(_slot);
@@ -37,12 +37,12 @@ export const createTransaction = (
 	const blockSpent = new BigNumber(_blockSpent);
 	const signature = _signature.toLowerCase();
 
-	if (slot.isNaN()) return cb({ statusCode: 400, message: 'Invalid slot' });
-	if (blockSpent.isNaN()) return cb({ statusCode: 400, message: 'Invalid blockSpent' });
+	if (slot.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot' });
+	if (blockSpent.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockSpent' });
 
 	isTransactionValid({ slot, owner, recipient, hash, blockSpent, signature }, (err, invalidError) => {
 		if (err) return cb(err);
-		if (invalidError) return cb({ statusCode: 400, message: invalidError });
+		if (invalidError) return cb({ statusCode: 400, error: invalidError });
 
 		TransactionService.create({
 			slot: slot,
@@ -53,10 +53,12 @@ export const createTransaction = (
 			signature
 		}, (err: any, t: ITransaction) => {
 			if (err) return cb(err)
-			cb(null, { statusCode: 201, message: Utils.transactionToJson(t) })
+			cb(null, { statusCode: 201, result: t })
 		});
 	})
 };
+
+
 /**
  * Given a transaction, determines if is valid or not. Slot and BlockSpent must be BigNumbers
  * @param {*} transaction
@@ -124,9 +126,9 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 
 
 //TODO: change this require in mid-file
-const { getExitDataForBlock } = require('./exit')
+const { getExitDataForBlock } = require('./exits')
 
-export const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
+export const getHistory = (slot: BigNumber, cb: CallBack<ApiResponse<Object[]>>) => {
 	let filter: any = { slot: slot };
 	filter.mined_block = { $ne: null };
 	TransactionService
@@ -137,15 +139,16 @@ export const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
 			if (err) return cb(err);
 
 			let proofRetrievers = transactions.map((t: ITransaction) =>
-				(cb: CallBack<any>) => getExitDataForBlock(slot, t.mined_block, cb));
-			async.parallel(proofRetrievers, (err: any, exitDatas: any) => {
-				if (err) return cb(err);
+							(cb: CallBack<ApiResponse<string>>) => getExitDataForBlock(slot, t.mined_block, cb));
 
-				// TODO: Test if zip works like this
-				cb(null, Utils.zip(transactions, exitDatas).map((pair: [any, any]) => {
-					return { transaction: Utils.transactionToJson(pair[0]), exitData: pair[1].message }
-				})
-				);
+
+			async.parallel(proofRetrievers, (err: any, apiResponse: any) => {
+				if (err) return cb(err);
+				let result = Utils.zip(transactions, apiResponse).map((pair: [any, any]) => {
+					return {transaction: Utils.transactionToJson(pair[0]), exitData: pair[1].result}
+				});
+
+				cb(null, { statusCode: 200, result: result });
 			})
 		});
 };
@@ -153,9 +156,10 @@ export const getHistory = (slot: BigNumber, cb: CallBack<Object[]>) => {
 /**
  * Gets all blocks since slot's deposit and the proof for the coin in each of them
  */
+//TODO migrate to ApiResponse
 export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) done({status: 400, message: "Invalid Slot"});
+	if(slotBN.isNaN()) done({status: 400, error: "Invalid Slot"});
 
 	async.waterfall([
 		(next: CallBack<ITransaction>) => {
@@ -199,13 +203,13 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 
 				const blocks = [depositBlock, ...historyBlocks];
 
-				async.parallel(blocks.map(b => (cb: CallBack<string>) => getProof(slot, b.block_number.toString(), cb)),
-					(err: any, proofs: string[]) => {
+				async.parallel(blocks.map(b => (cb: CallBack<ApiResponse<string>>) => getProof(slot, b.block_number.toString(), cb)),
+					(err: any, _proofs: ApiResponse<string>[]) => {
 						if (err) return next(err);
 
 						const history: any = {};
+						const proofs = _proofs.map(s => s.result);
 
-						// TODO: Test if zip works like this
 						Utils.zip(blocks, proofs).forEach(e => {
 							const transaction = minedTransactions.find(
 								t => (e[0].transactions as Array<string>).includes(t.hash)
