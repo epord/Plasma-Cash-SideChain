@@ -9,7 +9,10 @@ import CryptoMonsJson = require("../json/CryptoMons.json");
 import RootChainJson = require("../json/RootChain.json");
 import VMCJson = require("../json/ValidatorManagerContract.json");
 import Web3 from "web3";
+import {CallBack} from "./TypeDef";
+import {AbiItem} from "web3-utils";
 
+const debug = require('debug')('app:CryptoUtils');
 const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL!));
 
 export class CryptoUtils {
@@ -47,8 +50,7 @@ export class CryptoUtils {
     }
 
     // Only used for testing.
-    public static generateTransaction(slot: BigNumber, owner: BigNumber, recipient: string, blockSpent: BigNumber, privateKey: string) {
-        //TODO migrate slot and blockSpent to BigNumber
+    public static generateTransaction(slot: string, owner: string, recipient: string, blockSpent: string, privateKey: string) {
         const slotBN = new BigNumber(slot);
         const blockSpentBN = new BigNumber(blockSpent);
         const hash = this.generateTransactionHash(slotBN, blockSpentBN, recipient);
@@ -69,44 +71,39 @@ export class CryptoUtils {
     }
 
 
-    public static generateSMTFromTransactions(transactions: Array<ITransaction>) {
+    public static generateSMTFromTransactions(transactions: ITransaction[]) {
         let leaves = new Map<string, string>();
         transactions.forEach(value => {
-            //TODO: Ver aca porque dice que en realidad un BigNumber no puede usarse como índice. Qué pasaba con JS? Por qué funcionaba?
-            // Casi seguro que hace un toString
-            leaves.set(value.slot.toString(), this.generateTransactionHash(value.slot, value.block_spent, value.recipient));
+            leaves.set(value.slot.toFixed(), this.generateTransactionHash(value.slot, value.block_spent, value.recipient));
         });
 
         return new SparseMerkleTree(64, leaves);
     }
 
 
-    public static submitBlock(block: IBlock, cb: Function) {
-        if(process.env.BLOCKCHAINLESS) return cb();
-        // TODO: Ver si con el ts ignore funciona
-        // @ts-ignore
-        const RootChainContract = new web3.eth.Contract(RootChainJson.abi, RootChainJson.networks["5777"].address);
+    public static submitBlock(block: IBlock, cb: CallBack<void>) {
+        if(process.env.BLOCKCHAINLESS) return cb(null);
+        const RootChainContract = new web3.eth.Contract(RootChainJson.abi as AbiItem[], RootChainJson.networks["5777"].address);
         web3.eth.getAccounts().then((accounts: string[]) => {
             if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
-            RootChainContract.methods.submitBlock(block.block_number.toFixed(), block.root_hash).send({from: accounts[0]}, (err: Error, res: Response) => {
-                if (err) return cb(err);
-                cb();
+            RootChainContract.methods.submitBlock(block.block_number.toFixed(), block.root_hash).send({from: accounts[0]},
+                (err: Error, res: Response) => {
+                    if (err) return cb(err);
+                    debug("Block submitted");
+                    cb(null);
             });
         });
     }
 
 
-    public static validateCryptoMons(cb: Function) {
-        // TODO: Ver si con el ts ignore funciona
-        // @ts-ignore
-        const VMC = new web3.eth.Contract(VMCJson.abi, VMCJson.networks["5777"].address);
+    public static validateCryptoMons(cb: CallBack<void>) {
+        const VMC = new web3.eth.Contract(VMCJson.abi as AbiItem[], VMCJson.networks["5777"].address);
         web3.eth.getAccounts().then((accounts: string[]) => {
-            // TODO: Ver el tema de cb(err) que cambié por cb()
-            if (!accounts || accounts.length == 0) return cb();
-            VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]}, (err: Error, res: Response) => {
-                if (err) return cb(err);
-                console.log("Validated contract");
-                cb();
+            VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]},
+                (err: Error, res: Response) => {
+                    if (err) return cb(err);
+                    debug("Validated contract");
+                    cb(null);
             });
         });
     }

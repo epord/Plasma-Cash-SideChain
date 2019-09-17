@@ -63,14 +63,12 @@ export const createBlock = (transactions: ITransaction[], blockNumber: BigNumber
  */
 const reduceTransactionsBySlot = (groupedTransactions: Map<string, ITransaction[]>, transactionsCb: CallBack<ITransaction[]>) => {
 	//Generate a paralel job for each group of transactions
-	const jobs = Array.from(groupedTransactions.values()).map(group => {
-		return (transactionCb: CallBack<ITransaction>) => {
-			getFirstValidTransaction(group, (err: any, t?: ITransaction) => {
-				if(err) return transactionCb(err);
-				if(t) return transactionCb(null, t!);
-				return transactionCb(null);
-			})
-		}
+	const jobs = Array.from(groupedTransactions.values()).map(group => (transactionCb: CallBack<ITransaction>) => {
+		getFirstValidTransaction(group, (err: any, t?: ITransaction) => {
+			if(err) return transactionCb(err);
+			if(t) return transactionCb(null, t!);
+			return transactionCb(null);
+		})
 	});
 
 	async.parallel(jobs, (err: any, results: ITransaction[]) => {

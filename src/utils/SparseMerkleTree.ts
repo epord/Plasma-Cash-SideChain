@@ -12,9 +12,9 @@ export class SparseMerkleTree {
     public root: string;
 
 
-    constructor(depth: number, leaves: any) {
+    constructor(depth: number, leaves: Map<string, string>) {
         // Leaves must be a dictionary with key as the leaf's slot and value the leaf's hash
-        this.leaves = new Map(Object.entries(leaves));
+        this.leaves = leaves;
         this.depth = depth;
         // Initialize defaults
         let defaultNodes: Array<string> = this.buildDefaultNodes(depth);
