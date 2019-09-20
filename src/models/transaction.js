@@ -34,9 +34,14 @@ module.exports = mongoose.Schema({
 
 	mined_timestamp: Date,
 
+	timestamp: {
+		type: Date,
+		default: Date.now
+	},
+
 	signature: String,
 
-	isSwap: {
+	is_swap: {
 		type: Boolean,
 		default: false
 	},
@@ -47,6 +52,6 @@ module.exports = mongoose.Schema({
 		min: '0',
 	},
 
-	hashSecret: String,
+	hash_secret: String,
 	secret: String
 });

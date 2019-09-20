@@ -98,6 +98,7 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 		const { lastBlock, transactions } = results;
 
 		let swappingTransactions = transactions.filter(t => t.is_swap);
+
 		validateSwappingTransactions(swappingTransactions, (err: any, result?: ITransaction[]) => {
 			if(err) return cb(err);
 
@@ -261,7 +262,7 @@ const getFirstValidTransaction = (transactions: ITransaction[], transactionsCb: 
 				owner: t.owner,
 				recipient: t.recipient,
 				hash: t.hash,
-				secretHash: t.secret_hash,
+				hashSecret: t.hash_secret,
 				blockSpent: t.block_spent,
 				signature: t.signature
 			}, validateTransactionCB)
@@ -277,8 +278,8 @@ const validateSwappingTransactions = (transactions: ITransaction[], cb: CallBack
 	async.parallel(jobs, (err: any, validations: string[]) => {
 		const pairs = Utils.zip(transactions, validations);
 		const day = 24*60*60*1000;
-		const toDelete = pairs.filter(e => e[1] || e[0].mined_timestamp.getDate() < (Date.now() - day)).map(e => e[0]);
-		const valid = pairs.filter(e => !e[1] && e[0].mined_timestamp.getDate() >= (Date.now() - day)).map(e => e[0]);
+		const toDelete = pairs.filter(e => e[1] || (e[0].timestamp.getTime() < (Date.now() - day))).map(e => e[0]);
+		const valid = pairs.filter(e => !e[1] && (e[0].timestamp.getTime() >= (Date.now() - day))).map(e => e[0]);
 
 		TransactionService.deleteMany({_id: {$in: toDelete.map(t => t.hash) }}).then();
 

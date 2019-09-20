@@ -14,7 +14,7 @@ interface AtomicSwapData {
 	owner: string
 	recipient: string
 	hash: string
-	secretHash: string
+	hashSecret: string
 	blockSpent: BigNumber
 	signature: string
 }
@@ -26,15 +26,16 @@ export const toAtomicSwapData = (t: ITransaction) => {
 		owner: t.owner,
 		recipient: t.recipient,
 		hash: t.hash,
-		secretHash: t.secret_hash,
+		hashSecret: t.hash_secret,
 		blockSpent: t.block_spent,
 		signature: t.signature
 	}
 }
 
 export const isAtomicSwapTransactionValid = (transaction: AtomicSwapData, validateTransactionCb: CallBack<string>) => {
-	const { slot, swappingSlot, recipient, secretHash, blockSpent } = transaction;
-	const calculatedHash = CryptoUtils.generateAtomicSwapTransactionHash(slot, blockSpent, secretHash, recipient, swappingSlot);
+	const { slot, swappingSlot, recipient, hashSecret, blockSpent } = transaction;
+	const calculatedHash = CryptoUtils.generateAtomicSwapTransactionHash(slot, blockSpent, hashSecret, recipient, swappingSlot);
+
 	if(!calculatedHash) return validateTransactionCb(null, "Invalid Hash, blockSpent can be 0 in a swap");
 
 	isTransactionValidWithHash(transaction, calculatedHash, (err: any, result?: string) => {
@@ -94,9 +95,10 @@ export const createAtomicSwapComponent = (
 			owner,
 			recipient,
 			hash,
-			secretHash: hashSecret,
+			hashSecret,
 			blockSpent,
-			signature},
+			signature
+		},
 		(err: any, result?: string) => {
 			if (err) return cb(err);
 			if (result) return cb({statusCode: 400, error: result});
@@ -108,9 +110,9 @@ export const createAtomicSwapComponent = (
 				_id: hash,
 				block_spent: blockSpent,
 				signature,
-				isSwap: true,
+				is_swap: true,
 				swapping_slot: swappingSlot,
-				hashSecret: hashSecret,
+				hash_secret: hashSecret,
 			}, (err: any, t: ITransaction) => {
 				if (err) return cb(err);
 				cb(null, {statusCode: 201, result: t})
@@ -132,7 +134,7 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 			if(!t) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
 			if(!t.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
 			if(t.secret)  return cb(null, {statusCode: 200, result: t});
-			if(!CryptoUtils.validateHash(secret, t.secret_hash)) {
+			if(!CryptoUtils.validateHash(secret, t.hash_secret)) {
 				return cb({statusCode: 400, error: "Secret does not correspond to HashSecret in the transaction"});
 			}
 

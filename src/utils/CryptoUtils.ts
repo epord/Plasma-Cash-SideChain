@@ -99,6 +99,39 @@ export class CryptoUtils {
         };
     }
 
+    // Only used for testing.
+    public static generateAtomicSwapTransaction(
+        slot: string,
+        owner: string,
+        recipient: string,
+        blockSpent: string,
+        swappingSlot: string,
+        hashSecret: string,
+        privateKey: string) {
+
+        const slotBN = new BigNumber(slot);
+        const blockSpentBN = new BigNumber(blockSpent);
+        const swappingSlotBN = new BigNumber(swappingSlot);
+        const hash = this.generateAtomicSwapTransactionHash(slotBN, blockSpentBN, hashSecret, recipient, swappingSlotBN);
+        const signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(privateKey));
+
+        // This method simulates eth-sign RPC method
+        // https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
+        const realSignature = EthUtils.toRpcSig(signature.v, signature.r, signature.s);
+
+        return {
+            slot,
+            blockSpent,
+            owner,
+            recipient,
+            swappingSlot,
+            hashSecret: hashSecret,
+            hash,
+            signature: realSignature,
+        };
+    }
+
+
 
     public static generateSMTFromTransactions(transactions: ITransaction[]) {
         let leaves = new Map<string, string>();

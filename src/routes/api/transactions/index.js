@@ -67,9 +67,9 @@ router.post('/create', (req, res, next) => {
  *  "blockSpent": int|string,
  *  "owner": string (hex) (corresponds to A),
  *  "recipient":string (hex) (corresponds to B),
- *  "swapping_slot": int|string,
- *  "secretHash" : string (hex)
- *  "hash": string (hex) [ keccak256(uint256(slot), uint256(blockSpent), secretHash, recipient, swapping_slot) ],
+ *  "swappingSlot": int|string,
+ *  "hashSecret" : string (hex)
+ *  "hash": string (hex) [ keccak256(uint256(slot), uint256(blockSpent), hashSecret, recipient, swapping_slot) ],
  *  "signature" string (hex) [sig of hash]
  * }
  */

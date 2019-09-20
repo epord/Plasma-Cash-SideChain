@@ -27,12 +27,13 @@ export interface ITransaction {
     Mined_Block: IBlock;
 
     mined_timestamp: Date;
+    timestamp: Date;
 
     signature: string;
 
     is_swap: boolean;
     swapping_slot: BigNumber;
-    secret_hash: string;
+    hash_secret: string;
     secret: string;
 
     save: (cb?: CallBack<ITransaction>) => void;
@@ -51,7 +52,7 @@ export interface IJSONTransaction {
     signature: string,
     isSwap: boolean,
     swapping_slot: string | undefined
-    secretHash: string | undefined,
+    hashSecret: string | undefined,
     secret: string | undefined,
 
 }
