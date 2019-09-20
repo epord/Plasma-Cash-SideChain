@@ -36,4 +36,17 @@ module.exports = mongoose.Schema({
 
 	signature: String,
 
+	isSwap: {
+		type: Boolean,
+		default: false
+	},
+
+	swapping_slot:  {
+		type: BigNumberSchema,
+		scale: 0,
+		min: '0',
+	},
+
+	hashSecret: String,
+	secret: String
 });

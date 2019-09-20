@@ -53,4 +53,4 @@ export function init(cb: () => void) {
     })
 }
 
-module.exports.app = app
+module.exports.app = app;

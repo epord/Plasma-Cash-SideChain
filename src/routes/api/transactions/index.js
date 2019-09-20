@@ -1,5 +1,6 @@
 import {Utils} from "../../../utils/Utils";
 import {createTransaction} from "../../../services/transaction";
+import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
 
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
@@ -66,22 +67,51 @@ router.post('/create', (req, res, next) => {
  *  "blockSpent": int|string,
  *  "owner": string (hex) (corresponds to A),
  *  "recipient":string (hex) (corresponds to B),
- *  "receivingSlot": int|string,
- *  "hashSecret" : string (hex)
- *  "hash": string (hex) [ keccak256(uint256(slot), uint256(blockSpent), hashSecret, recipient, receivingSlot) ],
+ *  "swapping_slot": int|string,
+ *  "secretHash" : string (hex)
+ *  "hash": string (hex) [ keccak256(uint256(slot), uint256(blockSpent), secretHash, recipient, swapping_slot) ],
  *  "signature" string (hex) [sig of hash]
  * }
  */
 router.post('/createAtomicSwap', (req, res, next) => {
-	const { slot, owner, recipient, hash, blockSpent, signature } = req.body;
+	const { slot, owner, recipient, hash, blockSpent, signature, swappingSlot, hashSecret } = req.body;
 
-	if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || receivingSlot == undefined || !hashSecret || !signature) {
+	if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || swappingSlot == undefined || !hashSecret || !signature) {
 		return res.status(Status.BAD_REQUEST).json('Missing parameter');
 	}
 
-	//TODO
-	//createTransaction(slot, owner, recipient, hash, blockSpentBN, signature, Utils.responseWithStatus(res, Utils.transactionToJson))
+	createAtomicSwapComponent(
+		slot,
+		blockSpent,
+		owner,
+		recipient,
+		swappingSlot,
+		hashSecret,
+		hash,
+		signature,
+		Utils.responseWithStatus(res, Utils.transactionToJson)
+	)
 });
+
+/**
+ * Creates an Atomic Swap Transaction
+ * {
+ *  "secret" : string (hex)
+ *  "slot": int|string
+ *  "minedBlock": int|string
+ * }
+ */
+router.post('/revealSecret', (req, res, next) => {
+	const { slot, minedBlock, secret } = req.body;
+
+	if (!secret || slot == undefined || minedBlock == undefined) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter secret');
+	}
+
+	revealSecret(slot, minedBlock, secret, Utils.responseWithStatus(res, Utils.transactionToJson));
+
+});
+
 
 
 module.exports = router;

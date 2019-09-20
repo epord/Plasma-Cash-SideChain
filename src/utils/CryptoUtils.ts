@@ -25,6 +25,34 @@ export class CryptoUtils {
         }
     }
 
+    public static generateAtomicSwapTransactionHash(
+        slot: BigNumber,
+        blockSpent: BigNumber,
+        hashSecret: string,
+        recipient: string,
+        swappingSlot: BigNumber): string | undefined {
+        if(blockSpent.isZero()) {
+            debug("ERROR: Deposits can never be an atomic swap");
+            return undefined;
+        } else {
+            let params = [
+                //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
+                EthUtils.setLengthLeft(new BN(slot.toFixed()).toBuffer(), 256/8), 		 // uint256 little endian
+                EthUtils.setLengthLeft(new BN(blockSpent.toFixed()).toBuffer(), 256/8),	 // uint256 little endian
+                EthUtils.toBuffer(hashSecret),													 // must start with 0x
+                EthUtils.toBuffer(recipient),												     // must start with 0x
+                EthUtils.setLengthLeft(new BN(swappingSlot.toFixed()).toBuffer(), 256/8), // uint256 little endian
+            ];
+
+            const bytes = EthUtils.bufferToHex(RLP.encode(params));
+            return EthUtils.bufferToHex(EthUtils.keccak256(bytes))
+        }
+    }
+
+    public static validateHash = (message: string, hash: string) => {
+        return  EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.toBuffer(message))).toLowerCase() == hash.toLowerCase();
+    };
+
     public static getTransactionBytes(slot: BigNumber, blockSpent: BigNumber, recipient: string): string  {
         let params = [
             //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?

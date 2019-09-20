@@ -20,6 +20,17 @@ interface TransactionData {
 	signature: string
 }
 
+export const toTransactionData = (t: ITransaction) => {
+	return {
+		slot: t.slot,
+		owner: t.owner,
+		recipient: t.recipient,
+		hash: t.hash,
+		blockSpent: t.block_spent,
+		signature: t.signature
+	}
+};
+
 export const createTransaction = (
 		_slot: string,
 		_owner: string,
@@ -66,6 +77,11 @@ export const createTransaction = (
  * Callback being call without parameters means the transaction is valid
  */
 export const isTransactionValid = (transaction: TransactionData, validateTransactionCb: CallBack<string>) => {
+	const { slot, recipient, blockSpent } = transaction;
+	return isTransactionValidWithHash(transaction, CryptoUtils.generateTransactionHash(slot, blockSpent, recipient), validateTransactionCb);
+};
+
+export const isTransactionValidWithHash = (transaction: TransactionData, calculatedHash: string, validateTransactionCb: CallBack<string>) => {
 	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
 	getLastMinedTransaction({ slot: slot }, (err: any, result?: ITransaction) => {
@@ -80,8 +96,6 @@ export const isTransactionValid = (transaction: TransactionData, validateTransac
 			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
 			if (!(mined_block.block_number as BigNumber).eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
-
-			const calculatedHash = CryptoUtils.generateTransactionHash(slot, blockSpent, recipient);
 
 			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
@@ -110,7 +124,7 @@ export const isTransactionValid = (transaction: TransactionData, validateTransac
 
 
 	})
-};
+}
 
 export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>) => {
 	filter.mined_block = { $ne: null }

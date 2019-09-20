@@ -1,6 +1,6 @@
 import {CryptoUtils} from "./CryptoUtils";
-import {IBlock} from "../models/BlockInterface";
-import {ITransaction} from "../models/TransactionInterface";
+import {IBlock, IJSONBlock} from "../models/BlockInterface";
+import {IJSONTransaction, ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
 import {ApiResponse} from "./TypeDef";
 import Status from 'http-status-codes';
@@ -26,27 +26,54 @@ export class Utils {
         return max;
     }
 
-    public static groupTransactionsBySlot(arr: Array<ITransaction>): Map<string, Array<ITransaction>> {
+    public static groupTransactionsBySlot(arr: Array<ITransaction>): Map<string, ITransaction[]> {
         return arr.reduce((result: Map<string, Array<ITransaction>>, e: ITransaction) => {
             if (!result.get(e.slot.toFixed())) {
                 result.set(e.slot.toFixed(), new Array<ITransaction>());
             }
             result.get(e.slot.toFixed())!.push(e);
             return result;
-        }, new Map<string, Array<ITransaction>>())
+        }, new Map<string, ITransaction[]>())
     }
 
-    public static blockToJson(block: IBlock): Object {
+    public static blockToJson(block: IBlock): IJSONBlock {
         return {
             blockNumber: block.block_number.toFixed(),
             rootHash: block.root_hash,
-            timestamp: block.timestamp,
-            transactions: block.transactions
+            timestamp: block.timestamp.toString(),
+            transactions: block.Transactions.map(Utils.transactionToJson)
         }
     }
 
-    public static transactionToJson(transaction: ITransaction): Object {
-        return {
+    public static groupOnlySwappingPairs = (transactions: ITransaction[]): Map<string, ITransaction> => {
+        let map = new Map<string, ITransaction>();
+        const groupedArrays = Utils.groupTransactionsBySlot(transactions);
+
+        for (let slot of groupedArrays.keys()) {
+            if(map.has(slot)) continue;
+
+            for(let t of groupedArrays.get(slot)!) {
+                let swappingSlot = t.swapping_slot.toFixed();
+
+                if(groupedArrays.has(swappingSlot)) {
+                    let swappingCandidates = groupedArrays.get(swappingSlot)!;
+                    let index = swappingCandidates.map(t=>t.swapping_slot.toFixed()).indexOf(slot);
+                    if(index>=0) {
+                        map.set(slot, t);
+                        map.set(swappingSlot, swappingCandidates[index]);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return map;
+    };
+
+
+    public static transactionToJson(transaction: ITransaction): IJSONTransaction {
+
+        let transactionObj: any = {
             slot: transaction.slot.toFixed(),
             owner: transaction.owner,
             recipient: transaction.recipient,
@@ -57,6 +84,14 @@ export class Utils {
             minedTimestamp: transaction.mined_timestamp,
             minedBlock: transaction.mined_block,
         }
+
+        if(transaction.is_swap) {
+            transactionObj.swappingSlong = transaction.swapping_slot.toFixed();
+            transactionObj.secretHash = transaction.secret_hash;
+            transactionObj.secret = transaction.secret;
+        }
+
+        return transactionObj;
     }
 
     public static exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string) {

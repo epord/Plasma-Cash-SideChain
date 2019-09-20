@@ -96,30 +96,43 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 		if (err) return cb(err);
 
 		const { lastBlock, transactions } = results;
-		const groupedTransactions = Utils.groupTransactionsBySlot(transactions);
-		reduceTransactionsBySlot(groupedTransactions, (err, transactions) => {
 
+		let swappingTransactions = transactions.filter(t => t.is_swap);
+		validateSwappingTransactions(swappingTransactions, (err: any, result?: ITransaction[]) => {
 			if(err) return cb(err);
 
-			let nextNumber;
-			if(!lastBlock) {
-				nextNumber = blockInterval;
-			} else {
-				const lastBN = lastBlock.block_number;
-				const rest = lastBN.mod(blockInterval);
-				nextNumber = lastBN.minus(rest).plus(blockInterval);
-			}
+			let swappingMap = Utils.groupOnlySwappingPairs(result!);
+			let basicTransactions = transactions.filter(t => !t.is_swap && !swappingMap.has(t.slot.toFixed()));
 
-			createBlock(transactions!, nextNumber, (err, block) => {
-				debug(`mining ${block}`);
+			const groupedTransactions = Utils.groupTransactionsBySlot(basicTransactions);
+			reduceTransactionsBySlot(groupedTransactions, (err, transactions) => {
+				transactions = transactions!.concat(Array.from(swappingMap.values()));
+
 				if(err) return cb(err);
 
-                CryptoUtils.submitBlock(block, (err: any)=> {
+				let nextNumber;
+				if(!lastBlock) {
+					nextNumber = blockInterval;
+				} else {
+					const lastBN = lastBlock.block_number;
+					const rest = lastBN.mod(blockInterval);
+					nextNumber = lastBN.minus(rest).plus(blockInterval);
+				}
+
+				createBlock(transactions!, nextNumber, (err, block) => {
+					debug(`mining ${block}`);
 					if(err) return cb(err);
-					cb(null, { statusCode: 201, result: block });
-				})
+
+					CryptoUtils.submitBlock(block, (err: any)=> {
+						if(err) return cb(err);
+						cb(null, { statusCode: 201, result: block });
+					})
+				});
 			});
+
+
 		});
+
 	});
 };
 
@@ -206,10 +219,11 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<ApiResp
 };
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
-import { isTransactionValid } from'./transaction';
+import {isTransactionValid, toTransactionData} from './transaction';
+import {isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
 
 /**
- * Given a set of transactions, will find the first valid one, removem those that finds invalid
+ * Given a set of transactions, will find the first valid one, remove those that finds invalid
  * @param {Set of transactions that share the same Slot} transactions
  * @param {Callback function (error, result)} transactionsCb where result is the first valid transaction, or undefined if none was found
  */
@@ -219,14 +233,7 @@ const getFirstValidTransaction = (transactions: ITransaction[], transactionsCb: 
 	//Gets the first transaction
 	const t = transactions[0];
 
-	isTransactionValid({
-		slot: t.slot,
-		owner: t.owner,
-		recipient: t.recipient,
-		hash: t.hash,
-		blockSpent: t.block_spent,
-		signature: t.signature
-	}, (err: any, invalidError: any) => {
+	const validateTransactionCB = (err: any, invalidError: any) => {
 		//If there is a non-validating issue, propagate
 		if(err) { return transactionsCb(err); }
 
@@ -234,7 +241,7 @@ const getFirstValidTransaction = (transactions: ITransaction[], transactionsCb: 
 		if(!invalidError) {
 			transactionsCb(null, t)
 		} else {
-			//If the transaction is invalid, remove it from the DatabasFfine
+			//If the transaction is invalid, remove it from the Database
 			//Notify somewhere who knows where
 			TransactionService.deleteOne({ _id: t.hash }).exec((err: any) => {
 				if(err) return transactionsCb(err);
@@ -244,5 +251,39 @@ const getFirstValidTransaction = (transactions: ITransaction[], transactionsCb: 
 				getFirstValidTransaction(transactions, transactionsCb)
 			});
 		}
-	})
+	};
+
+	if(t.is_swap) {
+		isAtomicSwapTransactionValid(
+			{
+				slot: t.slot,
+				swappingSlot: t.swapping_slot,
+				owner: t.owner,
+				recipient: t.recipient,
+				hash: t.hash,
+				secretHash: t.secret_hash,
+				blockSpent: t.block_spent,
+				signature: t.signature
+			}, validateTransactionCB)
+	} else {
+		isTransactionValid(toTransactionData(t), validateTransactionCB)
+	}
+
+
 };
+
+const validateSwappingTransactions = (transactions: ITransaction[], cb: CallBack<ITransaction[]>) => {
+	const jobs = transactions.map(t => (cb: CallBack<string>) => isAtomicSwapTransactionValid(toAtomicSwapData(t), cb));
+	async.parallel(jobs, (err: any, validations: string[]) => {
+		const pairs = Utils.zip(transactions, validations);
+		const day = 24*60*60*1000;
+		const toDelete = pairs.filter(e => e[1] || e[0].mined_timestamp.getDate() < (Date.now() - day)).map(e => e[0]);
+		const valid = pairs.filter(e => !e[1] && e[0].mined_timestamp.getDate() >= (Date.now() - day)).map(e => e[0]);
+
+		TransactionService.deleteMany({_id: {$in: toDelete.map(t => t.hash) }}).then();
+
+		cb(null, valid)
+	});
+};
+
+

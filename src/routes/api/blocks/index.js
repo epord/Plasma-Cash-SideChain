@@ -20,6 +20,7 @@ const logError = (err) => {
 router.get('/:block_number([0-9]+)', (req, res, next) => {
 	BlockService
 		.findById(req.params.block_number)
+		.populate("transactions")
 		.exec((err, block) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			res.status(Status.OK).json(Utils.blockToJson(block));
@@ -29,6 +30,7 @@ router.get('/:block_number([0-9]+)', (req, res, next) => {
 router.get('/', (req, res, next) => {
 	BlockService
 		.find({})
+		.populate("transactions")
 		.exec((err, blocks) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			res.status(Status.OK).json(blocks.map(Utils.blockToJson));

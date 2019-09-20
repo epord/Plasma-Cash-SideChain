@@ -30,6 +30,28 @@ export interface ITransaction {
 
     signature: string;
 
-    save: () => void;
+    is_swap: boolean;
+    swapping_slot: BigNumber;
+    secret_hash: string;
+    secret: string;
+
+    save: (cb?: CallBack<ITransaction>) => void;
     populate: (field: string, cb: CallBack<ITransaction>) => void;
+}
+
+export interface IJSONTransaction {
+
+    hash: string,
+    slot: string,
+    owner: string,
+    recipient: string,
+    blockSpent: string,
+    minedBlock: string,
+    minedTimestamp: string,
+    signature: string,
+    isSwap: boolean,
+    swapping_slot: string | undefined
+    secretHash: string | undefined,
+    secret: string | undefined,
+
 }
