@@ -112,7 +112,7 @@ export class CryptoUtils {
         const slotBN = new BigNumber(slot);
         const blockSpentBN = new BigNumber(blockSpent);
         const swappingSlotBN = new BigNumber(swappingSlot);
-        const hash = this.generateAtomicSwapTransactionHash(slotBN, blockSpentBN, hashSecret, recipient, swappingSlotBN);
+        const hash = this.generateAtomicSwapTransactionHash(slotBN, blockSpentBN, hashSecret, recipient, swappingSlotBN)!;
         const signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(privateKey));
 
         // This method simulates eth-sign RPC method
@@ -136,7 +136,7 @@ export class CryptoUtils {
     public static generateSMTFromTransactions(transactions: ITransaction[]) {
         let leaves = new Map<string, string>();
         transactions.forEach(value => {
-            leaves.set(value.slot.toFixed(), this.generateTransactionHash(value.slot, value.block_spent, value.recipient));
+            leaves.set(value.slot.toFixed(), value.hash);
         });
 
         return new SparseMerkleTree(64, leaves);
