@@ -17,7 +17,7 @@ module.exports = mongoose.Schema({
 		default: Date.now
 	},
 
-	isSubmitted: {
+	is_submitted: {
 		type: Boolean,
 		default: false
 	}

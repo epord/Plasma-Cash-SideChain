@@ -16,16 +16,18 @@ export class TestUtils {
     public static _slotB        = "2";
     public static _blockNumber  = "2";
     public static _blockNumberB  = "3";
-    public static _secretA       = "0x11";
+    public static _secretA       = "0x25";
     public static _hashSecretA   = EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.toBuffer(TestUtils._secretA)));
-    public static _secretB       = "0x11";
+    public static _secretB       = "0x50";
     public static _hashSecretB   = EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.toBuffer(TestUtils._secretB)));
 
     public static transactionURL    = "/api/transactions/create";
     public static atomicSwapURL    = "/api/transactions/createAtomicSwap";
+    public static revealSecretURL   = "/api/transactions/revealSecret";
     public static depositURL        = "/api/blocks/deposit";
     public static blocksURL = "/api/blocks/";
     public static mineURL = "/api/blocks/mine";
+    public static secretBlockURL = (slot: string) => TestUtils.blocksURL + "secretBlock/" + slot;
 
 
     public static Alice = TestUtils._owner;
@@ -92,7 +94,7 @@ export class TestUtils {
             "blockNumber": blockNumber,
             "owner": TestUtils._owner
         }).expect(201)
-            .then((_: any) => {
+            .then(() => {
                 TestUtils.jsonPost(request, TestUtils.transactionURL)
                     .send(transaction)
                     .expect(201)
@@ -104,7 +106,79 @@ export class TestUtils {
         return TestUtils.jsonPost(request, TestUtils.depositURL).send({ slot, blockNumber, owner }).expect(201)
     };
 
+    public static revealSecret = (request: any, slot: string| number, secret: string, minedBlock: string | undefined) => {
+        return TestUtils.jsonPost(request, TestUtils.revealSecretURL).send({slot, secret, minedBlock}).expect(202)
+    };
 
 
+    public static addSwap = (request: any, cb: CallBack<any>) => {
+        TestUtils.addDeposit(request, TestUtils._slot, TestUtils.Alice, TestUtils._blockNumber).expect(201).then(() =>
+            TestUtils.addDeposit(request, TestUtils._slotB, TestUtils.Bob, TestUtils._blockNumberB).expect(201).then(() =>
+                TestUtils.jsonPost(request, TestUtils.atomicSwapURL).send(TestUtils._atomicSwapTransactionA).expect(201).then(() =>
+                    TestUtils.jsonPost(request, TestUtils.atomicSwapURL).send(TestUtils._atomicSwapTransactionB).expect(201).then(() =>
+                        cb(null)
+                    )
+                )
+            )
+        )
+    };
 
-}
+    public static addSwapAndMine = (request: any, cb: CallBack<any>) => {
+        TestUtils.addSwap(request, () => {
+            TestUtils.jsonPost(request, TestUtils.mineURL).expect(201).then((response: any) => {
+                cb(null)
+            })
+        })
+    };
+
+    public static addSwapAndMineB = (request: any, cb: CallBack<any>) => {
+        TestUtils.addSwapB(request, () => {
+            TestUtils.jsonPost(request, TestUtils.mineURL).expect(201).then((response: any) => {
+                cb(null)
+            })
+        })
+    };
+
+
+    //Swap variables
+    public static _slotA2 = TestUtils._slot + "1";
+    public static _slotB2 = TestUtils._slotB + "1";
+    public static _blockNumberA2 = TestUtils._blockNumber + "1";
+    public static _blockNumberB2 = TestUtils._blockNumberB + "1";
+
+    public static addSwapB = (request: any, cb: CallBack<any>) => {
+
+
+        const swapB = CryptoUtils.generateAtomicSwapTransaction(
+            TestUtils._slotB2,
+            TestUtils._recipient,
+            TestUtils._owner,
+            TestUtils._blockNumberB2,
+            TestUtils._slotA2,
+            TestUtils._hashSecretB,
+            TestUtils.BobPK,
+        );
+
+        const swapA = CryptoUtils.generateAtomicSwapTransaction(
+            TestUtils._slotA2,
+            TestUtils._owner,
+            TestUtils._recipient,
+            TestUtils._blockNumberA2,
+            TestUtils._slotB2,
+            TestUtils._hashSecretA,
+            TestUtils._privateKey,
+        );
+
+        TestUtils.addDeposit(request, TestUtils._slotA2, TestUtils.Alice, TestUtils._blockNumberA2).expect(201).then(() =>
+            TestUtils.addDeposit(request, TestUtils._slotB2, TestUtils.Bob, TestUtils._blockNumberB2).expect(201).then(() =>
+                TestUtils.jsonPost(request, TestUtils.atomicSwapURL).send(swapA).expect(201).then(() =>
+                    TestUtils.jsonPost(request, TestUtils.atomicSwapURL).send(swapB).expect(201).then(() =>
+                        cb(null)
+                    )
+                )
+            )
+        )
+    }
+
+
+};

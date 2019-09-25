@@ -13,7 +13,7 @@ export interface IBlock {
     transactions: Array<string>;
     Transactions: Array<ITransaction>;
 
-    save: () => void;
+    save: (cb?: CallBack<IBlock>) => void;
     populate: (field: string, cb: CallBack<IBlock>) => void;
 }
 

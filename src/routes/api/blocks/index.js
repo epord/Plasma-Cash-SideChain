@@ -7,7 +7,7 @@ const express 			= require('express')
 , Status 						= require('http-status-codes')
 , async							= require('async')
 , BigNumber					= require("bignumber.js")
-, { BlockService } 	= require('../../../services/index.js')
+, { BlockService, SecretRevealingBlockService } 	= require('../../../services/index.js')
 
 debug('registering /api/blocks routes');
 
@@ -24,6 +24,16 @@ router.get('/:block_number([0-9]+)', (req, res, next) => {
 		.exec((err, block) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			res.status(Status.OK).json(Utils.blockToJson(block));
+		})
+});
+
+router.get('/secretBlock/:block_number([0-9]+)', (req, res, next) => {
+	SecretRevealingBlockService
+		.findById(req.params.block_number)
+		.populate("transactions")
+		.exec((err, block) => {
+			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+			res.status(Status.OK).json(Utils.secretBlockToJson(block));
 		})
 });
 

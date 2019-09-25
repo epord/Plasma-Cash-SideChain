@@ -5,6 +5,7 @@ import {getLastMinedTransaction, isTransactionValidWithHash} from "./transaction
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {BlockService} from ".";
+import {IBlock} from "../models/BlockInterface";
 
 const { TransactionService, CoinStateService, SecretRevealingBlockService } = require('./index')
 
@@ -127,7 +128,7 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 	SecretRevealingBlockService.findById(minedBlock).exec((err: any, sblock: ISRBlock) => {
 		if(err) return cb(err)
 		if(!sblock) return cb(null, {statusCode: 409, error: "Invalid blockIncluded, this block has not atomic swaps"});
-		if(sblock.isSubmitted) return cb(null, {statusCode: 409, error: "This secret-revealing block was already submitted"});
+		if(sblock.is_submitted) return cb(null, {statusCode: 409, error: "This secret-revealing block was already submitted"});
 
 		TransactionService.findOne({ slot, mined_block: minedBlock}).exec((err: any, t: ITransaction) => {
 			if(err) return cb(err);
@@ -140,13 +141,43 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 
 			t.secret = secret;
 			t.save((err, t) => {
-				if(err) return cb(err)
-				cb(null, {statusCode: 202, result: t})
+				if(err) return cb(err);
+
+				checkIfBlockIsRevealed(minedBlock,() => cb(null, {statusCode: 202, result: t}));
 			});
 		})
 
 	})
+};
+
+export const checkIfBlockIsRevealed = async (minedBlock: BigNumber, cb: CallBack<void>) => {
+
+	const block: IBlock  = await BlockService.findById(minedBlock).populate("transactions").exec();
+
+	const swapTransactions = block.Transactions.filter(t => t.is_swap).map(t=> t.secret)
+	const isAllRevealed = swapTransactions.indexOf(undefined) < 0;
+
+	if(isAllRevealed) {
+		const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(block.Transactions);
+		const sblock: ISRBlock = await SecretRevealingBlockService.findById(minedBlock).exec();
 
 
-}
+		if(!sblock.is_submitted) {
+			await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { root_hash: tree.root } });
 
+			CryptoUtils.submitSecretBlock(sblock!, async (err: any) => {
+				if(err) {
+					console.error(err);
+					return cb(null)
+				}
+
+				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { is_submitted: true } });
+				return cb(null);
+			});
+		} else {
+			return cb(null);
+		}
+	} else {
+		return cb(null)
+	}
+};

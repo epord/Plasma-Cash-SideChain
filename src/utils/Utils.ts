@@ -4,6 +4,7 @@ import {IJSONTransaction, ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
 import {ApiResponse} from "./TypeDef";
 import Status from 'http-status-codes';
+import {IJSONSRBlock, ISRBlock} from "../models/SecretRevealingBlockInterface";
 const debug = require('debug')('app:api:Utils')
 
 export class Utils {
@@ -42,6 +43,16 @@ export class Utils {
             rootHash: block.root_hash,
             timestamp: block.timestamp.toString(),
             transactions: block.Transactions.map(Utils.transactionToJson)
+        }
+    }
+
+    public static secretBlockToJson(block: ISRBlock): IJSONSRBlock {
+        return {
+            blockNumber: block.block_number.toFixed(),
+            rootHash: block.root_hash,
+            timestamp: block.timestamp.toString(),
+            isSubmitted: block.is_submitted,
+
         }
     }
 

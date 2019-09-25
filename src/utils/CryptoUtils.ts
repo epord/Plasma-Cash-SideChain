@@ -11,6 +11,7 @@ import VMCJson = require("../json/ValidatorManagerContract.json");
 import Web3 from "web3";
 import {CallBack} from "./TypeDef";
 import {AbiItem} from "web3-utils";
+import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 
 const debug = require('debug')('app:CryptoUtils');
 const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL!));
@@ -142,6 +143,19 @@ export class CryptoUtils {
         return new SparseMerkleTree(64, leaves);
     }
 
+    public static generateSecretRevealingSMTFromTransactions(transactions: ITransaction[]) {
+        let leaves = new Map<string, string>();
+        transactions.forEach(value => {
+            if(!value.secret) {
+                console.error("Trying to create a Merkle Tree and secret is missing");
+            }
+
+            leaves.set(value.slot.toFixed(), value.secret!);
+        });
+
+        return new SparseMerkleTree(64, leaves);
+    }
+
 
     public static submitBlock(block: IBlock, cb: CallBack<void>) {
         if(process.env.BLOCKCHAINLESS) return cb(null);
@@ -154,6 +168,20 @@ export class CryptoUtils {
                     debug("Block submitted");
                     cb(null);
             });
+        });
+    }
+
+    public static submitSecretBlock(block: ISRBlock, cb: CallBack<void>) {
+        if(process.env.BLOCKCHAINLESS) return cb(null);
+        const RootChainContract = new web3.eth.Contract(RootChainJson.abi as AbiItem[], RootChainJson.networks["5777"].address);
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            if (!accounts || accounts.length == 0) return cb('Cannot find accounts');
+            RootChainContract.methods.submitSecretBlock(block.block_number.toFixed(), block.root_hash).send({from: accounts[0]},
+                (err: Error, res: Response) => {
+                    if (err) return cb(err);
+                    debug("Block submitted");
+                    cb(null);
+                });
         });
     }
 

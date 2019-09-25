@@ -20,8 +20,8 @@ describe('Transactions Works', () => {
   beforeEach(TU.beforeEach);
 
   it('Works with a correct component transaction', (done) => {
-    TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-        TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
+    TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+        TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
             TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() => done())
         )
     )
@@ -29,9 +29,9 @@ describe('Transactions Works', () => {
 
 
   it('Does not mine it alone', (done) => {
-    TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-        TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then( (_: any) =>
-            TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) =>
+    TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+        TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then( () =>
+            TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() =>
                 TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                     expect(response.body.transactions.length).toBe(0);
                     done()
@@ -42,10 +42,10 @@ describe('Transactions Works', () => {
   });
 
     it('Does mine it together', (done) => {
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
-                TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) =>
-                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then((_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
+                TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() =>
+                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then(() =>
                         TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                             expect(response.body.transactions.length).toBe(2);
                             done()
@@ -62,11 +62,11 @@ describe('Transactions Works', () => {
         let slotB2 = TU._slotB + "1";
         let blockNumberA2 = TU._blockNumber + "1";
         let blockNumberB2 = TU._blockNumberB + "1";
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( (_: any) =>
-                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
-                    TU.addDeposit(request,slotB2, TU.Bob, blockNumberB2).expect(201).then ( (_: any) =>
-                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) => {
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( () =>
+                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
+                    TU.addDeposit(request,slotB2, TU.Bob, blockNumberB2).expect(201).then ( () =>
+                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() => {
                             const swapB = CryptoUtils.generateAtomicSwapTransaction(
                                 slotB2,
                                 TU._recipient,
@@ -77,7 +77,7 @@ describe('Transactions Works', () => {
                                 TU.BobPK,
                             );
 
-                            TU.jsonPost(request, TU.atomicSwapURL).send(swapB).expect(201).then((_: any) =>
+                            TU.jsonPost(request, TU.atomicSwapURL).send(swapB).expect(201).then(() =>
                                 TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                     expect(response.body.transactions.length).toBe(0);
                                     done()
@@ -96,11 +96,11 @@ describe('Transactions Works', () => {
         let slotB2 = TU._slotB + "1";
         let blockNumberA2 = TU._blockNumber + "1";
         let blockNumberB2 = TU._blockNumberB + "1";
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( (_: any) =>
-                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
-                    TU.addDeposit(request,slotB2, TU.Bob, blockNumberB2).expect(201).then ( (_: any) =>
-                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) => {
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( () =>
+                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
+                    TU.addDeposit(request,slotB2, TU.Bob, blockNumberB2).expect(201).then ( () =>
+                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() => {
                             const swapB = CryptoUtils.generateAtomicSwapTransaction(
                                 slotB2,
                                 TU._recipient,
@@ -111,11 +111,11 @@ describe('Transactions Works', () => {
                                 TU.BobPK,
                             );
 
-                            TU.jsonPost(request, TU.atomicSwapURL).send(swapB).expect(201).then((_: any) =>
+                            TU.jsonPost(request, TU.atomicSwapURL).send(swapB).expect(201).then(() =>
                                 TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                     expect(response.body.transactions.length).toBe(0);
 
-                                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then((_: any) =>
+                                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then(() =>
                                         TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                             expect(response.body.transactions.length).toBe(2);
 
@@ -132,7 +132,7 @@ describe('Transactions Works', () => {
                                             TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                                 expect(response.body.transactions.length).toBe(0);
 
-                                                TU.jsonPost(request, TU.atomicSwapURL).send(swapA).expect(201).then((_: any) =>
+                                                TU.jsonPost(request, TU.atomicSwapURL).send(swapA).expect(201).then(() =>
                                                     TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                                         expect(response.body.transactions.length).toBe(2);
                                                         done();
@@ -152,10 +152,10 @@ describe('Transactions Works', () => {
 
 
     it('The root hash is valid', (done) => {
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
-                TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) =>
-                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then((_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
+                TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() =>
+                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then(() =>
                         TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                             const map = new Map<string, string>();
                             map.set(TU._atomicSwapTransactionA.slot, TU._atomicSwapTransactionA.hash);
@@ -197,14 +197,14 @@ describe('Transactions Works', () => {
             TU.BobPK,
         );
 
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( (_: any) =>
-                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
-                    TU.addDeposit(request,slotB2, TU.Bob, blockNumberB2).expect(201).then ( (_: any) =>
-                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) =>
-                            TU.jsonPost(request, TU.atomicSwapURL).send(swapB).expect(201).then((_: any) =>
-                                TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then((_: any) =>
-                                    TU.jsonPost(request, TU.atomicSwapURL).send(swapA).expect(201).then((_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( () =>
+                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
+                    TU.addDeposit(request,slotB2, TU.Bob, blockNumberB2).expect(201).then ( () =>
+                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() =>
+                            TU.jsonPost(request, TU.atomicSwapURL).send(swapB).expect(201).then(() =>
+                                TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then(() =>
+                                    TU.jsonPost(request, TU.atomicSwapURL).send(swapA).expect(201).then(() =>
                                         TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                             expect(response.body.transactions.length).toBe(4);
 
@@ -239,12 +239,12 @@ describe('Transactions Works', () => {
             TU._privateKey,
         );
 
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( (_: any) =>
-                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
-                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then((_: any) =>
-                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then((_: any) =>
-                            TU.jsonPost(request, TU.transactionURL).send(basicTransaction).expect(201).then((_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request, slotA2, TU.Alice, blockNumberA2).expect(201).then ( () =>
+                TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
+                    TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(201).then(() =>
+                        TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionB).expect(201).then(() =>
+                            TU.jsonPost(request, TU.transactionURL).send(basicTransaction).expect(201).then(() =>
                                 TU.jsonPost(request, TU.mineURL).expect(201).then((response: any) => {
                                     expect(response.body.transactions.length).toBe(3);
 
@@ -282,38 +282,38 @@ describe('Transactions Fails', () => {
     });
 
     it('The token is not deposited', (done) => {
-        TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
+        TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
             TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(400).then(() => done())
         )
     });
 
     it('If the owner does not match', (done) => {
-        TU.addDeposit(request,TU._slot, TU.Carl, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Carl, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
                 TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(400).then(() => done())
             )
         )
     });
 
     it('If the blockNumber does not match', (done) => {
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber + "1").expect(201).then ( (_: any) =>
-            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber + "1").expect(201).then ( () =>
+            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () =>
                 TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(400).then(() => done())
             )
         )
     });
 
     it('If the receiving token owner does not match', (done) => {
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request,TU._slotB, TU.Carl, TU._blockNumberB).expect(201).then ( (_: any) =>
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request,TU._slotB, TU.Carl, TU._blockNumberB).expect(201).then ( () =>
                 TU.jsonPost(request, TU.atomicSwapURL).send(TU._atomicSwapTransactionA).expect(400).then(() => done())
             )
         )
     });
 
     it('If signature is not correct', (done) => {
-        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( (_: any) =>
-            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( (_: any) => {
+        TU.addDeposit(request,TU._slot, TU.Alice, TU._blockNumber).expect(201).then ( () =>
+            TU.addDeposit(request,TU._slotB, TU.Bob, TU._blockNumberB).expect(201).then ( () => {
                 const notRealPrivateKey = '0x97ae3b77c061e6cb62e9a80e619880c79ce42c82ad904b36899a367594066282';
                 const transaction = CryptoUtils.generateAtomicSwapTransaction(
                     TU._slot,

@@ -10,7 +10,18 @@ export interface ISRBlock {
 
     timestamp: Date;
 
-    isSubmitted: boolean,
+    is_submitted: boolean,
 
-    save: () => void;
+    save: (cb?: CallBack<ISRBlock>) => void;
+}
+
+export interface IJSONSRBlock {
+
+    blockNumber: string;
+
+    rootHash: string;
+
+    timestamp: string;
+
+    isSubmitted: boolean,
 }

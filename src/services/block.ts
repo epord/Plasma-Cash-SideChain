@@ -4,12 +4,13 @@ import BigNumber from "bignumber.js";
 import {ApiResponse, CallBack} from "../utils/TypeDef";
 import {ITransaction} from "../models/TransactionInterface";
 import {IBlock} from "../models/BlockInterface";
+import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
-    , { TransactionService, BlockService, CoinStateService } = require('../services')
+    , { TransactionService, BlockService, CoinStateService, SecretRevealingBlockService } = require('../services')
     , { updateOwner }	= require('../services/coinState');
 
 
@@ -120,14 +121,27 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 					nextNumber = lastBN.minus(rest).plus(blockInterval);
 				}
 
-				createBlock(transactions!, nextNumber, (err, block) => {
+				createBlock(transactions!, nextNumber, (err: any, block: IBlock) => {
 					debug(`mining ${block}`);
 					if(err) return cb(err);
 
-					CryptoUtils.submitBlock(block, (err: any)=> {
+					const hasSwap = block.Transactions.map(t => t.is_swap).indexOf(true) >= 0;
+
+					const submit = () => CryptoUtils.submitBlock(block, (err: any)=> {
 						if(err) return cb(err);
 						cb(null, { statusCode: 201, result: block });
-					})
+					});
+
+
+					if(hasSwap) {
+						SecretRevealingBlockService.create({ _id: block.block_number }, (sblock: ISRBlock) => {
+							submit();
+						})
+					} else {
+						submit();
+					}
+
+
 				});
 			});
 
