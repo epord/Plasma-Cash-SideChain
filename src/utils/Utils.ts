@@ -1,10 +1,18 @@
 import {CryptoUtils} from "./CryptoUtils";
 import {IBlock, IJSONBlock} from "../models/BlockInterface";
-import {IJSONTransaction, ITransaction} from "../models/TransactionInterface";
-import BigNumber from "bignumber.js";
+import {
+    IJSONSingleSwapData,
+    IJSONSwapData,
+    IJSONTransaction,
+    ISingleSwapData,
+    ITransaction
+} from "../models/TransactionInterface";
 import {ApiResponse} from "./TypeDef";
 import Status from 'http-status-codes';
 import {IJSONSRBlock, ISRBlock} from "../models/SecretRevealingBlockInterface";
+import RLP from 'rlp';
+import * as EthUtils from 'ethereumjs-util';
+
 const debug = require('debug')('app:api:Utils')
 
 export class Utils {
@@ -105,6 +113,58 @@ export class Utils {
         return transactionObj;
     }
 
+    public static singleSwapDataToJson(swapData: ISingleSwapData): IJSONSingleSwapData {
+        return {
+            data: this.transactionToJson(swapData.data),
+            firstInclusionProof: swapData.firstInclusionProof,
+            secretProof:        swapData.secretProof
+        }
+    }
+
+    public static swapDataToJson(swapDataA: ISingleSwapData, swapDataB: ISingleSwapData): IJSONSwapData {
+        let bytes = undefined;
+        let proof = undefined;
+
+        if(swapDataA.data.secret && swapDataB.data.secret) {
+            const proofParams = [
+                swapDataA.firstInclusionProof!,
+                swapDataB.firstInclusionProof!,
+                swapDataA.secretProof!,
+                swapDataB.secretProof!
+            ];
+
+            proof = EthUtils.bufferToHex(RLP.encode(proofParams));
+
+            const bytesParams = [
+                new EthUtils.BN(swapDataA.data.slot.toFixed()),
+                new EthUtils.BN(swapDataA.data.block_spent.toFixed()),
+                swapDataA.data.secret!,
+                swapDataA.data.recipient,
+
+                new EthUtils.BN(swapDataB.data.slot.toFixed()),
+                new EthUtils.BN(swapDataB.data.block_spent.toFixed()),
+                swapDataB.data.secret!,
+                swapDataB.data.recipient,
+
+                swapDataB.data.signature
+            ];
+            bytes = EthUtils.bufferToHex(RLP.encode(bytesParams));
+        }
+
+
+        return {
+            transaction: this.singleSwapDataToJson(swapDataA),
+            counterpart: this.singleSwapDataToJson(swapDataB),
+            proof,
+            mined_block: swapDataA.data.mined_block.toFixed(),
+            signature:   swapDataA.data.signature,
+            bytes,
+            isRevealed: (swapDataA.data.secret != undefined && swapDataB.data.secret != undefined)
+        }
+
+
+    }
+
     public static exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string) {
         let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
         let prevTxInclusionProof = prevTx ? prevProof : undefined;
@@ -163,5 +223,14 @@ export class Utils {
                 return res.status(status.statusCode).json(status.result)
             }
         };
+    }
+
+    public static responseWithStatusIfError<T>(res: any, err: any, status: ApiResponse<T>): T | undefined {
+        Utils.logError(err);
+        if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+        if (err && err.statusCode) return res.status(err.statusCode).json(err.error);
+        if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
+
+        return status.result;
     }
 }

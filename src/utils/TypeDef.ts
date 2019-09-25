@@ -12,7 +12,7 @@ import {CryptoUtils} from "./CryptoUtils";
 
 export type CallBack<T> = ((err: any, result?: T) => void)
 
-export type ApiResponse<T> = { statusCode: number, error?: string, result?: T } //TODO remove message
+export type ApiResponse<T> = { statusCode: number, error?: string, result?: T }
 
 export interface ChallengeData {
     hash: string,

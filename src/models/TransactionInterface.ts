@@ -40,19 +40,42 @@ export interface ITransaction {
     populate: (field: string, cb: CallBack<ITransaction>) => void;
 }
 
+export interface ISingleSwapData {
+    data: ITransaction
+    firstInclusionProof?: string
+    secretProof?: string
+}
+
 export interface IJSONTransaction {
 
-    hash: string,
-    slot: string,
-    owner: string,
-    recipient: string,
-    blockSpent: string,
-    minedBlock: string,
-    minedTimestamp: string,
-    signature: string,
-    isSwap: boolean,
-    swapping_slot: string | undefined
-    hashSecret: string | undefined,
-    secret: string | undefined,
+    hash: string
+    slot: string
+    owner: string
+    recipient: string
+    blockSpent: string
+    minedBlock: string
+    minedTimestamp: string
+    signature: string
+    isSwap: boolean
+    swappingSlot: string | undefined
+    hashSecret: string | undefined
+    secret: string | undefined
 
+}
+
+export interface IJSONSingleSwapData {
+    data: IJSONTransaction
+    firstInclusionProof?: string
+    secretProof?: string
+}
+
+export interface IJSONSwapData {
+
+    transaction: IJSONSingleSwapData
+    counterpart: IJSONSingleSwapData
+    mined_block: string
+    signature: string
+    isRevealed: boolean
+    proof?: string
+    bytes?: string
 }

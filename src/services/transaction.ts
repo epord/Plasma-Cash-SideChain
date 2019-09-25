@@ -5,10 +5,10 @@ import {ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
 import {IBlock} from "../models/BlockInterface";
 import {getProof} from "./block";
-
+import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 
 const { recover } = require('../utils/sign')
-	, { TransactionService, CoinStateService, BlockService } = require('./index')
+	, { TransactionService, CoinStateService, BlockService, SecretRevealingBlockService } = require('./index')
 	, async = require('async');
 
 interface TransactionData {
@@ -249,3 +249,37 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 			}
 	], done);
 };
+
+export const getSwapData = (hash: string, cb: CallBack<ApiResponse<[ITransaction, ITransaction]>>) => {
+	TransactionService.findById(hash).exec((err: any, transaction?: ITransaction) => {
+		if(err) return cb(err);
+		if(!transaction) return cb({statusCode: 404, error: "Transaction Not found"});
+		if(!transaction.is_swap) return cb({statusCode: 409, error: "Transaction is not a swap"});
+
+		if(transaction.mined_block) {
+			TransactionService.findOne({
+				slot: transaction.swapping_slot,
+				mined_block: transaction.mined_block,
+			}).exec((err: any, transactionB: ITransaction) => {
+				if(err) return cb(err);
+				if(!transactionB) return cb({statusCode: 404, error: "Transaction is mined but counterpart is not found"});
+				if(!transactionB.is_swap) return cb({statusCode: 500, error: "Transaction is mined but counterpart is not swap"});
+
+				return cb(null, {statusCode: 200, result: [transaction, transactionB]})
+			});
+		} else {
+			return cb({statusCode: 409, error: "Transaction is not yet mined"})
+		}
+	});
+};
+
+export const isSwapCommitted = (transaction: ITransaction, counterpart: ITransaction, cb: CallBack<boolean>) => {
+	if(!transaction.secret) return cb(null, false);
+	if(!counterpart.secret) return cb(null, false);
+
+	SecretRevealingBlockService.findById(transaction.mined_block).exec((err: any, sblock: ISRBlock) => {
+		if(err) return cb(err);
+		if(!sblock) return cb(`ERROR: SecretRevealingBlock ${transaction.mined_block} was not found`);
+		return cb(null, sblock.is_submitted != undefined)
+	})
+}

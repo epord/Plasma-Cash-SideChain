@@ -233,6 +233,29 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<ApiResp
 	})
 };
 
+export const getSecretProof = (slot: string, blockNumber: string, cb: CallBack<ApiResponse<string>>) => {
+
+	const slotBN = new BigNumber(slot);
+	if(slotBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
+
+	const blockNumberBN = new BigNumber(blockNumber);
+	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
+
+	BlockService
+		.findById(blockNumberBN)
+		.populate("transactions")
+		.exec((err: any, block: IBlock) => {
+			if (err) return cb(err);
+
+			const sparseMerkleTree = CryptoUtils.generateSecretRevealingSMTFromTransactions(
+				block.Transactions.filter(t => t.is_swap)
+			);
+
+			const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
+			cb(null, { statusCode: 200, result: proof });
+		})
+};
+
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
 import {isTransactionValid, toTransactionData} from './transaction';
 import {isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";

@@ -1,6 +1,8 @@
 import {Utils} from "../../../utils/Utils";
-import {createTransaction} from "../../../services/transaction";
+import {createTransaction, getSwapData, isSwapCommitted} from "../../../services/transaction";
 import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
+import {ITransaction} from "../../../models/TransactionInterface";
+import {getProof, getSecretProof} from "../../../services/block";
 
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
@@ -21,12 +23,59 @@ router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 });
 
 router.get('swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
-	TransactionService
-		.findById(req.params.id)
-		.exec((err, transaction) => {
-			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(Utils.transactionToJson(transaction));
-		})
+	getSwapData(req.params.id, (err, apiRes) => {
+		let transactions = Utils.responseWithStatusIfError(res, err, apiRes);
+		if(transactions) {
+			isSwapCommitted(transactions[0], transactions[1], (err, isCommitted) => {
+
+				if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+				if(isCommitted) {
+
+					//Get AllProof
+
+					getProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), (err, apiRes) => {
+						let firstProofA = Utils.responseWithStatusIfError(res, err, apiRes);
+						if (firstProofA) {
+							getProof(transactions[1].slot.toFixed(), transactions[1].mined_block.toFixed(), (err, apiRes) => {
+								let firstProofB = Utils.responseWithStatusIfError(res, err, apiRes);
+								if (firstProofB) {
+									getSecretProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), (err, apiRes) => {
+										let secretProofA = Utils.responseWithStatusIfError(res, err, apiRes);
+										if (secretProofA) {
+											getSecretProof(transactions[1].slot.toFixed(), transactions[1].mined_block.toFixed(), (err, apiRes) => {
+												let secretProofB = Utils.responseWithStatusIfError(res, err, apiRes);
+
+												//Get AllProof
+
+												if (secretProofB) {
+													let swapDataA = {
+														data: transactions[0],
+														firstInclusionProof: firstProofA,
+														secretProof: secretProofA
+													};
+
+													let swapDataB = {
+														data: transactions[0],
+														firstInclusionProof: firstProofB,
+														secretProof: secretProofB
+													};
+
+													res.status(Status.OK).json(Utils.swapDataToJson(swapDataA, swapDataB));
+												}
+											});
+										}
+									});
+								}
+							});
+						}
+					});
+				} else {
+
+					res.status(Status.OK).json(Utils.swapDataToJson({data: transactions[0]}, {data: transactions[1]}));
+				}
+			});
+		}
+	});
 });
 
 /**
@@ -69,7 +118,7 @@ router.post('/create', (req, res, next) => {
  *  "recipient":string (hex) (corresponds to B),
  *  "swappingSlot": int|string,
  *  "hashSecret" : string (hex)
- *  "hash": string (hex) [ keccak256(uint256(slot), uint256(blockSpent), hashSecret, recipient, swapping_slot) ],
+ *  "hash": string (hex) [ keccak256(uint256(slot), uint256(blockSpent), hashSecret, recipient, swappingSlot) ],
  *  "signature" string (hex) [sig of hash]
  * }
  */
