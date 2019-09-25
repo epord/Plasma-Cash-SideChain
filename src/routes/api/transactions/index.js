@@ -20,12 +20,12 @@ router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 		})
 });
 
-router.get('/', (req, res, next) => {
+router.get('swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
 	TransactionService
-		.find({})
-		.exec((err, transactions) => {
+		.findById(req.params.id)
+		.exec((err, transaction) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-			res.status(Status.OK).json(transactions.map(Utils.transactionToJson));
+			res.status(Status.OK).json(Utils.transactionToJson(transaction));
 		})
 });
 
@@ -73,7 +73,7 @@ router.post('/create', (req, res, next) => {
  *  "signature" string (hex) [sig of hash]
  * }
  */
-router.post('/createAtomicSwap', (req, res, next) => {
+router.post('/create-atomic-swap', (req, res, next) => {
 	const { slot, owner, recipient, hash, blockSpent, signature, swappingSlot, hashSecret } = req.body;
 
 	if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || swappingSlot == undefined || !hashSecret || !signature) {
@@ -101,7 +101,7 @@ router.post('/createAtomicSwap', (req, res, next) => {
  *  "minedBlock": int|string
  * }
  */
-router.post('/revealSecret', (req, res, next) => {
+router.post('/reveal-secret', (req, res, next) => {
 	const { slot, minedBlock, secret } = req.body;
 
 	if (!secret || slot == undefined || minedBlock == undefined) {

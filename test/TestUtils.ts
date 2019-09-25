@@ -22,8 +22,8 @@ export class TestUtils {
     public static _hashSecretB   = EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.toBuffer(TestUtils._secretB)));
 
     public static transactionURL    = "/api/transactions/create";
-    public static atomicSwapURL    = "/api/transactions/createAtomicSwap";
-    public static revealSecretURL   = "/api/transactions/revealSecret";
+    public static atomicSwapURL    = "/api/transactions/create-atomic-swap";
+    public static revealSecretURL   = "/api/transactions/reveal-secret";
     public static depositURL        = "/api/blocks/deposit";
     public static blocksURL = "/api/blocks/";
     public static mineURL = "/api/blocks/mine";

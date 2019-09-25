@@ -11,12 +11,6 @@ const express 			= require('express')
 
 debug('registering /api/blocks routes');
 
-const logError = (err) => {
-	if (err && !err.statusCode) return console.log(err);
-	if (err && err.statusCode) return console.log(err.message);
-}
-
-
 router.get('/:block_number([0-9]+)', (req, res, next) => {
 	BlockService
 		.findById(req.params.block_number)
@@ -27,7 +21,7 @@ router.get('/:block_number([0-9]+)', (req, res, next) => {
 		})
 });
 
-router.get('/secretBlock/:block_number([0-9]+)', (req, res, next) => {
+router.get('/secret Block/:block_number([0-9]+)', (req, res, next) => {
 	SecretRevealingBlockService
 		.findById(req.params.block_number)
 		.populate("transactions")
