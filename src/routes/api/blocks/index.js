@@ -21,7 +21,7 @@ router.get('/:block_number([0-9]+)', (req, res, next) => {
 		})
 });
 
-router.get('/secret Block/:block_number([0-9]+)', (req, res, next) => {
+router.get('/secret-block/:block_number([0-9]+)', (req, res, next) => {
 	SecretRevealingBlockService
 		.findById(req.params.block_number)
 		.populate("transactions")

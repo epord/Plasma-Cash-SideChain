@@ -22,7 +22,7 @@ router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 		})
 });
 
-router.get('swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
+router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
 	getSwapData(req.params.id, (err, apiRes) => {
 		let transactions = Utils.responseWithStatusIfError(res, err, apiRes);
 		if(transactions) {

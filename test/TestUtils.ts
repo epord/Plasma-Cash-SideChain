@@ -27,7 +27,7 @@ export class TestUtils {
     public static depositURL        = "/api/blocks/deposit";
     public static blocksURL = "/api/blocks/";
     public static mineURL = "/api/blocks/mine";
-    public static secretBlockURL = (slot: string) => TestUtils.blocksURL + "secretBlock/" + slot;
+    public static secretBlockURL = (slot: string) => TestUtils.blocksURL + "secret-block/" + slot;
 
 
     public static Alice = TestUtils._owner;
