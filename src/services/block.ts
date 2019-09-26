@@ -149,6 +149,8 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 		});
 
 	});
+
+	checkIfAnySecretBlockReady()
 };
 
 export const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<ApiResponse<IBlock>>) => {
@@ -258,7 +260,7 @@ export const getSecretProof = (slot: string, blockNumber: string, cb: CallBack<A
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
 import {isTransactionValid, toTransactionData} from './transaction';
-import {isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
+import {checkIfAnySecretBlockReady, isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
 
 /**
  * Given a set of transactions, will find the first valid one, remove those that finds invalid

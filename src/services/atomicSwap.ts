@@ -7,7 +7,9 @@ import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {BlockService} from ".";
 import {IBlock} from "../models/BlockInterface";
 
-const { TransactionService, CoinStateService, SecretRevealingBlockService } = require('./index')
+const async = require("async");
+const debug = require('debug')('app:services:atomicSwap');
+const { TransactionService, CoinStateService, SecretRevealingBlockService } = require('./index');
 
 interface AtomicSwapData {
 	slot: BigNumber
@@ -143,24 +145,62 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 			t.save((err, t) => {
 				if(err) return cb(err);
 
-				checkIfBlockIsRevealed(minedBlock,() => cb(null, {statusCode: 202, result: t}));
+				submitSecretBlockIfReady(minedBlock,() => cb(null, {statusCode: 202, result: t}));
 			});
 		})
 
 	})
 };
 
-export const checkIfBlockIsRevealed = async (minedBlock: BigNumber, cb: CallBack<void>) => {
+export const getCutoffDate = () => {
+	var yesterday = new Date();
+	yesterday.setDate(yesterday.getHours()-23);
+	return yesterday;
+};
 
+export const checkIfAnySecretBlockReady = () => {
+	SecretRevealingBlockService.find({ is_submitted: false, timestamp: { $lt: getCutoffDate() }}).exec(
+		(err: any, sblock: ISRBlock[]) => {
+		if(err) return debug(`ERROR: ${err.message}`);
+
+		let functions = sblock.map((sblock: ISRBlock) => async (cb: CallBack<void>) => {
+			const block: IBlock  = await BlockService.findById(sblock.block_number).populate("transactions").exec();
+			const swapTransactions = block.Transactions.filter(t => t.is_swap && t.secret != undefined);
+			const notRevelaedTransactions = block.Transactions.filter(t => t.is_swap && t.secret == undefined);
+
+
+			const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(swapTransactions);
+			CryptoUtils.submitSecretBlock(sblock!, async (err: any) => {
+				if(err) {
+					console.error(err);
+					return cb(null)
+				}
+
+				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number },
+					{ $set: {  is_submitted: true, root_hash: tree.root }
+				});
+
+				async.parallel(notRevelaedTransactions.map(t => (cb: CallBack<ITransaction>) => {
+					t.invalidated = true;
+					t.save(cb)
+				}));
+
+				return cb(null);
+			});
+		});
+
+		async.parallel(functions)
+	});
+};
+
+export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBack<void>) => {
 	const block: IBlock  = await BlockService.findById(minedBlock).populate("transactions").exec();
-
-	const swapTransactions = block.Transactions.filter(t => t.is_swap).map(t=> t.secret)
-	const isAllRevealed = swapTransactions.indexOf(undefined) < 0;
+	const swapTransactions = block.Transactions.filter(t => t.is_swap);
+	const isAllRevealed = swapTransactions.map(t=> t.secret).indexOf(undefined) < 0;
 
 	if(isAllRevealed) {
-		const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(block.Transactions);
+		const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(swapTransactions);
 		const sblock: ISRBlock = await SecretRevealingBlockService.findById(minedBlock).exec();
-
 
 		if(!sblock.is_submitted) {
 			await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { root_hash: tree.root } });

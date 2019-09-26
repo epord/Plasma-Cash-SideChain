@@ -53,5 +53,9 @@ module.exports = mongoose.Schema({
 	},
 
 	hash_secret: String,
-	secret: String
+	secret: String,
+	invalidated:  {
+		type: Boolean,
+		default: false
+	}
 });

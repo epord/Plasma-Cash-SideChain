@@ -127,13 +127,23 @@ export const isTransactionValidWithHash = (transaction: TransactionData, calcula
 }
 
 export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>) => {
-	filter.mined_block = { $ne: null }
+	filter.mined_block = { $ne: null };
+	filter.invalidated = false;
 	TransactionService
 		.findOne(filter)
 		.sort({ mined_block: -1 })
 		.collation({ locale: "en_US", numericOrdering: true })
-		.exec((err:any, transaction: ITransaction) => {
+		.exec(async (err:any, transaction: ITransaction) => {
 			if (err) return cb(err);
+			if(!transaction) return cb(null, undefined);
+
+			if(transaction.is_swap) {
+				SecretRevealingBlockService.findById(transaction.mined_block).exec((err:any, sblock:ISRBlock) => {
+					if(!sblock.is_submitted) return cb({statusCode: 409, error: `Last transaction is inside a swap that may still be valid`});
+					return cb(null, transaction)
+				});
+			}
+
 			cb(null, transaction);
 		});
 };

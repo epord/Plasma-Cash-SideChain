@@ -35,6 +35,7 @@ export interface ITransaction {
     swapping_slot: BigNumber;
     hash_secret: string;
     secret?: string;
+    invalidated: boolean;
 
     save: (cb?: CallBack<ITransaction>) => void;
     populate: (field: string, cb: CallBack<ITransaction>) => void;

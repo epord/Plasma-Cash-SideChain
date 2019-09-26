@@ -3,6 +3,7 @@ import {createTransaction, getSwapData, isSwapCommitted} from "../../../services
 import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
 import {ITransaction} from "../../../models/TransactionInterface";
 import {getProof, getSecretProof} from "../../../services/block";
+import * as async from "async";
 
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
@@ -23,59 +24,39 @@ router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 });
 
 router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
-	getSwapData(req.params.id, (err, apiRes) => {
-		let transactions = Utils.responseWithStatusIfError(res, err, apiRes);
-		if(transactions) {
-			isSwapCommitted(transactions[0], transactions[1], (err, isCommitted) => {
+	getSwapData(req.params.id, Utils.unWrapIfNoError((err, transactions) => {
+		if (err) return Utils.responseWithStatus(res)(err, null);
 
-				if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-				if(isCommitted) {
+		isSwapCommitted(transactions[0], transactions[1], (err, isCommitted) => {
+			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+			if (!isCommitted) return res.status(Status.OK).json(Utils.swapDataToJson({data: transactions[0]}, {data: transactions[1]}));
 
-					//Get AllProof
+			async.parallel({
+				firstProofA: cb => getProof(transactions[0].slot.toFixed(), transactions[1].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
+				firstProofB: cb => getProof(transactions[1].slot.toFixed(), transactions[1].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
+				secretProofA: cb => getSecretProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
+				secretProofB: cb => getSecretProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
+			}, (err, result) => {
+				if (err) return Utils.responseWithStatus(res)(err, null);
 
-					getProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), (err, apiRes) => {
-						let firstProofA = Utils.responseWithStatusIfError(res, err, apiRes);
-						if (firstProofA) {
-							getProof(transactions[1].slot.toFixed(), transactions[1].mined_block.toFixed(), (err, apiRes) => {
-								let firstProofB = Utils.responseWithStatusIfError(res, err, apiRes);
-								if (firstProofB) {
-									getSecretProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), (err, apiRes) => {
-										let secretProofA = Utils.responseWithStatusIfError(res, err, apiRes);
-										if (secretProofA) {
-											getSecretProof(transactions[1].slot.toFixed(), transactions[1].mined_block.toFixed(), (err, apiRes) => {
-												let secretProofB = Utils.responseWithStatusIfError(res, err, apiRes);
+				//Get AllProof
+				let swapDataA = {
+					data: transactions[0],
+					firstInclusionProof: result.firstProofA,
+					secretProof: result.secretProofA
+				};
 
-												//Get AllProof
+				let swapDataB = {
+					data: transactions[1],
+					firstInclusionProof: result.firstProofB,
+					secretProof: result.secretProofB
+				};
 
-												if (secretProofB) {
-													let swapDataA = {
-														data: transactions[0],
-														firstInclusionProof: firstProofA,
-														secretProof: secretProofA
-													};
+				return res.status(Status.OK).json(Utils.swapDataToJson(swapDataA, swapDataB));
 
-													let swapDataB = {
-														data: transactions[0],
-														firstInclusionProof: firstProofB,
-														secretProof: secretProofB
-													};
-
-													res.status(Status.OK).json(Utils.swapDataToJson(swapDataA, swapDataB));
-												}
-											});
-										}
-									});
-								}
-							});
-						}
-					});
-				} else {
-
-					res.status(Status.OK).json(Utils.swapDataToJson({data: transactions[0]}, {data: transactions[1]}));
-				}
 			});
-		}
-	});
+		});
+	}));
 });
 
 /**

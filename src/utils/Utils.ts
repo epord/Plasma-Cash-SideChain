@@ -7,10 +7,10 @@ import {
     ISingleSwapData,
     ITransaction
 } from "../models/TransactionInterface";
-import {ApiResponse} from "./TypeDef";
+import {ApiResponse, CallBack} from "./TypeDef";
 import Status from 'http-status-codes';
 import {IJSONSRBlock, ISRBlock} from "../models/SecretRevealingBlockInterface";
-import RLP from 'rlp';
+import RLP = require('rlp');
 import * as EthUtils from 'ethereumjs-util';
 
 const debug = require('debug')('app:api:Utils')
@@ -102,7 +102,7 @@ export class Utils {
 
             minedTimestamp: transaction.mined_timestamp,
             minedBlock: transaction.mined_block,
-        }
+        };
 
         if(transaction.is_swap) {
             transactionObj.swappingSlong = transaction.swapping_slot.toFixed();
@@ -225,12 +225,13 @@ export class Utils {
         };
     }
 
-    public static responseWithStatusIfError<T>(res: any, err: any, status: ApiResponse<T>): T | undefined {
-        Utils.logError(err);
-        if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
-        if (err && err.statusCode) return res.status(err.statusCode).json(err.error);
-        if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
+    public static unWrapIfNoError<T>(cb: CallBack<T>) {
+        return (err: any, status: ApiResponse<T>) => {
+            if (err && !err.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: err});
+            if (err && err.statusCode) return cb({statusCode: err.statusCode, error: err.error});
+            if (!status.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: "No message"});
 
-        return status.result;
+            return cb(null, status.result!);
+        }
     }
 }
