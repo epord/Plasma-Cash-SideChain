@@ -5,6 +5,7 @@ import {ApiResponse, CallBack} from "../utils/TypeDef";
 import {ITransaction} from "../models/TransactionInterface";
 import {IBlock} from "../models/BlockInterface";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
+import RLP = require('rlp');
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
@@ -129,7 +130,7 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 
 					const submit = () => CryptoUtils.submitBlock(block, (err: any)=> {
 						if(err) return cb(err);
-						cb(null, { statusCode: 201, result: block });
+						return cb(null, { statusCode: 201, result: block });
 					});
 
 
@@ -214,7 +215,7 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 		});
 };
 
-export const getProof = (slot: string, blockNumber: string, cb: CallBack<ApiResponse<string>>) => {
+export const getProof = (slot: string, blockNumber: string, cb: CallBack<string>) => {
 
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
@@ -222,39 +223,80 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<ApiResp
 	const blockNumberBN = new BigNumber(blockNumber);
 	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
 
-	BlockService
-	.findById(blockNumberBN)
-	.populate("transactions")
-	.exec((err: any, block: IBlock) => {
-		if (err) return cb(err);
+	TransactionService.findOne({slot: slotBN, mined_block: blockNumberBN}).exec((err: any, transaction: ITransaction) => {
+		if(err) return cb(err);
+		if(!transaction) return cb({ statusCode: 404, error: "Transaction not found"});
 
-		const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.Transactions);
+		if(transaction.is_swap) {
+			getAtomicSwapProof(transaction, cb);
+		} else {
+			getInclusionProof(transaction, cb);
+		}
 
-		const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
-		cb(null, { statusCode: 200, result: proof });
-	})
+	});
 };
 
-export const getSecretProof = (slot: string, blockNumber: string, cb: CallBack<ApiResponse<string>>) => {
+export const getInclusionProof = (transaction: ITransaction, cb: CallBack<string>) => {
+	BlockService
+		.findById(transaction.mined_block)
+		.populate("transactions")
+		.exec((err: any, block: IBlock) => {
+			if (err) return cb(err);
 
-	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
+			const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.Transactions);
 
-	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
+			const proof = sparseMerkleTree.createMerkleProof(transaction.slot.toFixed());
+			cb(null, proof);
+		})
+};
+
+const getAtomicSwapProof = (transaction: ITransaction, cb: CallBack<string>) => {
+
+	TransactionService.findOne({
+		mined_block: transaction.mined_block,
+		slot: transaction.swapping_slot
+	}).exec((err: any, counterpart: ITransaction) => {
+		if (err) return cb(err);
+		if (!counterpart) return cb({statusCode: 500, error: "Missing counterpart for transaction"});
+
+		async.parallel({
+			firstProofA: (cb: CallBack<string>) => getInclusionProof(transaction, cb),
+			firstProofB: (cb: CallBack<string>) => getInclusionProof(counterpart, cb),
+			secretProofA: (cb: CallBack<string>) => getSecretProof(transaction, cb),
+			secretProofB: (cb: CallBack<string>) => getSecretProof(counterpart, cb),
+		}, (err: any, result: any) => {
+			if (err) return cb(err);
+
+			const proofParams = [
+				result.firstProofA!,
+				result.firstProofB!,
+				result.secretProofA!,
+				result.secretProofB!
+			];
+
+			const proof = EthUtils.bufferToHex(RLP.encode(proofParams));
+			return cb(null, proof);
+
+		});
+	});
+};
+
+export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) => {
+	if(transaction.invalidated) return cb(null, "0x0");
+	if(!transaction.secret) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
 
 	BlockService
-		.findById(blockNumberBN)
+		.findById(transaction.mined_block)
 		.populate("transactions")
 		.exec((err: any, block: IBlock) => {
 			if (err) return cb(err);
 
 			const sparseMerkleTree = CryptoUtils.generateSecretRevealingSMTFromTransactions(
-				block.Transactions.filter(t => t.is_swap)
+				block.Transactions.filter(t => t.is_swap && !t.invalidated)
 			);
 
-			const proof = sparseMerkleTree.createMerkleProof(slotBN.toFixed());
-			cb(null, { statusCode: 200, result: proof });
+			const proof = sparseMerkleTree.createMerkleProof(transaction.slot.toFixed());
+			cb(null, proof);
 		})
 };
 

@@ -2,7 +2,7 @@ import {Utils} from "../../../utils/Utils";
 import {createTransaction, getSwapData, isSwapCommitted} from "../../../services/transaction";
 import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
 import {ITransaction} from "../../../models/TransactionInterface";
-import {getProof, getSecretProof} from "../../../services/block";
+import {getInclusionProof, getProof, getSecretProof} from "../../../services/block";
 import * as async from "async";
 
 const express 					= require('express')
@@ -24,18 +24,18 @@ router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
 });
 
 router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
-	getSwapData(req.params.id, Utils.unWrapIfNoError((err, transactions) => {
+	getSwapData(req.params.id, (err, transactions) => {
 		if (err) return Utils.responseWithStatus(res)(err, null);
 
 		isSwapCommitted(transactions[0], transactions[1], (err, isCommitted) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			if (!isCommitted) return res.status(Status.OK).json(Utils.swapDataToJson({data: transactions[0]}, {data: transactions[1]}));
-
+			
 			async.parallel({
-				firstProofA: cb => getProof(transactions[0].slot.toFixed(), transactions[1].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
-				firstProofB: cb => getProof(transactions[1].slot.toFixed(), transactions[1].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
-				secretProofA: cb => getSecretProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
-				secretProofB: cb => getSecretProof(transactions[0].slot.toFixed(), transactions[0].mined_block.toFixed(), Utils.unWrapIfNoError(cb)),
+				firstProofA: cb => getInclusionProof(transactions[0], cb),
+				firstProofB: cb => getInclusionProof(transactions[1], cb),
+				secretProofA: cb => getSecretProof(transactions[0], cb),
+				secretProofB: cb => getSecretProof(transactions[1], cb),
 			}, (err, result) => {
 				if (err) return Utils.responseWithStatus(res)(err, null);
 
@@ -56,7 +56,7 @@ router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
 
 			});
 		});
-	}));
+	});
 });
 
 /**

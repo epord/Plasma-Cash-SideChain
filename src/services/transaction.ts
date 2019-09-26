@@ -142,9 +142,9 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 					if(!sblock.is_submitted) return cb({statusCode: 409, error: `Last transaction is inside a swap that may still be valid`});
 					return cb(null, transaction)
 				});
+			} else {
+				return cb(null, transaction);
 			}
-
-			cb(null, transaction);
 		});
 };
 
@@ -227,12 +227,11 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 
 				const blocks = [depositBlock, ...historyBlocks];
 
-				async.parallel(blocks.map(b => (cb: CallBack<ApiResponse<string>>) => getProof(slot, b.block_number.toString(), cb)),
-					(err: any, _proofs: ApiResponse<string>[]) => {
+				async.parallel(blocks.map(b => (cb: CallBack<string>) => getProof(slot, b.block_number.toString(), cb)),
+					(err: any, proofs: string[]) => {
 						if (err) return next(err);
 
 						const history: any = {};
-						const proofs = _proofs.map(s => s.result);
 
 						Utils.zip(blocks, proofs).forEach(e => {
 							const transaction = minedTransactions.find(
@@ -260,7 +259,7 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 	], done);
 };
 
-export const getSwapData = (hash: string, cb: CallBack<ApiResponse<[ITransaction, ITransaction]>>) => {
+export const getSwapData = (hash: string, cb: CallBack<[ITransaction, ITransaction]>) => {
 	TransactionService.findById(hash).exec((err: any, transaction?: ITransaction) => {
 		if(err) return cb(err);
 		if(!transaction) return cb({statusCode: 404, error: "Transaction Not found"});
@@ -275,7 +274,7 @@ export const getSwapData = (hash: string, cb: CallBack<ApiResponse<[ITransaction
 				if(!transactionB) return cb({statusCode: 404, error: "Transaction is mined but counterpart is not found"});
 				if(!transactionB.is_swap) return cb({statusCode: 500, error: "Transaction is mined but counterpart is not swap"});
 
-				return cb(null, {statusCode: 200, result: [transaction, transactionB]})
+				return cb(null, [transaction, transactionB])
 			});
 		} else {
 			return cb({statusCode: 409, error: "Transaction is not yet mined"})

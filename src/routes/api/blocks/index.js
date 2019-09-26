@@ -73,25 +73,4 @@ router.post('/deposit', (req, res, next) => {
 	depositBlock(slotBN, blockNumberBN, owner, Utils.responseWithStatus(res, Utils.blockToJson));
 });
 
-router.post('/proof', (req, res, next) => {
-	const { blockNumber, slot } = req.body;
-
-	if (!slot || !blockNumber) {
-		return res.status(Status.BAD_REQUEST).json('Missing parameter');
-	}
-
-
-	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) {
-		return res.status(Status.BAD_REQUEST).json('Invalid slot');
-	}
-
-	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) {
-		return res.status(Status.BAD_REQUEST).json('Invalid blockNumber');
-	}
-
-	getProof(slotBN, blockNumber, Utils.responseWithStatus(res));
-});
-
 module.exports = router;

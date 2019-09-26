@@ -6,6 +6,7 @@ import {CryptoUtils} from "../utils/CryptoUtils";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {BlockService} from ".";
 import {IBlock} from "../models/BlockInterface";
+import {Utils} from "../utils/Utils";
 
 const async = require("async");
 const debug = require('debug')('app:services:atomicSwap');
@@ -165,8 +166,23 @@ export const checkIfAnySecretBlockReady = () => {
 
 		let functions = sblock.map((sblock: ISRBlock) => async (cb: CallBack<void>) => {
 			const block: IBlock  = await BlockService.findById(sblock.block_number).populate("transactions").exec();
-			const swapTransactions = block.Transactions.filter(t => t.is_swap && t.secret != undefined);
-			const notRevelaedTransactions = block.Transactions.filter(t => t.is_swap && t.secret == undefined);
+
+			const grouped = Utils.groupTransactionsBySlot(block.Transactions);
+
+			const swapTransactions = block.Transactions.filter(t =>
+				t.is_swap &&
+				t.secret != undefined &&
+				grouped.has(t.swapping_slot.toFixed()) &&
+				grouped.get(t.swapping_slot.toFixed())![0].secret
+			);
+
+			const notRevelaedTransactions = block.Transactions.filter(t =>
+				t.is_swap && (
+					t.secret == undefined ||
+					!grouped.has(t.swapping_slot.toFixed()) ||
+					grouped.get(t.swapping_slot.toFixed())![0].secret == undefined
+				)
+			);
 
 
 			const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(swapTransactions);
@@ -181,6 +197,7 @@ export const checkIfAnySecretBlockReady = () => {
 				});
 
 				async.parallel(notRevelaedTransactions.map(t => (cb: CallBack<ITransaction>) => {
+					t.secret = undefined;
 					t.invalidated = true;
 					t.save(cb)
 				}));

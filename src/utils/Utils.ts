@@ -224,14 +224,14 @@ export class Utils {
             }
         };
     }
-
-    public static unWrapIfNoError<T>(cb: CallBack<T>) {
-        return (err: any, status: ApiResponse<T>) => {
-            if (err && !err.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: err});
-            if (err && err.statusCode) return cb({statusCode: err.statusCode, error: err.error});
-            if (!status.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: "No message"});
-
-            return cb(null, status.result!);
-        }
-    }
+    //
+    // public static unWrapIfNoError<T>(cb: CallBack<T>) {
+    //     return (err: any, status?: ApiResponse<T>) => {
+    //         if (err && !err.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: err});
+    //         if (err && err.statusCode) return cb({statusCode: err.statusCode, error: err.error});
+    //         if (!status!.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: "No message"});
+    //
+    //         return cb(null, status!.result!);
+    //     }
+    // }
 }

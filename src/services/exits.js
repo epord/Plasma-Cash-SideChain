@@ -29,7 +29,7 @@ const getExitData = (slot, cb) => {
 	if (slotBN.isNaN()) return cb({statusCode: 400, error: 'Invalid slot'});
 
 	getLastMinedTransaction({slot: slotBN}, (err, lastTransaction) => {
-		if (err) return cb(err)
+		if (err) return cb(err);
 		if (!lastTransaction) return cb({statusCode: 400, error: 'Slot is not in side chain'});
 
 		generateExitData(slot, lastTransaction, cb)
