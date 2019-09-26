@@ -94,6 +94,7 @@ export class Utils {
 
         let transactionObj: any = {
             slot: transaction.slot.toFixed(),
+            isSwap: transaction.is_swap,
             owner: transaction.owner,
             recipient: transaction.recipient,
             hash: transaction.hash,

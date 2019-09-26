@@ -30,7 +30,7 @@ router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
 		isSwapCommitted(transactions[0], transactions[1], (err, isCommitted) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			if (!isCommitted) return res.status(Status.OK).json(Utils.swapDataToJson({data: transactions[0]}, {data: transactions[1]}));
-			
+
 			async.parallel({
 				firstProofA: cb => getInclusionProof(transactions[0], cb),
 				firstProofB: cb => getInclusionProof(transactions[1], cb),
@@ -142,6 +142,39 @@ router.post('/reveal-secret', (req, res, next) => {
 
 });
 
+
+/**
+ * id: slot
+ */
+router.get('/last/:id([0-9]+)', (req, res, next) => {
+	const slot = req.params.id
+	TransactionService
+		.findOne({
+			slot: new BigNumber(slot),
+			mined_block: { $ne: null },
+			invalidated: false
+		})
+		.sort({ mined_block: -1 })
+		.collation({ locale: "en_US", numericOrdering: true })
+		.exec(async (err, transaction) => {
+			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+			if(!transaction) return res.status(Status.NOT_FOUND).json("No transaction mined");
+			const dto = {
+				hash: transaction._id,
+				isSwap: transaction.is_swap,
+				owner: transaction.owner,
+				recipient: transaction.recipient,
+				blockSpent: transaction.block_spent,
+				signature: transaction.signature,
+				swappingSlot: transaction.swapping_slot,
+				hashSecret: transaction.hash_secret,
+				timestamp: transaction.timestamp,
+				minedBlock: transaction.mined_block,
+				minedTimestamp: transaction.mined_timestamp,
+			};
+			return res.status(Status.OK).json(dto);
+		})
+})
 
 
 module.exports = router;

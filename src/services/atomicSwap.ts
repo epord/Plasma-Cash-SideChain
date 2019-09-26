@@ -137,7 +137,6 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 			if(err) return cb(err);
 			if(!t) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
 			if(!t.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
-			if(t.secret)  return cb(null, {statusCode: 200, result: t});
 			if(!CryptoUtils.validateHash(secret, t.hash_secret)) {
 				return cb({statusCode: 400, error: "Secret does not correspond to HashSecret in the transaction"});
 			}
@@ -220,6 +219,7 @@ export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBa
 		const sblock: ISRBlock = await SecretRevealingBlockService.findById(minedBlock).exec();
 
 		if(!sblock.is_submitted) {
+			sblock.root_hash = tree.root;
 			await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { root_hash: tree.root } });
 
 			CryptoUtils.submitSecretBlock(sblock!, async (err: any) => {
