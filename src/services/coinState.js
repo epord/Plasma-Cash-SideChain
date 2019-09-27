@@ -21,6 +21,27 @@ const resetSlot = (slot, cb) => {
 	}, cb);
 };
 
+const swapSlot = (slot, cb) => {
+	CoinStateService.findOneAndUpdate({
+		_id: new BigNumber(slot)
+	}, {
+		$set: {
+			state: 'SWAPPING'
+		}
+	}, cb);
+};
+
+const endSwap = (slot, newOwner, cb) => {
+	CoinStateService.findOneAndUpdate({
+		_id: new BigNumber(slot)
+	}, {
+		$set: {
+			state: 'DEPOSITED',
+			owner: newOwner.toLowerCase()
+		}
+	}, cb);
+};
+
 const updateOwner = (slot, newOwner, cb) => {
 	CoinStateService.findOneAndUpdate({
 		_id: new BigNumber(slot)
@@ -31,10 +52,10 @@ const updateOwner = (slot, newOwner, cb) => {
 	}, cb);
 };
 
-const getOwnedTokens = (owner, exiting,  cb) => {
-		CoinStateService.find({ owner: owner.toLowerCase(), state: exiting ? "EXITING" : "DEPOSITED" }).exec( (err, slots) => {
+const getOwnedTokens = (owner, state,  cb) => {
+		CoinStateService.find({ owner: owner.toLowerCase(), state: state ? state.toUpperCase() : "DEPOSITED" }).exec( (err, slots) => {
 			if(err) {
-				console.error(err)
+				console.error(err);
 				return cb(err);
 			}
 			return cb(null, {statusCode: 200, result: slots.map(s => s.slot)});
@@ -53,5 +74,7 @@ module.exports = {
 	updateOwner,
 	getOwnedTokens,
 	getOwner,
-	resetSlot
-}
+	resetSlot,
+	swapSlot,
+	endSwap
+};

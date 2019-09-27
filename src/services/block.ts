@@ -12,7 +12,7 @@ const moment = require('moment')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
     , { TransactionService, BlockService, CoinStateService, SecretRevealingBlockService } = require('../services')
-    , { updateOwner }	= require('../services/coinState');
+    , { updateOwner, swapSlot }	= require('../services/coinState');
 
 
 export const blockInterval = new BigNumber(1000);
@@ -46,8 +46,11 @@ export const createBlock = (transactions: ITransaction[], blockNumber: BigNumber
 					transaction.mined_block = block!.block_number;
 					transaction.save();
 
-					//TODO this callback?
-					updateOwner(transaction.slot, transaction.recipient, Utils.errorCB)
+					if(transaction.is_swap) {
+						swapSlot(transaction.slot, Utils.errorCB)
+					} else {
+						updateOwner(transaction.slot, transaction.recipient, Utils.errorCB)
+					}
 				});
 
 				cb(null, block);

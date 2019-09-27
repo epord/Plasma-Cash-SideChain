@@ -35,11 +35,9 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 */
 router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
   const { owner } = req.params;
-	const { exiting } = req.query;
+	const { state } = req.query;
 
-	const onlyExitingTokens = exiting === 'true';
-
-  getOwnedTokens(owner, onlyExitingTokens, Utils.responseWithStatus(res));
+  getOwnedTokens(owner, state, Utils.responseWithStatus(res));
 });
 
 router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {

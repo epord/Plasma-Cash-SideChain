@@ -138,10 +138,18 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 			if(!transaction) return cb(null, undefined);
 
 			if(transaction.is_swap) {
-				SecretRevealingBlockService.findById(transaction.mined_block).exec((err:any, sblock:ISRBlock) => {
-					if(!sblock.is_submitted) return cb({statusCode: 409, error: `Last transaction is inside a swap that may still be valid`});
-					return cb(null, transaction)
-				});
+				if(transaction.invalidated) {
+					filter.mined_timestamp = { $lt: transaction.mined_timestamp };
+					return getLastMinedTransaction(filter, cb);
+				} else {
+					SecretRevealingBlockService.findById(transaction.mined_block).exec((err: any, sblock: ISRBlock) => {
+						if (!sblock.is_submitted) return cb({
+							statusCode: 409,
+							error: `Last transaction is inside a swap that may still be valid`
+						});
+						return cb(null, transaction)
+					});
+				}
 			} else {
 				return cb(null, transaction);
 			}

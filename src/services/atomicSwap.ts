@@ -7,6 +7,7 @@ import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {BlockService} from ".";
 import {IBlock} from "../models/BlockInterface";
 import {Utils} from "../utils/Utils";
+import {swapSlot, endSwap, resetSlot} from "./coinState";
 
 const async = require("async");
 const debug = require('debug')('app:services:atomicSwap');
@@ -183,7 +184,6 @@ export const checkIfAnySecretBlockReady = () => {
 				)
 			);
 
-
 			const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(swapTransactions);
 			CryptoUtils.submitSecretBlock(sblock!, async (err: any) => {
 				if(err) {
@@ -198,8 +198,12 @@ export const checkIfAnySecretBlockReady = () => {
 				async.parallel(notRevelaedTransactions.map(t => (cb: CallBack<ITransaction>) => {
 					t.secret = undefined;
 					t.invalidated = true;
-					t.save(cb)
+					t.save(() => {
+						resetSlot(t.slot, cb);
+					})
 				}));
+				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
+
 
 				return cb(null);
 			});
@@ -229,6 +233,7 @@ export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBa
 				}
 
 				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { is_submitted: true } });
+				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
 				return cb(null);
 			});
 		} else {

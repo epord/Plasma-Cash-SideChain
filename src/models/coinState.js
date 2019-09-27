@@ -10,7 +10,7 @@ module.exports = mongoose.Schema({
 		min: '0'
 	},
 
-	state: { type: String, enum: ['DEPOSITED', 'EXITING'] },
+	state: { type: String, enum: ['DEPOSITED', 'EXITING', 'SWAPPING'] },
 	owner: String,
 
 });
