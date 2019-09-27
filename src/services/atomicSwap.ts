@@ -154,9 +154,9 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 };
 
 export const getCutoffDate = () => {
-	var yesterday = new Date();
-	yesterday.setDate(yesterday.getHours()-23);
-	return yesterday;
+	var date = new Date();
+	date.setHours(date.getHours()-23);
+	return date;
 };
 
 export const checkIfAnySecretBlockReady = () => {
@@ -184,7 +184,7 @@ export const checkIfAnySecretBlockReady = () => {
 				)
 			);
 
-			const tree = CryptoUtils.generateSecretRevealingSMTFromTransactions(swapTransactions);
+			sblock.root_hash = CryptoUtils.generateSecretRevealingSMTFromTransactions(swapTransactions).root;
 			CryptoUtils.submitSecretBlock(sblock!, async (err: any) => {
 				if(err) {
 					console.error(err);
@@ -192,7 +192,7 @@ export const checkIfAnySecretBlockReady = () => {
 				}
 
 				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number },
-					{ $set: {  is_submitted: true, root_hash: tree.root }
+					{ $set: {  is_submitted: true, root_hash: sblock.root_hash }
 				});
 
 				async.parallel(notRevelaedTransactions.map(t => (cb: CallBack<ITransaction>) => {

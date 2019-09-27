@@ -206,7 +206,7 @@ export class CryptoUtils {
             RootChainContract.methods.submitSecretBlock(block.block_number.toFixed(), block.root_hash).send({from: accounts[0]},
                 (err: Error, res: Response) => {
                     if (err) return cb(err);
-                    debug("Block submitted");
+                    debug("Block Secret submitted");
                     cb(null);
                 });
         });

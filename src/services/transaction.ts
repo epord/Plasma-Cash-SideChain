@@ -241,22 +241,22 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 
 						const history: any = {};
 
-						Utils.zip(blocks, proofs).forEach(async e => {
-							const transaction = minedTransactions.find(
-								t => (e[0].transactions as Array<string>).includes(t.hash)
-							);
+						async.parallel(
+							Utils.zip(blocks, proofs).map(e => async (cb: CallBack<void>) => {
+								const transaction = minedTransactions.find(
+									t => (e[0].transactions as Array<string>).includes(t.hash)
+								);
 
-							const data: any = { proof: e[1] };
-							if (transaction) {
-								data.hash = transaction.hash;
-								data.transactionBytes = await CryptoUtils.getTransactionBytes(transaction);
-								data.signature = transaction.signature;
-							}
+								const data: any = { proof: e[1] };
+								if (transaction) {
+									data.hash = transaction.hash;
+									data.transactionBytes = await CryptoUtils.getTransactionBytes(transaction);
+									data.signature = transaction.signature;
+								}
 
-							history[e[0].block_number.toString()] = data;
-						});
-
-						next(null, history);
+								history[e[0].block_number.toString()] = data
+								cb(null);
+						}), (err: any) => next(err, history));
 					})
 				});
 			}

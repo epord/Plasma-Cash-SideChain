@@ -228,9 +228,7 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<string>
 
 	TransactionService.findOne({slot: slotBN, mined_block: blockNumberBN}).exec((err: any, transaction: ITransaction) => {
 		if(err) return cb(err);
-		if(!transaction) {
-			return cb({ statusCode: 404, error: "Transaction not found"})
-		};
+		if(!transaction) return getNotInclusionProof(slotBN, blockNumberBN, cb);
 
 		if(transaction.is_swap) {
 			getAtomicSwapProof(transaction, cb);
@@ -240,6 +238,19 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<string>
 
 	});
 };
+export const getNotInclusionProof = (slot: BigNumber, blockNumber: BigNumber, cb: CallBack<string>) => {
+	BlockService
+		.findById(blockNumber)
+		.populate("transactions")
+		.exec((err: any, block: IBlock) => {
+			if (err) return cb(err);
+
+			const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions(block.Transactions);
+
+			const proof = sparseMerkleTree.createMerkleProof(slot.toFixed());
+			cb(null, proof);
+		})
+}
 
 export const getInclusionProof = (transaction: ITransaction, cb: CallBack<string>) => {
 	BlockService

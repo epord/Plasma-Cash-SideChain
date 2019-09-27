@@ -51,9 +51,15 @@ router.get('/:id([0-9a-zA-Z]+)/history-proof', (req, res, next) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err); // TODO: add responseWithStatus when migrating to TS
 		return Utils.responseWithStatus(res)(null, {statusCode: 200, result: { history }})
 	})
-
 })
 
+/**
+ * id: address
+ */
+router.get('/swapping-request/:id([0-9a-zA-Z]+)', (req, res, next) => {
+	const { id } = req.params;
+	
+})
 
 
 
