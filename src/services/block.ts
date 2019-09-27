@@ -228,7 +228,9 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<string>
 
 	TransactionService.findOne({slot: slotBN, mined_block: blockNumberBN}).exec((err: any, transaction: ITransaction) => {
 		if(err) return cb(err);
-		if(!transaction) return cb({ statusCode: 404, error: "Transaction not found"});
+		if(!transaction) {
+			return cb({ statusCode: 404, error: "Transaction not found"})
+		};
 
 		if(transaction.is_swap) {
 			getAtomicSwapProof(transaction, cb);
@@ -288,7 +290,10 @@ export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) 
 	if(transaction.invalidated) return cb(null, "0x0");
 	if(!transaction.secret) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
 
-	BlockService
+	SecretRevealingBlockService.findById(transaction.mined_block).exec((err:any, sblock:ISRBlock) => {
+		if(err) return cb(err)
+		if(!sblock || !sblock.is_submitted) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
+		BlockService
 		.findById(transaction.mined_block)
 		.populate("transactions")
 		.exec((err: any, block: IBlock) => {
@@ -301,6 +306,8 @@ export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) 
 			const proof = sparseMerkleTree.createMerkleProof(transaction.slot.toFixed());
 			cb(null, proof);
 		})
+
+	})
 };
 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies

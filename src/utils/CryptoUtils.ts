@@ -218,7 +218,11 @@ export class CryptoUtils {
         web3.eth.getAccounts().then((accounts: string[]) => {
             VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]},
                 (err: Error, res: Response) => {
-                    if (err) return cb(err);
+                    if (err) {
+                        debug("ERROR: Contract couldn't be validated")
+                        debug(err);
+                        return cb(err);
+                    }
                     debug("Validated contract");
                     cb(null);
             });
