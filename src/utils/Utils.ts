@@ -166,15 +166,15 @@ export class Utils {
 
     }
 
-    public static exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string) {
-        let prevTxBytes = prevTx ? CryptoUtils.getTransactionBytes(prevTx.slot, prevTx.block_spent, prevTx.recipient) : undefined;
+    public static async exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string): Promise<Object> {
+        let prevTxBytes = prevTx ? await CryptoUtils.getTransactionBytes(prevTx) : undefined;
         let prevTxInclusionProof = prevTx ? prevProof : undefined;
         let prevBlock = prevTx ? prevTx.mined_block : undefined;
         let prevTransactionHash = prevTx ? prevTx.hash : undefined;
         return {
             slot: lastTx.slot,
             prevTxBytes,
-            exitingTxBytes: CryptoUtils.getTransactionBytes(lastTx.slot, lastTx.block_spent, lastTx.recipient),
+            exitingTxBytes: await CryptoUtils.getTransactionBytes(lastTx),
             prevTxInclusionProof,
             exitingTxInclusionProof: lastProof,
             signature: lastTx.signature,
@@ -186,12 +186,12 @@ export class Utils {
     }
 
 
-    public static challengeDataToJson(challengingTx: ITransaction, proof: string) {
+    public static async challengeDataToJson(challengingTx: ITransaction, proof: string): Promise<Object> {
         return {
             hash: challengingTx.hash,
             slot: challengingTx.slot,
             challengingBlockNumber: challengingTx.mined_block,
-            challengingTransaction: CryptoUtils.getTransactionBytes(challengingTx.slot, challengingTx.block_spent, challengingTx.recipient),
+            challengingTransaction: await CryptoUtils.getTransactionBytes(challengingTx),
             proof: proof,
             signature: challengingTx.signature,
         }

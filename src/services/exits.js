@@ -38,7 +38,7 @@ const getExitData = (slot, cb) => {
 }
 
 const generateExitData = (slot, lastTransaction, cb) => {
-	getProof(slot, lastTransaction.mined_block, (err, lastProof) => {
+	getProof(slot, lastTransaction.mined_block, async (err, lastProof) => {
 		if (err) return cb(err);
 		if (!lastProof) return cb({ statusCode: 500, error: 'Could not create Proof for the exiting transaction' });
 		if (lastTransaction.mined_block.mod(blockInterval).isZero()) {
@@ -47,16 +47,16 @@ const generateExitData = (slot, lastTransaction, cb) => {
 				if (err) return cb(err);
 				if (!prevTransaction) return cb({ statusCode: 500, error: 'Did not find the previous transaction for the slot' });
 
-				getProof(slot, prevTransaction.mined_block, (err, prevProof) => {
+				getProof(slot, prevTransaction.mined_block, async (err, prevProof) => {
 					if (err) return cb(err)
 					if (!prevProof) return cb({ statusCode: 500, error: 'Could not create Proof for the previous transaction' });
 
-					cb(null, { statusCode: 200, result: Utils.exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof) });
+					cb(null, { statusCode: 200, result: await Utils.exitDataToJson(lastTransaction, lastProof, prevTransaction, prevProof) });
 				});
 			});
 
 		} else {
-			cb(null, { statusCode: 200, result: Utils.exitDataToJson(lastTransaction, lastProof, null, null) });
+			cb(null, { statusCode: 200, result: await Utils.exitDataToJson(lastTransaction, lastProof, null, null) });
 		}
 	})
 }
@@ -67,10 +67,10 @@ const getSingleData = (hash, cb) => {
 		if(!t)  return cb({ statusCode: 404, message: 'Transaction not found'});
 		if(!t.mined_block) return cb({ statusCode: Status.CONFLICT, message: 'Transaction not yet mined'});
 
-		getProof(t.slot, t.mined_block, (err, proof) => {
+		getProof(t.slot, t.mined_block, async (err, proof) => {
 			if(err) return cb(err);
 
-			let exitingBytes = CryptoUtils.getTransactionBytes(t.slot, t.block_spent, t.recipient);
+			let exitingBytes = await CryptoUtils.getTransactionBytes(t);
 
 			const exitData = {
 				slot: t.slot,

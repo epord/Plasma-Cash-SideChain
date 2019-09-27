@@ -241,7 +241,7 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 
 						const history: any = {};
 
-						Utils.zip(blocks, proofs).forEach(e => {
+						Utils.zip(blocks, proofs).forEach(async e => {
 							const transaction = minedTransactions.find(
 								t => (e[0].transactions as Array<string>).includes(t.hash)
 							);
@@ -249,11 +249,7 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 							const data: any = { proof: e[1] };
 							if (transaction) {
 								data.hash = transaction.hash;
-								data.transactionBytes = CryptoUtils.getTransactionBytes(
-									transaction.slot,
-									transaction.block_spent,
-									transaction.recipient
-								);
+								data.transactionBytes = await CryptoUtils.getTransactionBytes(transaction);
 								data.signature = transaction.signature;
 							}
 

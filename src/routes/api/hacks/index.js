@@ -84,12 +84,12 @@ router.post('/transactions/create', (req, res, next) => {
 				transactions: [] //Creating empty block cause we dont want no corrupted transactions in our DB
 			}, (err, block) => {
 				if(err) return Utils.responseWithStatus(res)(err);
-                CryptoUtils.submitBlock(block, (err) => {
+				CryptoUtils.submitBlock(block, async (err) => {
 					if(err) return Utils.responseWithStatus(res)(err) //TODO rollback block creation
 
 					let blockJSON =  Utils.blockToJson(block);
 					blockJSON.transactions = [t];
-					let exitingBytes = CryptoUtils.getTransactionBytes(t.slot, t.block_spent, t.recipient);
+					let exitingBytes = await CryptoUtils.getTransactionBytes(t);
 
 					const message = {
 						block: blockJSON,
