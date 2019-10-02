@@ -252,6 +252,13 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 									data.hash = transaction.hash;
 									data.transactionBytes = await CryptoUtils.getTransactionBytes(transaction);
 									data.signature = transaction.signature;
+									if(transaction.is_swap) {
+										let counterpart = await TransactionService.findOne(
+											{slot: transaction.swapping_slot, mined_block: transaction.mined_block}).exec();
+
+										data.hashSecretA = transaction.hash_secret;
+										data.hashSecretB = counterpart.hash_secret;
+									}
 								}
 
 								history[e[0].block_number.toString()] = data
