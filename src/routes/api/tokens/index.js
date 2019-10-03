@@ -100,7 +100,7 @@ router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req, res, next) => {
 			hashSecret: t.hash_secret,
 		}));
 
-		res.status(Status.OK).json({ swappingRequests });
+		res.status(Status.OK).json(swappingRequests);
 	});
 })
 
