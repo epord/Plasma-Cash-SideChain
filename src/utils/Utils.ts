@@ -106,7 +106,7 @@ export class Utils {
         };
 
         if(transaction.is_swap) {
-            transactionObj.swappingSlong = transaction.swapping_slot.toFixed();
+            transactionObj.swappingSlot = transaction.swapping_slot.toFixed();
             transactionObj.hashSecret = transaction.hash_secret;
             transactionObj.secret = transaction.secret;
         }

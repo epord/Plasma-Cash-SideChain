@@ -1,5 +1,6 @@
 import {Utils} from "../../../utils/Utils";
 import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
+import { TransactionService } from '../../../services';
 
 const express = require('express')
 	, router = express.Router({ mergeParams: true })
@@ -31,7 +32,7 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 
 /*
 *	Query params:
-* 	- exiting: only return tokens in state 'EXITING'
+* 	- state: only return tokens in state 'EXITING'
 */
 router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
   const { owner } = req.params;
@@ -53,12 +54,54 @@ router.get('/:id([0-9a-zA-Z]+)/history-proof', (req, res, next) => {
 	})
 })
 
-/**
- * id: address
- */
-router.get('/swapping-request/:id([0-9a-zA-Z]+)', (req, res, next) => {
-	const { id } = req.params;
-	
+router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req, res, next) => {
+	const { address } = req.params;
+
+	TransactionService.aggregate([
+		{
+			$project: {
+				slot: { $toString: "$slot" },
+				owner: true,
+				recipient: true,
+				_id: true,
+				block_spent: { $toString: "$block_spent" },
+				mined_timestamp: true,
+				timestamp: true,
+				signature: true,
+				swapping_slot: { $toString: "$swapping_slot" },
+				hash_secret: true,
+				is_swap: true,
+				invalidated: true,
+				recipient: true,
+				mined_block: { $toString: "$mined_block" },
+			}
+		}, {
+			$match: {
+				is_swap: true,
+				invalidated: false,
+				recipient: address,
+				mined_block: null,
+			}
+		}
+	], (err, transactions) => {
+		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+
+		const swappingRequests = transactions.map(t => ({
+			slot: t.slot,
+			isSwap: t.is_swap,
+			owner: t.owner,
+			recipient: t.recipient,
+			hash: t._id,
+			blockSpent: t.block_spent,
+			signature: t.signature,
+			minedTimestamp: t.mined_timestamp,
+			minedBlock: t.mined_block,
+			swappingSlot: t.swapping_slot,
+			hashSecret: t.hash_secret,
+		}));
+
+		res.status(Status.OK).json({ swappingRequests });
+	});
 })
 
 
