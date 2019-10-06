@@ -1,4 +1,4 @@
-const { TransactionModel, BlockModel, CoinStateModel, SecretRevealingBlockModel } 	= require('../models')
+const { TransactionModel, BlockModel, SecretRevealingBlockModel } 	= require('../models')
 			, mongoose												= require('mongoose');
 
 TransactionModel.virtual('hash').get(function() { return this._id });
@@ -11,9 +11,6 @@ const BlockService = mongoose.model('Block', BlockModel, 'blocks');
 
 SecretRevealingBlockModel.virtual('block_number').get(function() { return this._id });
 const SecretRevealingBlockService = mongoose.model('SecretRevealingBlock', SecretRevealingBlockModel, 'secretRevealingBlocks');
-
-CoinStateModel.virtual('slot').get(function() { return this._id });
-const CoinStateService = mongoose.model('CoinState', CoinStateModel, 'coinStates');
 
 const Services = {
 	BlockService,

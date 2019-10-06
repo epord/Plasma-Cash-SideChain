@@ -1,12 +1,11 @@
 import {Utils} from "../../../utils/Utils";
 import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
+import {CoinStateService} from "../../../services/CoinStateService";
 
 const express = require('express')
 	, router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens')
-	, Status = require('http-status-codes')
-	, { getOwnedTokens } = require('../../../services/coinState')
-	, BigNumber = require('bignumber.js');
+	, Status = require('http-status-codes');
 
 debug('registering /api/tokens routes')
 
@@ -37,7 +36,7 @@ router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
   const { owner } = req.params;
 	const { state } = req.query;
 
-  getOwnedTokens(owner, state, Utils.responseWithStatus(res));
+    CoinStateService.getOwnedTokens(owner, state, Utils.responseWithStatus(res));
 });
 
 router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {

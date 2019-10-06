@@ -7,9 +7,9 @@ const RootChainJson = require("../../json/RootChain.json");
 
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
+import {CoinStateService} from "../CoinStateService";
 
 const _ = require('lodash');
-const { exitSlot, getOwner, resetSlot }	= require('../coinState');
 const debug	= require('debug')('app:api:hooks')
 const { TransactionService } = require('../index');
 const { getChallengeAfterData, getChallengeBeforeData } = require("../challenges");
@@ -89,10 +89,10 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result?: even
 	const slotBN = new BigNumber(eventObj.slot.toString());
 	debug(`Exit: `,eventObj);
 
-	exitSlot(eventObj.slot.toString(), (err: any) => { if (err) console.error(err) });
+	CoinStateService.exitSlot(slotBN, (err: any) => { if (err) console.error(err) });
 
 	async.waterfall([
-		(next: CallBack<string>) => { getOwner(eventObj.slot.toString(), next) },
+		(next: CallBack<string>) => { CoinStateService.getOwner(eventObj.slot.toString(), next) },
 		(owner: string, next: CallBack<ExitingBlocks>) => {
 			const isExitCorrect = owner.toLowerCase() == eventObj.owner.toLowerCase();
 			const autoChallengeEnabled = process.env.AUTO_CHALLENGE != 'false';
@@ -132,7 +132,7 @@ const tryChallengeAfter = (slotBN: BigNumber, exitingBlocks: ExitingBlocks, next
 		], (err: any) => {
 			if (err) return console.error(err);
 			debug('Successfully challenged after');
-			resetSlot(slotBN.toFixed(), (err: any) => { if (err) console.error(err) });
+			CoinStateService.resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
 		});
 		return; // do not continue waterfall
 	});
@@ -183,7 +183,7 @@ const tryChallengeBetween =  (slotBN: BigNumber, exitingBlocks: ExitingBlocks, n
 		], (err: any) => {
 			if (err) return console.error(err);
 			debug('Successfully challenged between');
-			resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
+			CoinStateService.resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
 		});
 		return; // do not continue waterfall
 	});
@@ -277,7 +277,7 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	const eventObj = eventToObj(iCoinReset, result!);
 	debug(`Coin reset ${eventObj.slot.toString()} for ${eventObj.owner}`);
 
-	resetSlot(eventObj.slot.toString(), (err: any, coinState: { owner: { toLowerCase: () => void; }; }) => {
+	CoinStateService.resetSlot(eventObj.slot, (err: any, coinState: { owner: { toLowerCase: () => void; }; }) => {
 		if (err) return console.error(err);
 		//TODO what to do here?
 		if(coinState.owner.toLowerCase() != eventObj.owner.toLowerCase()) {
