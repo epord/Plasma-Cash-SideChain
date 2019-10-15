@@ -1,5 +1,5 @@
-const { TransactionModel, BlockModel, CoinStateModel, SecretRevealingBlockModel } 	= require('../models')
-			, mongoose												= require('mongoose');
+const { TransactionModel, BlockModel, CoinStateModel, SecretRevealingBlockModel, BattleModel } = require('../models')
+			, mongoose = require('mongoose');
 
 TransactionModel.virtual('hash').get(function() { return this._id });
 TransactionModel.virtual('Mined_Block').get(function() { return this.mined_block });
@@ -15,11 +15,14 @@ const SecretRevealingBlockService = mongoose.model('SecretRevealingBlock', Secre
 CoinStateModel.virtual('slot').get(function() { return this._id });
 const CoinStateService = mongoose.model('CoinState', CoinStateModel, 'coinStates');
 
+const BattleService = mongoose.model('Battle', BattleModel, 'battles');
+
 const Services = {
 	BlockService,
 	TransactionService,
 	CoinStateService,
-	SecretRevealingBlockService
+	SecretRevealingBlockService,
+	BattleService
 };
 
 module.exports = Services;

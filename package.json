@@ -50,6 +50,7 @@
   "keywords": [],
   "author": "epord",
   "dependencies": {
+    "@types/socket.io": "^2.1.4",
     "async": "^2.6.2",
     "better-npm-run": "^0.1.1",
     "bignumber.js": "^8.1.1",
