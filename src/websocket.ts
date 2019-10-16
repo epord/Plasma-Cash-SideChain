@@ -4,6 +4,7 @@ import { IBattle, IState } from './models/BattleInterface';
 import { getBattleBySocket } from "./services/battle";
 
 const debug = require('debug')('app:websockets');
+const _ = require('lodash');
 const express = require('express');
 const app = express();
 const http = require("http").Server(app);
@@ -11,22 +12,13 @@ const io = require("socket.io")(http);
 
 const { BattleService } = require('./services');
 
-
-// TODO: persist in DB
-// interface IState {
-//   turn: number
-// };
-// interface IBattle {
-//   player1: { id: string, socket: any },
-//   player2: { id: string, socket: any | undefined },
-//   established: boolean,
-//   finished: boolean,
-//   state: IState,
-// };
-// let sockets: IBattle[] = [];
-
-// sockets: socketId -> Scoket
+// sockets: socketId -> Socket
 const sockets = new Map<String,Socket>();
+
+const emitEvent = (socketId: string, event: string, ...args: any[]) => {
+  const socket = sockets.get(socketId);
+  if (socket) socket.emit(event, ...args);
+}
 
 function isTransitionValid (battle: IBattle, newState: IState) {
   const oldState = battle.state;
@@ -59,6 +51,7 @@ io.on('connection', (socket: Socket) => {
         return socket.emit('invalidAction', { message: 'Error finding battle' });
       }
       if (battle && battle.established) {
+        // TODO: reconnect user
         return socket.emit('invalidAction', { message: 'This battle already exists' });
       }
       if (battle && battle.player1.id == user) {
@@ -89,12 +82,11 @@ io.on('connection', (socket: Socket) => {
         battle.player2.socket_id = socket.id;
         battle.markModified('player2');
         battle.save();
+
         sockets.set(socket.id, socket);
 
-        const socketPlayer1 = sockets.get(battle.player1.socket_id);
-        const socketPlayer2 = sockets.get(battle.player2.socket_id);
-        if (socketPlayer1) socketPlayer1.emit('battleEstablished', { state: battle.state });
-        if (socketPlayer2) socketPlayer2.emit('battleEstablished', { state: battle.state });
+        emitEvent(battle.player1.socket_id, 'battleEstablished', { state: battle.state });
+        emitEvent(battle.player2.socket_id, 'battleEstablished', { state: battle.state });
       }
     });
   });
@@ -116,7 +108,7 @@ io.on('connection', (socket: Socket) => {
       if (
         (isPlayer1Turn && battle.player2.socket_id == socket.id) ||
         (!isPlayer1Turn && battle.player1.socket_id == socket.id)) {
-        return socket.emit('invalidAction', { message: 'Not your turn', state });
+        return socket.emit('invalidAction', { message: 'Not your turn', state: battle.state });
       }
       if (!isTransitionValid(battle, state)) {
         return socket.emit('invalidAction', { message: 'Invalid transition', state: battle.state });
@@ -124,29 +116,42 @@ io.on('connection', (socket: Socket) => {
 
       battle.state = state;
       battle.markModified('state');
-      const socketPlayer1 = sockets.get(battle.player1.socket_id);
-      const socketPlayer2 = sockets.get(battle.player2.socket_id);
 
       if (isBattleFinished(battle)) {
         battle.finished = true;
-        if (socketPlayer1) socketPlayer1.emit('battleFinished', state);
-        if (socketPlayer2) socketPlayer2.emit('battleFinished', state);
+        emitEvent(battle.player1.socket_id, 'battleFinished', state);
+        emitEvent(battle.player2.socket_id, 'battleFinished', state);
       } else {
-        if (socketPlayer1) socketPlayer1.emit('stateUpdated', state);
-        if (socketPlayer2) socketPlayer2.emit('stateUpdated', state);
+        emitEvent(battle.player1.socket_id, 'stateUpdated', state);
+        emitEvent(battle.player2.socket_id, 'stateUpdated', state);
       }
 
-      battle.save()
+      battle.save();
     });
   });
 
-  // socket.on('debugBattles', (state: any) => {
-  //   debug(sockets);
-  // });
+  socket.on('debugBattles', (state: any) => {
+    debug(sockets.keys());
+    BattleService.find({}, console.log)
+  });
 
   socket.on("disconnect", () => {
     debug("Client disconnected")
-    // TODO: remove things
+
+    BattleService.updateMany({
+      "player1.socket_id": socket.id
+    }, {
+      $set: { "player1.socket_id": undefined }
+    }, _.noop);
+    BattleService.updateMany({
+      "player2.socket_id": socket.id
+    }, {
+      $set: { "player2.socket_id": undefined }
+    }, {
+      multi: true
+    }, _.noop);
+
+    sockets.delete(socket.id);
   });
 });
 

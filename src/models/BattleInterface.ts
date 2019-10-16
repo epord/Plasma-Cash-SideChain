@@ -6,30 +6,30 @@ export interface IState {
 
 export interface IBattle {
 	player1: {
-        id: String,
-        socket_id: String,
+        id: string,
+        socket_id: string,
 	},
 	player2: {
-		id: String,
-		socket_id: String,
+		id: string,
+		socket_id: string,
 	},
-	established: Boolean,
-	finished: Boolean,
+	established: boolean,
+	finished: boolean,
 	state: IState
 	save: (cb?: CallBack<IBattle>) => void;
-	markModified: (field: String) => void;
+	markModified: (field: string) => void;
 }
 
 export interface IJSONBattle {
 	player1: {
-		id: String,
-		socketId: String,
+		id: string,
+		socketId: string,
 	},
 	player2: {
-		id: String,
-		socketId: String,
+		id: string,
+		socketId: string,
 	},
-	established: Boolean,
-	finished: Boolean,
+	established: boolean,
+	finished: boolean,
 	state: IState
 }
