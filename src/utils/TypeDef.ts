@@ -9,6 +9,7 @@ import {CryptoUtils} from "./CryptoUtils";
 //     proof: string,
 //     signature: string
 // }
+export type Maybe<T> = { err?: any, result?: T }
 
 export type CallBack<T> = ((err: any, result?: T) => void)
 

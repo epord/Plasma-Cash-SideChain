@@ -1,7 +1,33 @@
 import {CallBack} from "../utils/TypeDef";
 
 export interface IState {
-    turn: number
+	channelId: string;
+	channelType: string;
+	participants: Array<string>;
+	turnNum: number;
+	gameAttributes: string;
+	game: IRPSExample;
+}
+
+export interface IRPSExample {
+	//initialState  + //State 1         + //State even      + //State odd         +  //State ending
+	//GamesToPlay   | //GamesToPlay     | //GamesToPlay     | //GamesToPlay       |  //GamesToPlay == 0
+	//ScorePl       | //ScorePl         | //ScorePl         | //ScorePl           |  //ScorePl
+	//ScoreOp       | //ScoreOp         | //ScoreOp         | //ScoreOp           |  //ScoreOp
+	//              | //HashDecision    | //HashDecision    | //HashDecision  	  |  //HashDecision
+	//              |                   | //DecsionPl       | //DecisionPl        |  //DecisionPl
+	//              |                   |                   | //DecisionOp        |  //DecisionOp
+	//              |                   |                   | //Salt              |  //Salt
+	//              |                   |                   | //nextHashDecision  |
+
+	gamesToPlay: number;
+	scorePL: number;
+	scoreOP: number;
+	hashDecision?: string;
+	decisionPL?: number;
+	decisionOP?: number;
+	salt?: string;
+	nextHashDecision?: string;
 }
 
 export interface IBattle {

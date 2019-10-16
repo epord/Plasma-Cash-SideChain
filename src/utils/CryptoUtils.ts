@@ -94,7 +94,7 @@ export class CryptoUtils {
         )
     }
 
-    private static keccak256(...args: Uint8Array[]): string {
+    public static keccak256(...args: Uint8Array[]): string {
         return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(args))));
     }
 

@@ -2,6 +2,8 @@ import { IBlock } from "./models/BlockInterface";
 import { Socket } from "socket.io";
 import { IBattle, IState } from './models/BattleInterface';
 import { getBattleBySocket } from "./services/battle";
+import {Maybe} from "./utils/TypeDef";
+import {isRPSBattleFinished, validateRPSTransition} from "./utils/RPSExample";
 
 const debug = require('debug')('app:websockets');
 const _ = require('lodash');
@@ -20,13 +22,22 @@ const emitEvent = (socketId: string, event: string, ...args: any[]) => {
   if (socket) socket.emit(event, ...args);
 }
 
-function isTransitionValid (battle: IBattle, newState: IState) {
+function isTransitionValid (battle: IBattle, newState: IState): Maybe<boolean> {
   const oldState = battle.state;
-  return !battle.finished && parseInt('' + oldState.turn) + 1 == newState.turn;
+
+  if(oldState.channelId != newState.channelId) return { err: "channelId change" };
+  if(oldState.channelType != newState.channelType) return { err: "channelType change" };
+  if(oldState.participants.length != newState.participants.length) return { err: "participants must stay the same "};
+  if(oldState.participants[0] != newState.participants[0]) return { err: "Player must stay the same "};
+  if(oldState.participants[1] != newState.participants[1]) return { err: "Opponent must stay the same "};
+  if(oldState.turnNum != newState.turnNum + 1) return { err: "TurnNum should be increased by 1"};
+  //TODO validate gameAttributes are ok and signed
+
+  return validateRPSTransition(oldState.turnNum, oldState.game, newState.game);
 }
 
 function isBattleFinished (battle: IBattle) {
-  return battle.state.turn == 5;
+  return isRPSBattleFinished(battle.state.game);
 }
 
 io.on('connection', (socket: Socket) => {
@@ -104,7 +115,7 @@ io.on('connection', (socket: Socket) => {
       if (!battle.established) {
         return socket.emit('invalidAction', { message: 'The battle hasn\'t been established' });
       }
-      const isPlayer1Turn = battle.state.turn % 2 == 0;
+      const isPlayer1Turn = battle.state.turnNum % 2 == 0;
       if (
         (isPlayer1Turn && battle.player2.socket_id == socket.id) ||
         (!isPlayer1Turn && battle.player1.socket_id == socket.id)) {
