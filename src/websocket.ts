@@ -73,11 +73,11 @@ io.on('connection', (socket: Socket) => {
         return socket.emit('invalidAction', { message: 'Error finding battle' });
       }
       if (battle && battle.established) {
-        // TODO: reconnect user
         return socket.emit('invalidAction', { message: 'This battle already exists' });
       }
-      if (battle && battle.player1.id == user) {
-        return socket.emit('invalidAction', { message: 'The battle has already been created. Waiting for opponent' });
+      if (battle) {
+        const player = battle.player1.id == user ? battle.player1 : battle.player2;
+        if (player.socket_id) return socket.emit('invalidAction', { message: 'The battle has already been created. Waiting for opponent' });
       }
 
       if (!battle) {
@@ -98,17 +98,36 @@ io.on('connection', (socket: Socket) => {
           socket.emit('battleAccepted', { state: battle.state });
         });
       } else {
-        // Accept battle
         debug('battle exists')
-        battle.established = true;
-        battle.player2.socket_id = socket.id;
-        battle.markModified('player2');
-        battle.save();
-
         sockets.set(socket.id, socket);
 
-        emitEvent(battle.player1.socket_id, 'battleEstablished', { state: battle.state });
-        emitEvent(battle.player2.socket_id, 'battleEstablished', { state: battle.state });
+        const otherPlayer = battle.player1.id == user ? battle.player2 : battle.player1;
+        if (otherPlayer.socket_id) {
+          // Accept battle
+          debug('accept battle')
+          if (battle.player1.id == user) {
+            battle.player1.socket_id = socket.id;
+          } else {
+            battle.player2.socket_id = socket.id;
+          }
+          battle.markModified('player2');
+          battle.established = true;
+          battle.save();
+
+          emitEvent(socket.id, 'battleEstablished', { state: battle.state });
+          emitEvent(otherPlayer.socket_id, 'battleEstablished', { state: battle.state });
+        } else {
+          // Reconnect and wait for other player
+          debug('Reconnect and wait for other player');
+          if (battle.player1.id == user) {
+            battle.player1.socket_id = socket.id;
+          } else {
+            battle.player2.socket_id = socket.id;
+          }
+          battle.markModified('player2');
+          battle.save();
+          socket.emit('battleAccepted', { state: battle.state });
+        }
       }
     });
   });
@@ -124,7 +143,7 @@ io.on('connection', (socket: Socket) => {
         return socket.emit('invalidAction', { message: 'Send connect before play' });
       }
       if (!battle.established) {
-        return socket.emit('invalidAction', { message: 'The battle hasn\'t been established' });
+        return socket.emit('invalidAction', { message: 'The battle is not established' });
       }
       const isPlayer1Turn = battle.state.turnNum % 2 == 1;
       if (
@@ -163,12 +182,18 @@ io.on('connection', (socket: Socket) => {
     BattleService.updateMany({
       "player1.socket_id": socket.id
     }, {
-      $set: { "player1.socket_id": undefined }
+      $set: {
+        "player1.socket_id": undefined,
+        established: false,
+      }
     }, _.noop);
     BattleService.updateMany({
       "player2.socket_id": socket.id
     }, {
-      $set: { "player2.socket_id": undefined }
+      $set: {
+        "player2.socket_id": undefined,
+        established: false,
+      }
     }, {
       multi: true
     }, _.noop);
@@ -177,9 +202,16 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-export function init(cb: () => void) {
+export function init(cb: (err: any) => void) {
   const port = process.env.WEBSOCKET_PORT || 4000;
   io.listen(port);
   debug(`Websocket on port ${port}`);
-  cb();
+
+  BattleService.updateMany({}, {
+    $set: {
+      "player1.socket_id": undefined,
+      "player2.socket_id": undefined,
+      established: false,
+    }
+  }, (err: any) => cb(err));
 }
