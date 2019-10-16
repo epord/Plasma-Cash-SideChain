@@ -11,10 +11,5 @@ module.exports = mongoose.Schema({
 	},
 	established: Boolean,
 	finished: Boolean,
-	state: {
-		turn: {
-			type: Number,
-			default: 0,
-		}
-	}
+	state: Object,
 });

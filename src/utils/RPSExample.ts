@@ -25,9 +25,9 @@ const validateInitialTransition = (start: IRPSExample, first: IRPSExample): Mayb
 
 const validateEvenToOdd = (even: IRPSExample, odd: IRPSExample, isFinal: boolean): Maybe<boolean> => {
     if(even.hashDecision != odd.hashDecision) return {err:  "HashDecision should not change"};
-    if(!odd.decisionOP || odd.decisionOP < 0 || odd.decisionOP >= 3) return {err:  "Invalid Opponent decision"};
+    if(odd.decisionOP  == undefined || odd.decisionOP < 0 || odd.decisionOP >= 3) return {err:  "Invalid Opponent decision"};
     if(!odd.salt) return {err: "No salt provided"};
-    
+
     if(even.hashDecision != CryptoUtils.keccak256(
         EthUtils.setLengthLeft(new BN(odd.decisionOP!).toBuffer(), 256/8),
         EthUtils.toBuffer(odd.salt!)
@@ -45,12 +45,12 @@ const validateEvenToOdd = (even: IRPSExample, odd: IRPSExample, isFinal: boolean
         (odd.decisionPL == 2  && odd.decisionOP == 1)
     ) {
         if(even.gamesToPlay != odd.gamesToPlay + 1) return {err:  "GamesToPlay should decrease"};
-        if(even.scorePL != odd.scorePL + 1) return {err:  "Player Score increases due to win"};
+        if(even.scorePL + 1 != odd.scorePL) return {err:  "Player Score increases due to win"};
         if(even.scoreOP != odd.scoreOP) return {err:  "Opponent Score must say the same due to loss"};
     } else {
         if(even.gamesToPlay != odd.gamesToPlay + 1) return { err: "GamesToPlay should decrease"};
         if(even.scorePL != odd.scorePL) return { err: "Player Score must  say the same due to loss"};
-        if(even.scoreOP != odd.scoreOP + 1) return { err: "Opponent Score increases due to win"};
+        if(even.scoreOP + 1 != odd.scoreOP) return { err: "Opponent Score increases due to win"};
     }
 
     if(!isFinal) {
@@ -72,12 +72,21 @@ const validateOddToEven = (odd: IRPSExample, even: IRPSExample, isFirst: boolean
     if(even.scorePL != odd.scorePL) return {err:  "Player score must stay de same"};
     if(even.scoreOP != odd.scoreOP) return {err:  "Opponent score must stay de same"};
     if(even.hashDecision != oddNewHashDec) return {err:  "Hash decision must stay de same"};
-    if(!even.decisionPL || even.decisionPL < 0 || even.decisionPL >= 3) return {err:  "Player decision must be 0, 1 or 2"};
+    if(even.decisionPL == undefined || even.decisionPL < 0 || even.decisionPL >= 3) return {err:  "Player decision must be 0, 1 or 2"};
 
     return { result: true };
 };
 
 
 export const isRPSBattleFinished = (state: IRPSExample): boolean => {
-    return state.gamesToPlay != 0;
+    return state.gamesToPlay == 0;
 };
+
+
+export const getInitialRPSState = (): IRPSExample => {
+    return {
+        gamesToPlay: 3,
+        scoreOP: 0,
+        scorePL: 0,
+    }
+}

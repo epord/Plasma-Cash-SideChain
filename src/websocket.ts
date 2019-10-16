@@ -3,7 +3,7 @@ import { Socket } from "socket.io";
 import { IBattle, IState } from './models/BattleInterface';
 import { getBattleBySocket } from "./services/battle";
 import {Maybe} from "./utils/TypeDef";
-import {isRPSBattleFinished, validateRPSTransition} from "./utils/RPSExample";
+import {isRPSBattleFinished, validateRPSTransition, getInitialRPSState} from "./utils/RPSExample";
 
 const debug = require('debug')('app:websockets');
 const _ = require('lodash');
@@ -30,7 +30,7 @@ function isTransitionValid (battle: IBattle, newState: IState): Maybe<boolean> {
   if(oldState.participants.length != newState.participants.length) return { err: "participants must stay the same "};
   if(oldState.participants[0] != newState.participants[0]) return { err: "Player must stay the same "};
   if(oldState.participants[1] != newState.participants[1]) return { err: "Opponent must stay the same "};
-  if(oldState.turnNum != newState.turnNum + 1) return { err: "TurnNum should be increased by 1"};
+  if(oldState.turnNum + 1 != newState.turnNum) return { err: "TurnNum should be increased by 1"};
   //TODO validate gameAttributes are ok and signed
 
   return validateRPSTransition(oldState.turnNum, oldState.game, newState.game);
@@ -38,6 +38,17 @@ function isTransitionValid (battle: IBattle, newState: IState): Maybe<boolean> {
 
 function isBattleFinished (battle: IBattle) {
   return isRPSBattleFinished(battle.state.game);
+}
+
+function getInitialState(channelId: string, player: string, opponent: string): IState {
+  return {
+    channelId,
+    channelType: '',
+    participants: [player, opponent],
+    turnNum: 0,
+    gameAttributes: '',
+    game: getInitialRPSState(),
+  }
 }
 
 io.on('connection', (socket: Socket) => {
@@ -77,7 +88,7 @@ io.on('connection', (socket: Socket) => {
           player2: { id: opponent },
           established: false,
           finished: false,
-          state: { turn: 0 },
+          state: getInitialState('0', user, opponent),
         }, (err: any, battle: IBattle) => {
           if (err) {
             console.error(err);
@@ -115,14 +126,15 @@ io.on('connection', (socket: Socket) => {
       if (!battle.established) {
         return socket.emit('invalidAction', { message: 'The battle hasn\'t been established' });
       }
-      const isPlayer1Turn = battle.state.turnNum % 2 == 0;
+      const isPlayer1Turn = battle.state.turnNum % 2 == 1;
       if (
         (isPlayer1Turn && battle.player2.socket_id == socket.id) ||
         (!isPlayer1Turn && battle.player1.socket_id == socket.id)) {
         return socket.emit('invalidAction', { message: 'Not your turn', state: battle.state });
       }
-      if (!isTransitionValid(battle, state)) {
-        return socket.emit('invalidAction', { message: 'Invalid transition', state: battle.state });
+      const valid = isTransitionValid(battle, state);
+      if (!valid.result) {
+        return socket.emit('invalidAction', { message: valid.err, state: battle.state });
       }
 
       battle.state = state;
@@ -130,12 +142,11 @@ io.on('connection', (socket: Socket) => {
 
       if (isBattleFinished(battle)) {
         battle.finished = true;
-        emitEvent(battle.player1.socket_id, 'battleFinished', state);
-        emitEvent(battle.player2.socket_id, 'battleFinished', state);
-      } else {
-        emitEvent(battle.player1.socket_id, 'stateUpdated', state);
-        emitEvent(battle.player2.socket_id, 'stateUpdated', state);
+        emitEvent(battle.player1.socket_id, 'battleFinished', {state});
+        emitEvent(battle.player2.socket_id, 'battleFinished', {state});
       }
+      emitEvent(battle.player1.socket_id, 'stateUpdated', { state });
+      emitEvent(battle.player2.socket_id, 'stateUpdated', {state});
 
       battle.save();
     });
