@@ -42,20 +42,7 @@ export interface IBattle {
 	established: boolean,
 	finished: boolean,
 	state: IState
+	prev_state: IState
 	save: (cb?: CallBack<IBattle>) => void;
 	markModified: (field: string) => void;
-}
-
-export interface IJSONBattle {
-	player1: {
-		id: string,
-		socketId: string,
-	},
-	player2: {
-		id: string,
-		socketId: string,
-	},
-	established: boolean,
-	finished: boolean,
-	state: IState
 }
