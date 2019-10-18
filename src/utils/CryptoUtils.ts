@@ -13,6 +13,9 @@ import {CallBack} from "./TypeDef";
 import {AbiItem} from "web3-utils";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {TransactionService} from "../services";
+import {IState} from "../models/BattleInterface";
+import  abi = require('ethereumjs-abi');
+import {toBytes} from "./RPSExample";
 
 const debug = require('debug')('app:CryptoUtils');
 const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL!));
@@ -223,5 +226,18 @@ export class CryptoUtils {
                     cb(null);
             });
         });
+    }
+
+    public static hashChannelState(state: IState) {
+
+        return '0x' + abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
+            [
+                state.channelId,
+                state.channelType,
+                state.participants,
+                state.turnNum,
+                toBytes(state.game)
+            ]).toString('hex');
+
     }
 }

@@ -3,6 +3,7 @@ import {Maybe} from "./TypeDef";
 import {CryptoUtils} from "./CryptoUtils";
 import EthUtils = require("ethereumjs-util");
 import {BN} from "ethereumjs-util";
+import RLP = require("rlp");
 
 export const validateRPSTransition = (turnNum: number, oldState: IRPSExample, newState: IRPSExample): Maybe<boolean> => {
     if(turnNum == 0) {
@@ -90,3 +91,28 @@ export const getInitialRPSState = (): IRPSExample => {
         scorePL: 0,
     }
 }
+
+export const toBytes = (state: IRPSExample) => {
+    let params = [
+        //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
+        EthUtils.setLengthLeft(new BN(state.gamesToPlay).toBuffer(), 256/8), 			// uint256 little endian
+        EthUtils.setLengthLeft(new BN(state.scorePL).toBuffer(), 256/8), 			// uint256 little endian
+        EthUtils.setLengthLeft(new BN(state.scoreOP).toBuffer(), 256/8), 			// uint256 little endian
+    ];
+
+    if(state.hashDecision) {
+        params.push(EthUtils.toBuffer(state.hashDecision));
+        if(state.decisionPL) {
+            params.push(EthUtils.setLengthLeft(new BN(state.decisionPL).toBuffer(), 256/8));
+            if(state.decisionOP) {
+                params.push(EthUtils.setLengthLeft(new BN(state.decisionOP).toBuffer(), 256/8));
+                params.push(EthUtils.toBuffer(state.salt));
+                if(state.nextHashDecision) {
+                    params.push(EthUtils.toBuffer(state.nextHashDecision));
+                }
+            }
+        }
+    }
+
+    return RLP.encode(params);
+};

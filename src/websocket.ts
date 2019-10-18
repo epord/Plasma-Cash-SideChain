@@ -10,6 +10,9 @@ import {
   resetAllSockets, disconnectSocket
 } from "./services/battle";
 import {disconnect} from "cluster";
+import {Utils} from "./utils/Utils";
+import {CryptoUtils} from "./utils/CryptoUtils";
+import {recover} from "./utils/sign";
 
 const debug = require('debug')('app:websockets');
 const _ = require('lodash');
@@ -21,11 +24,17 @@ const io = require("socket.io")(http);
 const { BattleService } = require('./services');
 
 // sockets: socketId -> Socket
-const sockets = new Map<String,Socket>();
+interface ISocketState {
+  socket: Socket,
+  owner: string,
+  authenticated: boolean,
+  nonce: string,
+}
+const sockets = new Map<String,ISocketState>();
 
 const emitEvent = (socketId: string, event: string, ...args: any[]) => {
-  const socket = sockets.get(socketId);
-  if (socket) socket.emit(event, ...args);
+  const socketState = sockets.get(socketId);
+  if (socketState) socketState.socket.emit(event, ...args);
 };
 
 const emitError = (socket: Socket, battle: IBattle | undefined, message: String) => {
@@ -39,13 +48,41 @@ const emitError = (socket: Socket, battle: IBattle | undefined, message: String)
 const emitState = (socketId: string, event: string, battle: IBattle) => {
   emitEvent(socketId, event, { state: battle.state, prevState: battle.prev_state})
 };
+const isAuthenticated = (socketId: string) => {
+  return sockets.get(socketId)!.authenticated;
+};
 
+const isOwner = (socketId: string, owner: string) => {
+  return sockets.get(socketId)!.authenticated;
+};
 
-io.on('connection', (socket: Socket) => {
-  debug('User connected');
+const onAuthentication = (socket: Socket) => {
+  socket.on("authenticationResponse", (data: { user: string, signature: string}) => {
 
+    const socketState = sockets.get(socket.id);
+    if (!socketState) return emitError(socket, undefined, "No connection registered");
+
+    try {
+      const pubAddress = CryptoUtils.pubToAddress(recover(socketState.nonce, data.signature));
+      if (data.user.toLowerCase() !== pubAddress) return emitError(socket, undefined, 'Validation failed');
+    } catch (e) {
+      console.error(e.message);
+      return emitError(socket, undefined, 'Validation failed');
+    }
+
+    socketState.owner = data.user;
+    socketState.authenticated = true;
+    sockets.set(socket.id, socketState);
+    debug("Client authenticated");
+    socket.emit("authenticated");
+  });
+};
+
+const onBattleRequest = (socket: Socket) => {
   socket.on("battleRequest", (data: { user: string, opponent: string }) => {
     const { user, opponent } = data;
+
+    if(!isAuthenticated(socket.id) || !isOwner(socket.id, user)) return emitError(socket, undefined, "Not authenticated");
 
     debug(`${user} requests a battle with ${opponent}`);
 
@@ -67,14 +104,12 @@ io.on('connection', (socket: Socket) => {
             return emitError(socket, battle, err);
           }
 
-          sockets.set(socket.id, socket);
           emitState(socket.id, 'battleAccepted', battle!);
         });
 
       } else {
 
         debug('battle exists');
-        sockets.set(socket.id, socket);
 
         const otherPlayer = battle.player1.id == user ? battle.player2 : battle.player1;
 
@@ -104,9 +139,12 @@ io.on('connection', (socket: Socket) => {
       }
     });
   });
+};
 
+const onPlay = (socket: Socket) => {
   socket.on('play', (state: IState) => {
     debug('Player playing with state ', state);
+    if(!isAuthenticated(socket.id)) return emitError(socket, undefined, "Not authenticated");
 
     getBattleBySocket(socket.id, (err: any, battle?: IBattle) => {
       if (err) return emitError(socket, battle, 'Error finding battle');
@@ -115,40 +153,59 @@ io.on('connection', (socket: Socket) => {
 
       const isPlayer1Turn = battle.state.turnNum % 2 == 1;
       if (
-        (isPlayer1Turn && battle.player2.socket_id == socket.id) ||
-        (!isPlayer1Turn && battle.player1.socket_id == socket.id)) {
+          (isPlayer1Turn && battle.player2.socket_id == socket.id) ||
+          (!isPlayer1Turn && battle.player1.socket_id == socket.id)) {
         return emitError(socket, battle, 'Not your turn');
       }
 
       const valid = isTransitionValid(battle, state);
       if (!valid.result) return emitError(socket, battle, valid.err);
 
+      battle.prev_state = battle.state;
       battle.state = state;
       battle.markModified('state');
+      battle.markModified('prev_state');
 
       if (isBattleFinished(battle)) {
         battle.finished = true;
-        emitEvent(battle.player1.socket_id, 'battleFinished', {state});
-        emitEvent(battle.player2.socket_id, 'battleFinished', {state});
+        emitState(battle.player1.socket_id, 'battleFinished', battle);
+        emitState(battle.player2.socket_id, 'battleFinished', battle);
       }
-      emitEvent(battle.player1.socket_id, 'stateUpdated', { state });
-      emitEvent(battle.player2.socket_id, 'stateUpdated', {state});
+      emitState(battle.player1.socket_id, 'stateUpdated', battle);
+      emitState(battle.player2.socket_id, 'stateUpdated', battle);
 
       battle.save();
     });
   });
+};
 
-  socket.on('debugBattles', (state: any) => {
-    debug(sockets.keys());
-    BattleService.find({}, console.log)
-  });
-
+const onDisonnect = (socket: Socket) => {
   socket.on("disconnect", () => {
     debug("Client disconnected")
 
     disconnectSocket(socket.id);
     sockets.delete(socket.id);
   });
+};
+
+io.on('connection', (socket: Socket) => {
+  debug('User connected');
+
+  const socketState = { socket: socket, nonce: Utils.randomHex256() , authenticated: false, owner: ""};
+  sockets.set(socket.id, socketState);
+
+  onBattleRequest(socket);
+  onPlay(socket);
+  onDisonnect(socket);
+  onAuthentication(socket);
+
+  socket.on('debugBattles', (state: any) => {
+    debug(sockets.keys());
+    BattleService.find({}, console.log)
+  });
+
+  socket.emit("authenticationRequest", { nonce: socketState.nonce })
+
 });
 
 export function init(cb: (err: any) => void) {

@@ -12,4 +12,5 @@ module.exports = mongoose.Schema({
 	established: Boolean,
 	finished: Boolean,
 	state: Object,
+	prev_state: Object,
 });

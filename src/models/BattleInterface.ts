@@ -7,6 +7,7 @@ export interface IState {
 	turnNum: number;
 	gameAttributes: string;
 	game: IRPSExample;
+	signature?: string;
 }
 
 export interface IRPSExample {
