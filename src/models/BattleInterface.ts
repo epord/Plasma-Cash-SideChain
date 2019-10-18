@@ -5,7 +5,6 @@ export interface IState {
 	channelType: string;
 	participants: Array<string>;
 	turnNum: number;
-	gameAttributes: string;
 	game: IRPSExample;
 	signature?: string;
 }
@@ -32,15 +31,13 @@ export interface IRPSExample {
 }
 
 export interface IBattle {
-	player1: {
+	players: [ {
         id: string,
         socket_id: string,
-	},
-	player2: {
+	}, {
 		id: string,
 		socket_id: string,
-	},
-	established: boolean,
+ }],
 	finished: boolean,
 	state: IState
 	prev_state: IState

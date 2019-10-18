@@ -230,14 +230,16 @@ export class CryptoUtils {
 
     public static hashChannelState(state: IState) {
 
-        return EthUtils.keccak256(abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
-            [
-                state.channelId,
-                state.channelType,
-                state.participants,
-                state.turnNum,
-                toBytes(state.game)
-            ])
+        return EthUtils.bufferToHex(
+            EthUtils.keccak256(abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
+                [
+                    state.channelId,
+                    state.channelType,
+                    state.participants,
+                    state.turnNum,
+                    toBytes(state.game)
+                ])
+            )
         );
 
     }

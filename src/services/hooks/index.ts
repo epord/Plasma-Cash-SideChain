@@ -4,9 +4,13 @@ const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
 const CryptoMonsJson = require("../../json/CryptoMons.json");
 const RootChainJson = require("../../json/RootChain.json");
+const PlasmaChannelManagerJson = require('../../json/PlasmaCM.json');
+const RPSExampleJson = require('../../json/RPSExample.json');
 
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
+import { createBattle } from "../battle";
+import { IBattle } from "../../models/BattleInterface";
 
 const _ = require('lodash');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
@@ -286,6 +290,17 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	});
 };
 
+const onBattleStarted = (iRPSStarted: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iRPSStarted, result!);
+
+	debug(`Battle started ${eventObj.gameId.toString()} for ${eventObj.player} and ${eventObj.opponent}`);
+	createBattle(eventObj.gameId.toString(), address, parseInt(eventObj.gamesToPlay.toString()), eventObj.player, eventObj.opponent,
+	 (err: any, battle?: IBattle) => {
+			if(err) debug("ERROR: ", err);
+	});
+};
+
 const getExit = (slot: BigNumber, cb: CallBack<any>) => {
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
 	web3.eth.getAccounts().then((accounts: any) => {
@@ -334,6 +349,15 @@ export function init(cb: () => void) {
 
 	const iTransfer = getEventInterface(CryptoMonContract, 'Transfer');
 	subscribeLogEvent(CryptoMonContract, iTransfer, onTransfer(iTransfer));
+
+	//RPS Battles
+	const RPSExampleContract = new web3.eth.Contract(RPSExampleJson.abi, RPSExampleJson.networks["5777"].address);
+	const RPSaddress = RPSExampleJson.networks["5777"].address;
+	const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
+
+	subscribeLogEvent(RPSExampleContract, iRPSStarted, onBattleStarted(iRPSStarted, RPSaddress));
+
+
 
 	cb();
 }

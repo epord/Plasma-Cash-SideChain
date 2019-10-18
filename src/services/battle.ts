@@ -8,55 +8,9 @@ import {recover} from "../utils/sign";
 const _ = require('lodash');
 const debug = require('debug')('app:battles');
 
-
-export const getBattleBySocket = (socketId: String, cb: CallBack<IBattle>) => {
-  BattleService.findOne({
-    $or: [{
-      "player1.socket_id": socketId,
-    }, {
-      "player2.socket_id": socketId
-    }
-  ]}, cb);
-};
-
-export const getBattleByParticipants = (player1: string, player2: string, cb: CallBack<IBattle>) => {
-  BattleService.findOne({
-    finished: false,
-    $or: [{ "player1.id": player1, "player2.id": player2 },
-      { "player1.id": player2, "player2.id": player1 }]
-  }, cb);
-};
-
-export const resetAllSockets = (cb: CallBack<void>) => {
-  BattleService.updateMany({}, {
-    $set: {
-      "player1.socket_id": undefined,
-      "player2.socket_id": undefined,
-      established: false,
-    }
-  }, cb);
-};
-
-export const disconnectSocket = (socketId: string) => {
-  BattleService.updateMany({
-    "player1.socket_id": socketId
-  }, {
-    $set: {
-      "player1.socket_id": undefined,
-      established: false,
-    }
-  }, _.noop);
-  BattleService.updateMany({
-    "player2.socket_id": socketId
-  }, {
-    $set: {
-      "player2.socket_id": undefined,
-      established: false,
-    }
-  }, {
-    multi: true
-  }, _.noop);
-};
+export const getBattleById = (channelId: string, cb: CallBack<IBattle>) => {
+  BattleService.findById(channelId, cb);
+}
 
 export function mover(state: IState) {
   return state.participants[state.turnNum % 2];
@@ -75,6 +29,8 @@ export function isTransitionValid (battle: IBattle, newState: IState): Maybe<boo
   if(!newState.signature) return {err: "Missing siganture"};
   try {
     const pubAddress = CryptoUtils.pubToAddress(recover(CryptoUtils.hashChannelState(newState), newState.signature));
+
+
     if (mover(newState).toLowerCase() !== pubAddress) return {err: "Invalid Signature"};
   } catch (e) {
     console.error(e.message);
@@ -88,28 +44,32 @@ export function isBattleFinished (battle: IBattle) {
   return isRPSBattleFinished(battle.state.game);
 }
 
-export function getInitialState(channelId: string, player: string, opponent: string): IState {
+export function getInitialState(channelId: string, channelType: string, gamesToPlay: number,  player: string, opponent: string): IState {
   return {
     channelId,
-    channelType: '',
+    channelType: channelType,
     participants: [player, opponent],
     turnNum: 0,
-    gameAttributes: '',
-    game: getInitialRPSState(),
+    game: getInitialRPSState(gamesToPlay),
   }
 }
 
-export const createBattle = (player: string, opponent: string, playerSocketId: string, cb: CallBack<IBattle>) => {
+export const createBattle = (
+  channelId: string,
+  channelType: string,
+  gamesToPlay: number,
+  player: string,
+  opponent: string,
+  cb: CallBack<IBattle>) => {
 
   // Create battle
   debug('create battle');
 
   BattleService.create({
-    player1: { id: player, socket_id: playerSocketId },
-    player2: { id: opponent },
-    established: false,
+    _id: channelId,
+    players: [{ id: player } , { id: opponent }],
     finished: false,
-    state: getInitialState('0', player, opponent),
+    state: getInitialState(channelId, channelType, gamesToPlay, player, opponent),
   }, cb);
 
 };

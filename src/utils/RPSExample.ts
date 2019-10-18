@@ -84,9 +84,9 @@ export const isRPSBattleFinished = (state: IRPSExample): boolean => {
 };
 
 
-export const getInitialRPSState = (): IRPSExample => {
+export const getInitialRPSState = (gamesToPlay: number): IRPSExample => {
     return {
-        gamesToPlay: 3,
+        gamesToPlay: gamesToPlay,
         scoreOP: 0,
         scorePL: 0,
     }
@@ -100,14 +100,14 @@ export const toBytes = (state: IRPSExample) => {
         EthUtils.setLengthLeft(new BN(state.scoreOP).toBuffer(), 256/8), 			// uint256 little endian
     ];
 
-    if(state.hashDecision) {
+    if(state.hashDecision != undefined) {
         params.push(EthUtils.toBuffer(state.hashDecision));
-        if(state.decisionPL) {
+        if(state.decisionPL != undefined) {
             params.push(EthUtils.setLengthLeft(new BN(state.decisionPL).toBuffer(), 256/8));
-            if(state.decisionOP) {
+            if(state.decisionOP != undefined) {
                 params.push(EthUtils.setLengthLeft(new BN(state.decisionOP).toBuffer(), 256/8));
                 params.push(EthUtils.toBuffer(state.salt));
-                if(state.nextHashDecision) {
+                if(state.nextHashDecision != undefined) {
                     params.push(EthUtils.toBuffer(state.nextHashDecision));
                 }
             }
