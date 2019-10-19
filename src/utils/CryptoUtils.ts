@@ -231,7 +231,7 @@ export class CryptoUtils {
     public static hashChannelState(state: IState) {
 
         return EthUtils.bufferToHex(
-            EthUtils.keccak256(abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
+            abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
                 [
                     state.channelId,
                     state.channelType,
@@ -240,7 +240,5 @@ export class CryptoUtils {
                     toBytes(state.game)
                 ])
             )
-        );
-
     }
 }
