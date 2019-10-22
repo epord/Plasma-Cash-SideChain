@@ -15,11 +15,6 @@ dotenv.config();
 
 // TODO: Ver de qué tipo es cb
 async.waterfall([
-    (cb: any) => initMongo(cb),
-    (cb: any) => initServer(cb),
-    (cb: any) => initHooks(cb),
-    (cb: any) => initWebSocket(cb),
-    (cb: any) => CryptoUtils.validateCryptoMons(cb),
     (cb: any) => {
         if(process.env.BLOCKCHAINLESS) return cb();
         setInterval(() => {
@@ -28,5 +23,10 @@ async.waterfall([
             });
         }, 20000);
         cb();
-    }
+    },
+    (cb: any) => CryptoUtils.validateCryptoMons(cb),
+    (cb: any) => initMongo(cb),
+    (cb: any) => initServer(cb),
+    (cb: any) => initHooks(cb),
+    (cb: any) => initWebSocket(cb),
 ]);

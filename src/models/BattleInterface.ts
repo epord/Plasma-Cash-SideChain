@@ -31,6 +31,7 @@ export interface IRPSExample {
 }
 
 export interface IBattle {
+	_id: string,
 	players: [ {
         id: string,
         socket_id: string,

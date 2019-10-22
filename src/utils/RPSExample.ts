@@ -116,3 +116,30 @@ export const toBytes = (state: IRPSExample) => {
 
     return RLP.encode(params);
 };
+
+export const fromBytes = (bytes: string): IRPSExample => {
+
+    const decoded: Buffer[] = RLP.decode(bytes) as Buffer[];
+
+    let game: IRPSExample = {
+        gamesToPlay: parseInt(decoded[0].toString('hex'), 16),
+        scorePL: parseInt(decoded[1].toString('hex'), 16),
+        scoreOP: parseInt(decoded[2].toString('hex'), 16),
+    };
+
+    if (decoded.length > 3) {
+        game.hashDecision = "0x" + decoded[3].toString('hex');
+        if (decoded.length > 4) {
+            game.decisionPL = parseInt(decoded[4].toString('hex'), 16);
+            if (decoded.length > 5) {
+                game.decisionOP = parseInt(decoded[5].toString('hex'), 16);
+                game.salt = "0x" + decoded[6].toString('hex');
+                if (decoded.length > 7) {
+                    game.nextHashDecision = "0x" + decoded[7].toString('hex');
+                }
+            }
+        }
+    }
+
+    return game;
+};

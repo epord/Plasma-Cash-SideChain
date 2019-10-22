@@ -9,14 +9,17 @@ const RPSExampleJson = require('../../json/RPSExample.json');
 
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
-import { createBattle } from "../battle";
+import { createBattle, play } from "../battle";
 import { IBattle } from "../../models/BattleInterface";
+import { fromBytes } from "../../utils/RPSExample";
 
 const _ = require('lodash');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
 const debug	= require('debug')('app:api:hooks')
 const { TransactionService } = require('../index');
 const { getChallengeAfterData, getChallengeBeforeData } = require("../challenges");
+
+const { BattleService } = require('../../services');
 
 const async = require('async');
 
@@ -301,6 +304,25 @@ const onBattleStarted = (iRPSStarted: abiInterface, address: string) => (error: 
 	});
 };
 
+const onForceMoveResponded = (iForceMoveResponded: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iForceMoveResponded, result!);
+	console.log(eventObj)
+	debug(`Force move responded in channel ${eventObj.channelId} with ${eventObj.nextState}`);
+	BattleService.findById(eventObj.channelId, (err: any, battle: IBattle) => {
+		if (err) return console.error("Error finding battle", err);
+		const nextState = {
+			channelId: eventObj.channelId.toString(),
+			channelType: eventObj.nextState.channelType,
+			participants: eventObj.nextState.participants,
+			turnNum: parseInt(eventObj.nextState.turnNum.toString()),
+			game: fromBytes(eventObj.nextState.gameAttributes),
+			signature: eventObj.signature,
+		};
+		play(nextState, battle, (err: any) => console.error("Force move responded error", err));
+	})
+};
+
 const getExit = (slot: BigNumber, cb: CallBack<any>) => {
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
 	web3.eth.getAccounts().then((accounts: any) => {
@@ -353,9 +375,16 @@ export function init(cb: () => void) {
 	//RPS Battles
 	const RPSExampleContract = new web3.eth.Contract(RPSExampleJson.abi, RPSExampleJson.networks["5777"].address);
 	const RPSaddress = RPSExampleJson.networks["5777"].address;
-	const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
 
+	const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
 	subscribeLogEvent(RPSExampleContract, iRPSStarted, onBattleStarted(iRPSStarted, RPSaddress));
+
+	//Plasma Channel Manager
+	const PlasmaChannelManagerContract = new web3.eth.Contract(PlasmaChannelManagerJson.abi, PlasmaChannelManagerJson.networks["5777"].address);
+	const PlasmaChannelManagerAddress = PlasmaChannelManagerJson.networks["5777"].address;
+
+	const iForceMoveResponded = getEventInterface(PlasmaChannelManagerContract, 'ForceMoveResponded');
+	subscribeLogEvent(PlasmaChannelManagerContract, iForceMoveResponded, onForceMoveResponded(iForceMoveResponded, PlasmaChannelManagerAddress));
 
 
 

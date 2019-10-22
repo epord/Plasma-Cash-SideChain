@@ -11,6 +11,7 @@ import { Utils } from "./utils/Utils";
 import { CryptoUtils } from "./utils/CryptoUtils";
 import { recover } from "./utils/sign";
 import { CallBack } from "./utils/TypeDef";
+import { play } from './services/battle';
 
 const debug = require('debug')('app:websockets');
 const _ = require('lodash');
@@ -43,7 +44,7 @@ const emitError = (socket: Socket, battle: IBattle | undefined, message: String)
   }
 };
 
-const emitState = (socketId: string, event: string, battle: IBattle) => {
+export const emitState = (socketId: string, event: string, battle: IBattle) => {
   emitEvent(socketId, event, { state: battle.state, prevState: battle.prev_state })
 };
 const isAuthenticated = (socketId: string) => {
@@ -142,26 +143,9 @@ const onPlay = (socket: Socket) => {
         (!isPlayer1Turn && battle.players[1].socket_id == socket.id)) {
         return emitError(socket, battle, 'Not your turn');
       }
-
-      const valid = isTransitionValid(battle, state);
-      if (!valid.result) return emitError(socket, battle, valid.err);
-
-      battle.prev_state = battle.state;
-      battle.state = state;
-      battle.markModified('state');
-      battle.markModified('prev_state');
-
-
-      emitState(battle.players[0].socket_id, 'stateUpdated', battle);
-      emitState(battle.players[1].socket_id, 'stateUpdated', battle);
-
-      if (isBattleFinished(battle)) {
-        battle.finished = true;
-        emitState(battle.players[0].socket_id, 'battleFinished', battle);
-        emitState(battle.players[1].socket_id, 'battleFinished', battle);
-      }
-
-      battle.save();
+      play(state, battle, (err: any) => {
+        if (err) return emitError(socket, battle, err);
+      })
     });
   });
 };
