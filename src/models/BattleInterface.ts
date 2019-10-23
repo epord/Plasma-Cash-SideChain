@@ -41,7 +41,59 @@ export enum Move {
 	ATK2          ,
 	SPATK2        ,
 	STATUS2       ,
-};
+}
+
+export enum Gender {
+	Male		  = 0,
+	Female		  ,
+	Unknown		  ,
+}
+
+export enum Type {
+	Normal			=0,
+	Fighting	 	,
+	Flying			,
+	Poison			,
+	Ground			,
+	Rock			,
+	Bug				,
+	Ghost			,
+	Steel			,
+	Fire			,
+	Water			,
+	Grass			,
+	Electric		,
+	Psychic			,
+	Ice				,
+	Dragon			,
+	Dark			,
+	Fairy			,
+	Unknown			,
+}
+
+export interface IStats {
+	hp: number
+	atk: number
+	def: number
+	spAtk: number
+	spDef: number
+	speed: number
+}
+
+export interface ICryptoMon {
+	id: number,
+	gender: Gender
+	isShiny: boolean
+	IVs: IStats
+	stats: IStats
+}
+
+export interface IPokemonData {
+	id: number,
+	type1: Type,
+	type2: Type,
+	base: IStats
+}
 
 export interface ICMBState {
 //Signed Player -> Signed OP        -> Signed Player
@@ -65,11 +117,15 @@ export interface ICMBState {
     //              |               |               | 14 SaltOP            | SaltOP
     //              |               |               | 15 nextHashDecision  |
 		CryptoMonPL: string,
+		CryptoMonPLInstance: ICryptoMon,
+		CryptoMonPlData: IPokemonData,
 		HPPL: number,
 		Status1PL: boolean,
 		Status2PL: boolean,
 		ChargePL: number,
 		CryptoMonOP: string,
+		CryptoMonOPInstance: ICryptoMon,
+		CryptoMonOPData: IPokemonData,
 		HPOP: number,
 		Status1OP: boolean,
 		Status2OP: boolean,
