@@ -5,9 +5,12 @@ import {IBlock} from "../models/BlockInterface";
 import {SparseMerkleTree} from "./SparseMerkleTree";
 import EthUtils = require("ethereumjs-util");
 import RLP = require('rlp');
+import async = require('async');
 import CryptoMonsJson = require("../json/CryptoMons.json");
 import RootChainJson = require("../json/RootChain.json");
 import VMCJson = require("../json/ValidatorManagerContract.json");
+import CMBJson = require("../json/CryptoMonBattles.json");
+import PlasmaCMJson = require("../json/PlasmaCM.json");
 import Web3 from "web3";
 import {CallBack} from "./TypeDef";
 import {AbiItem} from "web3-utils";
@@ -212,19 +215,36 @@ export class CryptoUtils {
     }
 
 
-    public static validateCryptoMons(cb: CallBack<void>) {
-        const VMC = new web3.eth.Contract(VMCJson.abi as AbiItem[], VMCJson.networks["5777"].address);
+    public static validateCryptoMons(done: CallBack<void>) {
         web3.eth.getAccounts().then((accounts: string[]) => {
-            VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]},
-                (err: Error, res: Response) => {
-                    if (err) {
-                        debug("ERROR: Contract couldn't be validated")
-                        debug(err);
-                        return cb(err);
-                    }
-                    debug("Validated contract");
-                    cb(null);
-            });
+            async.parallel([
+                (cb: any) => {
+                    const VMC = new web3.eth.Contract(VMCJson.abi as AbiItem[], VMCJson.networks["5777"].address);
+                    VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]},
+                        (err: Error, res: Response) => {
+                            if (err) {
+                                debug("ERROR: Contract couldn't be validated")
+                                debug(err);
+                                return cb(err);
+                            }
+                            debug("Validated CryptoMon deposit");
+                            cb(null);
+                    });
+                },
+                (cb: any) => {
+                    const CryptoMonBattles = new web3.eth.Contract(CMBJson.abi as AbiItem[], CMBJson.networks["5777"].address);
+                    CryptoMonBattles.methods.setValidator(PlasmaCMJson.networks["5777"].address, true).send({from: accounts[0]},
+                        (err: Error, res: Response) => {
+                            if (err) {
+                                debug("ERROR: Contract couldn't be validated")
+                                debug(err);
+                                return cb(err);
+                            }
+                            debug("Validated CryptoMon battles");
+                            cb(null);
+                    });
+                }
+            ], (err: any) => done(err));
         });
     }
 

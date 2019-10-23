@@ -8,7 +8,7 @@ const express 					= require('express')
 	, RootChainJson = require("../../../json/RootChain.json")
 	, ValidatorManagerContractJson = require('../../../json/ValidatorManagerContract.json')
 	, PlasmaChannelManagerJson = require('../../../json/PlasmaCM.json')
-	, PlasmaTurnGameJson = require('../../../json/RPSExample.json')
+	, PlasmaTurnGameJson = require('../../../json/CryptoMonBattles.json');
 
 debug('registering /api/contracts routes')
 
@@ -38,7 +38,7 @@ router.get('/', (req, res, next) => {
 		PlasmaTurnGameContract: {
 			abi: PlasmaTurnGameJson.abi,
 			networks: PlasmaTurnGameJson.networks,
-		}
+		},
 	});
 
 });

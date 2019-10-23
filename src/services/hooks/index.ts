@@ -5,7 +5,8 @@ const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAI
 const CryptoMonsJson = require("../../json/CryptoMons.json");
 const RootChainJson = require("../../json/RootChain.json");
 const PlasmaChannelManagerJson = require('../../json/PlasmaCM.json');
-const RPSExampleJson = require('../../json/RPSExample.json');
+// const RPSExampleJson = require('../../json/RPSExample.json');
+const CryptoMonsBattlesJson = require('../../json/CryptoMonBattles.json');
 
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
@@ -293,16 +294,24 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	});
 };
 
-const onBattleStarted = (iRPSStarted: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
-	if(error) return console.error(error);
-	const eventObj = eventToObj(iRPSStarted, result!);
+// const onBattleStarted = (iRPSStarted: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
+// 	if(error) return console.error(error);
+// 	const eventObj = eventToObj(iRPSStarted, result!);
 
-	debug(`Battle started ${eventObj.gameId.toString()} for ${eventObj.player} and ${eventObj.opponent}`);
-	createBattle(eventObj.gameId.toString(), address, parseInt(eventObj.gamesToPlay.toString()), eventObj.player, eventObj.opponent,
-	 (err: any, battle?: IBattle) => {
-			if(err) debug("ERROR: ", err);
-	});
-};
+// 	debug(`Battle started ${eventObj.gameId.toString()} for ${eventObj.player} and ${eventObj.opponent}`);
+// 	createBattle(eventObj.gameId.toString(), address, parseInt(eventObj.gamesToPlay.toString()), eventObj.player, eventObj.opponent,
+// 	 (err: any, battle?: IBattle) => {
+// 			if(err) debug("ERROR: ", err);
+// 	});
+// };
+
+
+const onChannelFunded = (iChannelFunded: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iChannelFunded, result!);
+	console.log(eventObj)
+	debug(`Channel ${eventObj.channelId} has been funded`);
+}
 
 const onForceMoveResponded = (iForceMoveResponded: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
 	if(error) return console.error(error);
@@ -373,11 +382,18 @@ export function init(cb: () => void) {
 	subscribeLogEvent(CryptoMonContract, iTransfer, onTransfer(iTransfer));
 
 	//RPS Battles
-	const RPSExampleContract = new web3.eth.Contract(RPSExampleJson.abi, RPSExampleJson.networks["5777"].address);
-	const RPSaddress = RPSExampleJson.networks["5777"].address;
+	// const RPSExampleContract = new web3.eth.Contract(RPSExampleJson.abi, RPSExampleJson.networks["5777"].address);
+	// const RPSaddress = RPSExampleJson.networks["5777"].address;
 
-	const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
-	subscribeLogEvent(RPSExampleContract, iRPSStarted, onBattleStarted(iRPSStarted, RPSaddress));
+	// const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
+	// subscribeLogEvent(RPSExampleContract, iRPSStarted, onBattleStarted(iRPSStarted, RPSaddress));
+
+	//CryptoMons Battles TODO: Listen to unlawful battles
+	// const CryptoMonsBattlesContract = new web3.eth.Contract(CryptoMonsBattlesJson.abi, CryptoMonsBattlesJson.networks["5777"].address);
+	// const CryptoMonsBattlesaddress = CryptoMonsBattlesJson.networks["5777"].address;
+
+	// const iCryptoMonBattleStarted = getEventInterface(CryptoMonsBattlesContract, 'CryptoMonBattleStarted');
+	// subscribeLogEvent(CryptoMonsBattlesContract, iCryptoMonBattleStarted, onBattleStarted(CryptoMonsBattlesContract, iCryptoMonBattleStarted, CryptoMonsBattlesaddress));
 
 	//Plasma Channel Manager
 	const PlasmaChannelManagerContract = new web3.eth.Contract(PlasmaChannelManagerJson.abi, PlasmaChannelManagerJson.networks["5777"].address);
@@ -385,6 +401,9 @@ export function init(cb: () => void) {
 
 	const iForceMoveResponded = getEventInterface(PlasmaChannelManagerContract, 'ForceMoveResponded');
 	subscribeLogEvent(PlasmaChannelManagerContract, iForceMoveResponded, onForceMoveResponded(iForceMoveResponded, PlasmaChannelManagerAddress));
+
+	const iChannelFunded = getEventInterface(PlasmaChannelManagerContract, 'ChannelFunded');
+	subscribeLogEvent(PlasmaChannelManagerContract, iChannelFunded, onChannelFunded(iChannelFunded, PlasmaChannelManagerAddress));
 
 
 

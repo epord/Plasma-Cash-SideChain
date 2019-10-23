@@ -50,6 +50,7 @@
   "keywords": [],
   "author": "epord",
   "dependencies": {
+    "@types/async": "^3.0.3",
     "@types/ethereumjs-abi": "^0.6.3",
     "@types/socket.io": "^2.1.4",
     "async": "^2.6.2",
