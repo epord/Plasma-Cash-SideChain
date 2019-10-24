@@ -5,14 +5,13 @@ const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAI
 const CryptoMonsJson = require("../../json/CryptoMons.json");
 const RootChainJson = require("../../json/RootChain.json");
 const PlasmaChannelManagerJson = require('../../json/PlasmaCM.json');
-// const RPSExampleJson = require('../../json/RPSExample.json');
 const CryptoMonsBattlesJson = require('../../json/CryptoMonBattles.json');
 
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
 import { createBattle, play } from "../battle";
 import { IBattle, ICryptoMon, ICMBState } from "../../models/BattleInterface";
-import { fromBytes } from "../../utils/CryptoMonBattles";
+import {fromBytes, fromBytesAndData} from "../../utils/CryptoMonBattles";
 
 const _ = require('lodash');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
@@ -294,37 +293,26 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	});
 };
 
-// const onBattleStarted = (iRPSStarted: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
-// 	if(error) return console.error(error);
-// 	const eventObj = eventToObj(iRPSStarted, result!);
-
-// 	debug(`Battle started ${eventObj.gameId.toString()} for ${eventObj.player} and ${eventObj.opponent}`);
-// 	createBattle(eventObj.gameId.toString(), address, parseInt(eventObj.gamesToPlay.toString()), eventObj.player, eventObj.opponent,
-// 	 (err: any, battle?: IBattle) => {
-// 			if(err) debug("ERROR: ", err);
-// 	});
-// };
-
-
-const onChannelFunded = (iChannelFunded: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
+const onChannelFunded = (iChannelFunded: abiInterface) => (error: any, result?: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iChannelFunded, result!);
-	console.log(eventObj)
 	debug(`Channel ${eventObj.channelId} has been funded`);
-	fromBytes(eventObj.initiaState, (err: any, initialState?: ICMBState) => {
-		console.log('fromBytes finished', err)
+	fromBytes(eventObj.initialState, (err: any, initialState?: ICMBState) => {
 		if (err) return console.error(err);
 		if (!initialState) return console.error('Couldn\'t decode initialState bytes');
-		console.log('=====> initialState:')
-		console.log(initialState);
-		createBattle(eventObj.channelId, eventObj.channelType, eventObj.creator, eventObj.opponent, initialState, console.log);
-	})
-}
+		createBattle(
+			eventObj.channelId.toString(),
+			eventObj.channelType,
+			eventObj.creator,
+			eventObj.opponent,
+			initialState,
+		(err) => { if(err) debug("ERROR: " + err) });
+	});
+};
 
-const onForceMoveResponded = (iForceMoveResponded: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
+const onForceMoveResponded = (iForceMoveResponded: abiInterface) => (error: any, result?: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iForceMoveResponded, result!);
-	console.log(eventObj)
 	debug(`Force move responded in channel ${eventObj.channelId} with ${eventObj.nextState}`);
 	BattleService.findById(eventObj.channelId, (err: any, battle: IBattle) => {
 		if (err) return console.error("Error finding battle", err);
@@ -333,11 +321,15 @@ const onForceMoveResponded = (iForceMoveResponded: abiInterface, address: string
 			channelType: eventObj.nextState.channelType,
 			participants: eventObj.nextState.participants,
 			turnNum: parseInt(eventObj.nextState.turnNum.toString()),
-			game: {},// TODO: fromBytes(eventObj.nextState.gameAttributes),
+			game: fromBytesAndData(eventObj.nextState.gameAttrbutes,
+				battle.state.game.cryptoMonPLInstance,
+				battle.state.game.cryptoMonOPInstance,
+				battle.state.game.cryptoMonPLData,
+				battle.state.game.cryptoMonOPData),
 			signature: eventObj.signature,
 		};
-		// play(nextState, battle, (err: any) => console.error("Force move responded error", err));
-	})
+		play(nextState, battle, (err: any) => console.error("Force move responded error", err));
+	});
 };
 
 const getExit = (slot: BigNumber, cb: CallBack<any>) => {
@@ -408,10 +400,10 @@ export function init(cb: () => void) {
 	const PlasmaChannelManagerAddress = PlasmaChannelManagerJson.networks["5777"].address;
 
 	const iForceMoveResponded = getEventInterface(PlasmaChannelManagerContract, 'ForceMoveResponded');
-	subscribeLogEvent(PlasmaChannelManagerContract, iForceMoveResponded, onForceMoveResponded(iForceMoveResponded, PlasmaChannelManagerAddress));
+	subscribeLogEvent(PlasmaChannelManagerContract, iForceMoveResponded, onForceMoveResponded(iForceMoveResponded));
 
 	const iChannelFunded = getEventInterface(PlasmaChannelManagerContract, 'ChannelFunded');
-	subscribeLogEvent(PlasmaChannelManagerContract, iChannelFunded, onChannelFunded(iChannelFunded, PlasmaChannelManagerAddress));
+	subscribeLogEvent(PlasmaChannelManagerContract, iChannelFunded, onChannelFunded(iChannelFunded));
 
 
 

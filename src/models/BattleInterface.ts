@@ -5,7 +5,7 @@ export interface IState {
 	channelType: string;
 	participants: Array<string>;
 	turnNum: number;
-	game: IRPSExample;
+	game: ICMBState;
 	signature?: string;
 }
 
@@ -14,9 +14,9 @@ export interface IRPSExample {
 	//GamesToPlay   | //GamesToPlay     | //GamesToPlay     | //GamesToPlay       |  //GamesToPlay == 0
 	//ScorePl       | //ScorePl         | //ScorePl         | //ScorePl           |  //ScorePl
 	//ScoreOp       | //ScoreOp         | //ScoreOp         | //ScoreOp           |  //ScoreOp
-	//              | //HashDecision    | //HashDecision    | //HashDecision  	  |  //HashDecision
+	//              | //hashDecision    | //hashDecision    | //hashDecision  	  |  //hashDecision
 	//              |                   | //DecsionPl       | //DecisionPl        |  //DecisionPl
-	//              |                   |                   | //DecisionOp        |  //DecisionOp
+	//              |                   |                   | //decisionOP        |  //decisionOP
 	//              |                   |                   | //Salt              |  //Salt
 	//              |                   |                   | //nextHashDecision  |
 
@@ -100,42 +100,42 @@ export interface ICMBState {
 
     //initialState  + //State 1    + //State even   + //State odd  +  //State ending (odd)
 
-    //CryptoMonPL   | CryptoMonPL   | CryptoMonPL   | 0 CryptoMonPL        | CryptoMonPL
+    //cryptoMonPL   | cryptoMonPL   | cryptoMonPL   | 0 cryptoMonPL        | cryptoMonPL
     //HPPL          | HPPL          | HPPL          | 1 HPPL               | HPPL
-    //Status1PL     | Status1PL     | Status1PL     | 2 Status1PL          | Status1PL
-    //Status2PL     | Status2PL     | Status2PL     | 3 Status2PL          | Status2PL
-    //ChargePL      | ChargePL      | ChargePL      | 4 ChargePL           | ChargePL
-    //CryptoMonOP   | CryptoMonOP   | CryptoMonOP   | 5 CryptoMonOP        | CryptoMonOP
+    //status1PL     | status1PL     | status1PL     | 2 status1PL          | status1PL
+    //status2PL     | status2PL     | status2PL     | 3 status2PL          | status2PL
+    //chargePL      | chargePL      | chargePL      | 4 chargePL           | chargePL
+    //cryptoMonOP   | cryptoMonOP   | cryptoMonOP   | 5 cryptoMonOP        | cryptoMonOP
     //HPOP          | HPOP          | HPOP          | 6 HPOP               | HPOP
-    //Status1OP     | Status1OP     | Status1OP     | 7 Status1OP          | Status1OP
-    //Status2OP     | Status2OP     | Status2OP     | 8 Status2OP          | Status2OP
-    //ChargeOP      | ChargeOP      | ChargeOP      | 9  ChargeOP          | ChargeOP
-    //              | HashDecision  | HashDecision  | 10 HashDecision      | HashDecision
-    //              |               | DecisionPL    | 11 DecisionPL        | DecisionPL
-    //              |               | SaltPL        | 12 SaltPL            | SaltPL
-    //              |               |               | 13 DecisionOp        | DecisionOp
-    //              |               |               | 14 SaltOP            | SaltOP
+    //status1OP     | status1OP     | status1OP     | 7 status1OP          | status1OP
+    //status2OP     | status2OP     | status2OP     | 8 status2OP          | status2OP
+    //chargeOP      | chargeOP      | chargeOP      | 9  chargeOP          | chargeOP
+    //              | hashDecision  | hashDecision  | 10 hashDecision      | hashDecision
+    //              |               | decisionPL    | 11 decisionPL        | decisionPL
+    //              |               | saltPL        | 12 saltPL            | saltPL
+    //              |               |               | 13 decisionOP        | decisionOP
+    //              |               |               | 14 saltOP            | saltOP
     //              |               |               | 15 nextHashDecision  |
-		CryptoMonPL: string,
-		CryptoMonPLInstance: ICryptoMon,
-		CryptoMonPlData: IPokemonData,
-		HPPL: number,
-		Status1PL: boolean,
-		Status2PL: boolean,
-		ChargePL: number,
-		CryptoMonOP: string,
-		CryptoMonOPInstance: ICryptoMon,
-		CryptoMonOPData: IPokemonData,
-		HPOP: number,
-		Status1OP: boolean,
-		Status2OP: boolean,
-		ChargeOP: number,
-		HashDecision?: string,
-		DecisionPL?: Move,
-		SaltPL?: string,
-		DecisionOp?: Move,
-		SaltOP?: string,
-		nextHashDecision?: string
+    cryptoMonPL: string,
+    cryptoMonPLInstance: ICryptoMon,
+    cryptoMonPLData: IPokemonData,
+    HPPL: number,
+    status1PL: boolean,
+    status2PL: boolean,
+    chargePL: number,
+    cryptoMonOP: string,
+    cryptoMonOPInstance: ICryptoMon,
+    cryptoMonOPData: IPokemonData,
+    HPOP: number,
+    status1OP: boolean,
+    status2OP: boolean,
+    chargeOP: number,
+    hashDecision?: string,
+    decisionPL?: Move,
+    saltPL?: string,
+    decisionOP?: Move,
+    saltOP?: string,
+    nextHashDecision?: string
 }
 
 export interface IBattle {

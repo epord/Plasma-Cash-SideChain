@@ -130,7 +130,7 @@ const onBattleRequest = (socket: Socket) => {
 
 const onPlay = (socket: Socket) => {
   socket.on('play', (state: IState) => {
-    debug('Player playing with state ', state);
+    debug('Player playing with state ', state.turnNum);
     if(!isAuthenticated(socket.id)) return emitError(socket, undefined, "Not authenticated");
 
     updateSocketIdIfNeeded(state.channelId, socket.id, (err: any, battle?: IBattle) => {

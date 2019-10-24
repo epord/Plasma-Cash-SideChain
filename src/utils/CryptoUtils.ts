@@ -18,7 +18,7 @@ import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {TransactionService} from "../services";
 import {IState, ICryptoMon, IPokemonData} from "../models/BattleInterface";
 import  abi = require('ethereumjs-abi');
-import {toBytes} from "./RPSExample";
+import {toCMBBytes} from "./CryptoMonBattles";
 
 const debug = require('debug')('app:CryptoUtils');
 const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL!));
@@ -272,7 +272,28 @@ export class CryptoUtils {
                     debug(err);
                     return done(err);
                 }
-                done(null, res)
+                let cryptoMon: ICryptoMon = {
+                    id: res.id,
+                    gender: res.gender,
+                    isShiny: res.isShiny,
+                    IVs: {
+                        hp: res.IVs.hp,
+                        atk: res.IVs.atk,
+                        def: res.IVs.def,
+                        spAtk: res.IVs.spAtk,
+                        spDef: res.IVs.spDef,
+                        speed: res.IVs.speed
+                    },
+                    stats: {
+                        hp: res.stats.hp,
+                        atk: res.stats.atk,
+                        def: res.stats.def,
+                        spAtk: res.stats.spAtk,
+                        spDef: res.stats.spDef,
+                        speed: res.stats.speed
+                    },
+                };
+                done(null, cryptoMon)
             });
         });
     }
@@ -286,7 +307,22 @@ export class CryptoUtils {
                     debug(err);
                     return done(err);
                 }
-                done(null, res)
+                const pokeData: IPokemonData = {
+                    id: res.id,
+                    type1: res.type1,
+                    type2: res.type2,
+                    base: {
+                        hp: res.base.hp,
+                        atk: res.base.atk,
+                        def: res.base.def,
+                        spAtk: res.base.spAtk,
+                        spDef: res.base.spDef,
+                        speed: res.base.speed
+
+                    }
+                };
+
+                done(null, pokeData);
             });
         });
     }
@@ -300,7 +336,7 @@ export class CryptoUtils {
                     state.channelType,
                     state.participants,
                     state.turnNum,
-                    toBytes(state.game)
+                    toCMBBytes(state.game)
                 ])
             )
     }

@@ -1,5 +1,3 @@
-const { Type } = require("./pokeUtils");
-
 const ATTACK_POWER = 50;
 const CONFUSED_ATTACK_POWER = 25;
 const STATUS_HIT_CHANCE = 0xBE;
@@ -46,6 +44,29 @@ const Moves = {
     ATK2          : 7,
     SPATK2        : 8,
     STATUS2       : 9,
+};
+
+
+const Type =  {
+  Normal      : 0,
+  Fighting    : 1,
+  Flying      : 2,
+  Poison      : 3,
+  Ground      : 4,
+  Rock        : 5,
+  Bug         : 6,
+  Ghost       : 7,
+  Steel       : 8,
+  Fire        : 9,
+  Water       : 10,
+  Grass       : 11,
+  Electric    : 12,
+  Psychic     : 13,
+  Ice         : 14,
+  Dragon      : 15,
+  Dark        : 16,
+  Fairy       : 17,
+  Unknown     : 18
 };
 
 const Gender = {
@@ -101,7 +122,7 @@ CryptoMonState {
   }
 **/
 
-function require(bool, message) {
+function check(bool, message) {
   if(!bool) {
     throw message;
   }
@@ -165,28 +186,28 @@ function moveTurn(state){
   if(state.player.move === Moves.PROTECT) return state;
 
   if(needsCharge(state.player.move)) {
-    require(state.player.charges > 0, "Player needs a charge to do this move");
+    check(state.player.charges > 0, "Player needs a charge to do this move");
     state.player.charges = state.player.charges - 1;
   }
 
   if(state.player.move === Moves.RECHARGE) {
-    require(state.player.charges < 3, "Player recharge not possible when over 3");
+    check(state.player.charges < 3, "Player recharge not possible when over 3");
     state.player.charges = state.player.charges + 1;
     return state;
   }
 
   if(usesFirstType(state.player.move)) {
-    require(state.player.data.type1 !== Type.Unknown, "Player attack cant be done with Unknown type");
+    check(state.player.data.type1 !== Type.Unknown, "Player attack cant be done with Unknown type");
   }
 
   if(usesSecondType(state.player.move)) {
-    require(state.player.data.type2 !== Type.Unknown, "Player attack cant be done with Unknown type");
+    check(state.player.data.type2 !== Type.Unknown, "Player attack cant be done with Unknown type");
   }
 
   if(isAttacking(state.player.move)) {
-    [ random1, criticalR ] = getNextR(state.random);
-    [ random2, jitterR ]   = getNextR(random1);
-    [ random3, hitR ]    = getNextR(random2);
+    let [ random1, criticalR ] = getNextR(state.random);
+    let [ random2, jitterR ]   = getNextR(random1);
+    let [ random3, hitR ]    = getNextR(random2);
     state.random = random3;
     let hit = willHit(state.player, state.opponent, hitR);
     if(hit) {
@@ -235,7 +256,7 @@ function moveTurn(state){
   }
 
   if(state.player.move === Moves.STATUS1) {
-    [random, statusHit] = getNextR(state.random);
+    let [random, statusHit] = getNextR(state.random);
     state.random = random;
     if(canStatus(state, statusHit)){
       state.opponent.status1 = true;
@@ -246,7 +267,7 @@ function moveTurn(state){
   }
 
   if(state.player.move === Moves.STATUS2) {
-    [ random, statusHit] = getNextR(state.random);
+    let [ random, statusHit] = getNextR(state.random);
     state.random = random;
     if(canStatus(state, statusHit)){
       state.opponent.status2 = true;
@@ -266,8 +287,8 @@ function moveTurn(state){
 }
 
 function canStatus(state, random) {
-  if(state.player.status1) require(state.opponent.data.type1 !== Type.Ice, "Cant use Status while Froze");
-  if(state.player.status2) require(state.opponent.data.type2 !== Type.Ice, "Cant use Status while Froze");
+  if(state.player.status1) check(state.opponent.data.type1 !== Type.Ice, "Cant use Status while Froze");
+  if(state.player.status2) check(state.opponent.data.type2 !== Type.Ice, "Cant use Status while Froze");
   return random < STATUS_HIT_CHANCE;
 }
 
@@ -286,7 +307,7 @@ function calculateEffectiveDamage(state, otherState, criticalR, jitterR) {
     let effectiveSpAtk = calculateEffectiveSpAtk(state, otherState);
     let effectiveSpDef = calculateEffectiveSpDef(otherState, state);
 
-    damage = Math.floor((Math.floor(Math.floor(Math.floor(2*LEVEL/5) + 2) * ATTACK_POWER * effectiveAtk) / effectiveDef)/50) + 2;
+    damage = Math.floor((Math.floor(Math.floor(Math.floor(2*LEVEL/5) + 2) * ATTACK_POWER * effectiveSpAtk) / effectiveSpDef)/50) + 2;
   } else {
     revert("Attacking move should be an attacking move");
   }
@@ -538,18 +559,15 @@ function calculateEndHealingForType(state, ptype) {
 
 //RANDOM ---------------------------------------
 function getNextR(random) {
-  let nextR = parseInt("0x" + random.substr(random.length - 2));
-  return [shiftRandom(random), nextR];
+  let i = random.length - 1;
+  let nextR = random[i];
+  return [random.slice(0, i), nextR];
 }
 
-function shiftRandom(random) {
-  let not0x = random.substr(2).substr(0, random.length - 4);
-  return "0x00" + not0x;
-}
 // -----------------------------------------------------
 
 
-function needsCharge(move) {
+export function needsCharge(move) {
   return move !== Moves.RECHARGE && move !== Moves.PROTECT;
 }
 
@@ -565,11 +583,11 @@ export function someoneDied(state) {
   return state.player.hp === 0 || state.opponent.hp === 0;
 }
 
-function usesFirstType(move) {
+export function usesFirstType(move) {
   return move === Moves.ATK1 || move === Moves.SPATK1 || move === Moves.STATUS1;
 }
 
-function usesSecondType(move) {
+export function usesSecondType(move) {
   return move === Moves.ATK2 || move === Moves.SPATK2 || move === Moves.STATUS2;
 }
 
