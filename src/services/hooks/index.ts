@@ -11,8 +11,8 @@ const CryptoMonsBattlesJson = require('../../json/CryptoMonBattles.json');
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
 import { createBattle, play } from "../battle";
-import { IBattle } from "../../models/BattleInterface";
-import { fromBytes } from "../../utils/RPSExample";
+import { IBattle, ICryptoMon, ICMBState } from "../../models/BattleInterface";
+import { fromBytes } from "../../utils/CryptoMonBattles";
 
 const _ = require('lodash');
 const { exitSlot, getOwner, resetSlot }	= require('../coinState');
@@ -311,6 +311,14 @@ const onChannelFunded = (iChannelFunded: abiInterface, address: string) => (erro
 	const eventObj = eventToObj(iChannelFunded, result!);
 	console.log(eventObj)
 	debug(`Channel ${eventObj.channelId} has been funded`);
+	fromBytes(eventObj.initiaState, (err: any, initialState?: ICMBState) => {
+		console.log('fromBytes finished', err)
+		if (err) return console.error(err);
+		if (!initialState) return console.error('Couldn\'t decode initialState bytes');
+		console.log('=====> initialState:')
+		console.log(initialState);
+		createBattle(eventObj.channelId, eventObj.channelType, eventObj.creator, eventObj.opponent, initialState, console.log);
+	})
 }
 
 const onForceMoveResponded = (iForceMoveResponded: abiInterface, address: string) => (error: any, result?: eventResultInterface) => {
@@ -325,10 +333,10 @@ const onForceMoveResponded = (iForceMoveResponded: abiInterface, address: string
 			channelType: eventObj.nextState.channelType,
 			participants: eventObj.nextState.participants,
 			turnNum: parseInt(eventObj.nextState.turnNum.toString()),
-			game: fromBytes(eventObj.nextState.gameAttributes),
+			game: {},// TODO: fromBytes(eventObj.nextState.gameAttributes),
 			signature: eventObj.signature,
 		};
-		play(nextState, battle, (err: any) => console.error("Force move responded error", err));
+		// play(nextState, battle, (err: any) => console.error("Force move responded error", err));
 	})
 };
 

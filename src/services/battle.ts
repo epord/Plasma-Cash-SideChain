@@ -1,6 +1,6 @@
 import { BattleService } from './index';
 import { CallBack, Maybe } from '../utils/TypeDef';
-import { IBattle, IState } from '../models/BattleInterface';
+import { IBattle, IState, ICMBState } from '../models/BattleInterface';
 import { getInitialRPSState, isRPSBattleFinished, validateRPSTransition } from "../utils/RPSExample";
 import { CryptoUtils } from '../utils/CryptoUtils';
 import { recover } from "../utils/sign";
@@ -58,9 +58,9 @@ export function getInitialState(channelId: string, channelType: string, gamesToP
 export const createBattle = (
   channelId: string,
   channelType: string,
-  gamesToPlay: number,
   player: string,
   opponent: string,
+  initialState: ICMBState,
   cb: CallBack<IBattle>) => {
 
   // Create battle
@@ -70,7 +70,7 @@ export const createBattle = (
     _id: channelId,
     players: [{ id: player } , { id: opponent }],
     finished: false,
-    state: getInitialState(channelId, channelType, gamesToPlay, player, opponent),
+    state: initialState,
   }, cb);
 };
 

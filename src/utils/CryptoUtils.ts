@@ -16,7 +16,7 @@ import {CallBack} from "./TypeDef";
 import {AbiItem} from "web3-utils";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {TransactionService} from "../services";
-import {IState} from "../models/BattleInterface";
+import {IState, ICryptoMon, IPokemonData} from "../models/BattleInterface";
 import  abi = require('ethereumjs-abi');
 import {toBytes} from "./RPSExample";
 
@@ -245,6 +245,49 @@ export class CryptoUtils {
                     });
                 }
             ], (err: any) => done(err));
+        });
+    }
+
+    public static getPlasmaCoinId(slot: string, done: CallBack<string>) {
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            const RootChainContract = new web3.eth.Contract(RootChainJson.abi as AbiItem[], RootChainJson.networks["5777"].address);
+            RootChainContract.methods.getPlasmaCoin(slot).call({from: accounts[0]},(err: Error, res: any) => {
+                if (err) {
+                    debug("ERROR: Couldn't fetch plasma coin id");
+                    debug(err);
+                    return done(err);
+                }
+                const id = new BigNumber(res[0]).toFixed();
+                done(null, id);
+            });
+        });
+    }
+
+    public static getCryptomon(slot: string, done: CallBack<ICryptoMon>) {
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            const CryptoMonsContract = new web3.eth.Contract(CryptoMonsJson.abi as AbiItem[], CryptoMonsJson.networks["5777"].address);
+            CryptoMonsContract.methods.getCryptomon(slot).call({from: accounts[0]}, (err: Error, res: any) => {
+                if (err) {
+                    debug("ERROR: Couldn't fetch CryptoMon instance");
+                    debug(err);
+                    return done(err);
+                }
+                done(null, res)
+            });
+        });
+    }
+
+    public static getPokemonData(id: string, done: CallBack<IPokemonData>) {
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            const CryptoMonsContract = new web3.eth.Contract(CryptoMonsJson.abi as unknown as AbiItem[], CryptoMonsJson.networks["5777"].address);
+            CryptoMonsContract.methods.getPokemonData(id).call({from: accounts[0]}, (err: Error, res: any) => {
+                if (err) {
+                    debug("ERROR: Couldn't fetch pokemon data");
+                    debug(err);
+                    return done(err);
+                }
+                done(null, res)
+            });
         });
     }
 
