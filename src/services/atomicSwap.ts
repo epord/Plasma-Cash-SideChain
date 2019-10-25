@@ -164,7 +164,8 @@ export const checkIfAnySecretBlockReady = () => {
 		if(err) return debug(`ERROR: ${err.message}`);
 
 		let functions = sblock.map((sblock: ISRBlock) => async (cb: CallBack<void>) => {
-			const block: IBlock  = await BlockService.findById(sblock.block_number).populate("transactions").exec();
+			// @ts-ignore TODO: Fix
+            const block: IBlock  = await BlockService.findById(sblock.block_number).populate("transactions").exec();
 
 			const grouped = Utils.groupTransactionsBySlot(block.Transactions);
 
@@ -213,7 +214,8 @@ export const checkIfAnySecretBlockReady = () => {
 };
 
 export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBack<void>) => {
-	const block: IBlock  = await BlockService.findById(minedBlock).populate("transactions").exec();
+	// @ts-ignore //TODO: Fix
+    const block: IBlock  = await BlockService.findById(minedBlock).populate("transactions").exec();
 	const swapTransactions = block.Transactions.filter(t => t.is_swap);
 	const isAllRevealed = swapTransactions.map(t=> t.secret).indexOf(undefined) < 0;
 

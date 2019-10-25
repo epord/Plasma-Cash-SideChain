@@ -6,12 +6,13 @@ import {ITransaction} from "../models/TransactionInterface";
 import {IBlock} from "../models/BlockInterface";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import RLP = require('rlp');
+import {CoinStateService} from "./CoinStateService";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
-    , { TransactionService, BlockService, CoinStateService, SecretRevealingBlockService } = require('../services');
+    , { TransactionService, BlockService, SecretRevealingBlockService } = require('../services');
 
 
 export const blockInterval = new BigNumber(1000);
@@ -185,7 +186,7 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 					if (transaction) return cb({ statusCode: 400, error: "The transaction already exists"});
 
 					/// TODO: make atomic
-					CoinStateService.create({
+					CoinState.create({
 						_id: slotBN,
 						state: "DEPOSITED",
 						owner: owner
@@ -323,6 +324,7 @@ export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) 
 //TODO Clean up this. We had to put it down here due to cyclical dependencies
 import {isTransactionValid, toTransactionData} from './transaction';
 import {checkIfAnySecretBlockReady, isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
+import CoinState from "../models/CoinStateModel";
 
 /**
  * Given a set of transactions, will find the first valid one, remove those that finds invalid

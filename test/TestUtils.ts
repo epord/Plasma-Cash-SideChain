@@ -1,8 +1,8 @@
 import {CryptoUtils} from "../src/utils/CryptoUtils";
-import { BlockService, TransactionService, CoinStateService, SecretRevealingBlockService } from '../src/services';
+import { BlockService, TransactionService, SecretRevealingBlockService } from '../src/services';
 import {CallBack} from "../src/utils/TypeDef";
-import {BigNumber} from "bignumber.js";
 import * as EthUtils from "ethereumjs-util"
+import CoinState from "../src/models/CoinStateModel";
 
 const async = require('async');
 
@@ -76,7 +76,7 @@ export class TestUtils {
         async.parallel([
             (cb: any) => BlockService.deleteMany({}, cb),
             (cb: any) => TransactionService.deleteMany({}, cb),
-            (cb: any) => CoinStateService.deleteMany({}, cb),
+            (cb: any) => CoinState.deleteMany({}, cb),
             (cb: any) => SecretRevealingBlockService.deleteMany({}, cb)
         ], done);
     };

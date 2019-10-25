@@ -80,15 +80,20 @@ export class CryptoUtils {
 
         let params = [
             //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
-            EthUtils.setLengthLeft(new BN(transaction.slot.toFixed()).toBuffer(), 256/8), 			// uint256 little endian
-            EthUtils.setLengthLeft(new BN(transaction.block_spent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
-            EthUtils.toBuffer(transaction.secret || "0x0"),																						// must start with 0x
+            EthUtils.setLengthLeft(new BN(transaction.slot.toFixed()).toBuffer(), 256/8),   // uint256 little endian
+            EthUtils.setLengthLeft(new BN(transaction.block_spent.toFixed()).toBuffer(), 256/8),    // uint256 little endian
+            EthUtils.toBuffer(transaction.secret || "0x0"), // must start with 0x
             EthUtils.toBuffer(transaction.recipient),
-            EthUtils.setLengthLeft(new BN(counterpart.slot.toFixed()).toBuffer(), 256/8), 			// uint256 little endian
-            EthUtils.setLengthLeft(new BN(counterpart.block_spent.toFixed()).toBuffer(), 256/8),	// uint256 little endian
-            EthUtils.toBuffer(counterpart.secret || "0x0"),																						// must start with 0x
-            EthUtils.toBuffer(counterpart.recipient),// must start with 0x
-            EthUtils.toBuffer(counterpart.signature),// must start with 0x
+            // @ts-ignore TODO: Fix
+            EthUtils.setLengthLeft(new BN(counterpart.slot.toFixed()).toBuffer(), 256/8),   // uint256 little endian
+            // @ts-ignore TODO: Fix
+            EthUtils.setLengthLeft(new BN(counterpart.block_spent.toFixed()).toBuffer(), 256/8),    // uint256 little endian
+            // @ts-ignore TODO: Fix
+            EthUtils.toBuffer(counterpart.secret || "0x0"), // must start with 0x
+            // @ts-ignore TODO: Fix
+            EthUtils.toBuffer(counterpart.recipient),   // must start with 0x
+            // @ts-ignore TODO: Fix
+            EthUtils.toBuffer(counterpart.signature),   // must start with 0x
         ];
 
         return EthUtils.bufferToHex(RLP.encode(params));

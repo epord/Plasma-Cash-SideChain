@@ -1,13 +1,12 @@
 import {Utils} from "../../../utils/Utils";
 import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
-import {CoinStateService} from "../../../services/CoinStateService";
 import { TransactionService } from '../../../services';
+import {CoinStateService} from "../../../services/CoinStateService";
 
 const express = require('express')
 	, router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens')
 	, Status = require('http-status-codes')
-	, { getOwnedTokens } = require('../../../services/coinState')
 	, BigNumber = require('bignumber.js');
 
 debug('registering /api/tokens routes')
@@ -73,7 +72,6 @@ router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req, res, next) => {
 				hash_secret: true,
 				is_swap: true,
 				invalidated: true,
-				recipient: true,
 				mined_block: { $toString: "$mined_block" },
 			}
 		}, {

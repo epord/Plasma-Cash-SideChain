@@ -17,7 +17,6 @@ const BattleService = mongoose.model('Battle', BattleModel, 'battles');
 const Services = {
 	BlockService,
 	TransactionService,
-	CoinStateService,
 	SecretRevealingBlockService,
 	BattleService
 };
