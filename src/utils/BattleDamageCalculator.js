@@ -1,5 +1,5 @@
-const ATTACK_POWER = 50;
-const CONFUSED_ATTACK_POWER = 25;
+const ATTACK_POWER = 2;
+const CONFUSED_ATTACK_POWER = 1;
 const STATUS_HIT_CHANCE = 0xBE;
 const LEVEL = 100;
 
@@ -312,7 +312,7 @@ function calculateEffectiveDamage(state, otherState, criticalR, jitterR) {
     revert("Attacking move should be an attacking move");
   }
 
-  let isCritical = criticalR > getCriticalHitThreshold(state, otherState);
+  let isCritical = criticalR < getCriticalHitThreshold(state, otherState);
   if(isCritical) damage = Math.floor(damage * 150 / 100);
 
   let jitter = ( Math.floor(jitterR * decimals / 255) * (255-217)  ) + (217 * decimals);
