@@ -187,7 +187,7 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 
 					/// TODO: make atomic
 					CoinState.create({
-						_id: slotBN,
+						slot: slotBN,
 						state: "DEPOSITED",
 						owner: owner
 					});

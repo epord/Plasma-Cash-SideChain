@@ -4,12 +4,12 @@ import CoinState, {ICoinState} from "../models/CoinStateModel";
 export class CoinStateService {
 
     public static exitSlot(slot: BigNumber, cb: any) {
-        CoinState.findById(slot, (err: Error, coinState: ICoinState) => {
+        CoinState.find({slot: slot}, (err: Error, coinState: ICoinState) => {
             coinState.state = "EXITING";
             coinState.save();
         });
         CoinState.findOneAndUpdate({
-            _id: new BigNumber(slot)
+            slot: new BigNumber(slot)
         }, {
             $set: {
                 state: 'EXITING'
@@ -19,7 +19,7 @@ export class CoinStateService {
 
     public static resetSlot(slot: BigNumber, cb: any) {
         CoinState.findOneAndUpdate({
-            _id: new BigNumber(slot)
+            slot: new BigNumber(slot)
         }, {
             $set: {
                 state: 'DEPOSITED'
@@ -29,7 +29,7 @@ export class CoinStateService {
 
     public static swapSlot(slot: BigNumber, cb: any) {
         CoinState.findOneAndUpdate({
-            _id: new BigNumber(slot)
+            slot: new BigNumber(slot)
         }, {
             $set: {
                 state: 'SWAPPING'
@@ -39,7 +39,7 @@ export class CoinStateService {
 
     public static endSwap(slot: BigNumber, newOwner: string, cb: any) {
         CoinState.findOneAndUpdate({
-            _id: new BigNumber(slot)
+            slot: new BigNumber(slot)
         }, {
             $set: {
                 state: 'DEPOSITED',
@@ -50,7 +50,7 @@ export class CoinStateService {
 
     public static updateOwner(slot: BigNumber, newOwner: string, cb: any) {
         CoinState.findOneAndUpdate({
-            _id: new BigNumber(slot)
+            slot: new BigNumber(slot)
         }, {
             $set: {
                 owner: newOwner.toLowerCase()
@@ -59,19 +59,19 @@ export class CoinStateService {
     }
 
     // TODO: Find out type of exiting
-    public static getOwnedTokens(owner: string, exiting: any, cb: any) {
-        CoinState.find({ owner: owner.toLowerCase(), state: exiting ? "EXITING" : "DEPOSITED" }).exec( (err: Error, slots: Array<ICoinState>) => {
+    public static getOwnedTokens(owner: string, state: string, cb: any) {
+        CoinState.find({ owner: owner.toLowerCase(), state: state.toUpperCase() }).exec( (err: Error, slots: Array<ICoinState>) => {
             if(err) {
                 console.error(err)
                 return cb(err);
             }
-            return cb(null, {statusCode: 200, result: slots.map(s => s._id)});
+            return cb(null, {statusCode: 200, result: slots.map(s => s.slot)});
         });
     }
 
     //TODO: Change calls to this with the BigNumber instead of the string.
     public static getOwner(token: BigNumber, cb: any) {
-        CoinState.findById(token).exec( (err: Error, coin: ICoinState) => {
+        CoinState.find({slot: token}).exec( (err: Error, coin: ICoinState) => {
             if(err) return cb(err);
             return cb(null, coin.owner);
         });
