@@ -6,9 +6,11 @@ import BigNumber from "bignumber.js";
 import {IBlock} from "../models/BlockInterface";
 import {getProof} from "./block";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
+import {ICoinState} from "../models/CoinStateModel";
+import {CoinStateService} from "./CoinStateService";
 
 const { recover } = require('../utils/sign')
-	, { TransactionService, CoinStateService, BlockService, SecretRevealingBlockService } = require('./index')
+	, { TransactionService, BlockService, SecretRevealingBlockService } = require('./index')
 	, async = require('async');
 
 interface TransactionData {
@@ -109,7 +111,7 @@ export const isTransactionValidWithHash = (transaction: TransactionData, calcula
 				return validateTransactionCb(null, 'Invalid Signature');
 			}
 
-			CoinStateService.findById(slot, (err: any, coinState: any) => {
+			CoinStateService.findBySlot(slot, (err: any, coinState: ICoinState) => {
 				if (err) return validateTransactionCb(err);
 
 				if (coinState.state != "DEPOSITED") {

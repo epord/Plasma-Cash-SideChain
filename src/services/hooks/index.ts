@@ -13,6 +13,7 @@ import {CoinStateService} from "../CoinStateService";
 import { createBattle, play } from "../battle";
 import { IBattle, ICryptoMon, ICMBState } from "../../models/BattleInterface";
 import {fromBytes, fromBytesAndData} from "../../utils/CryptoMonBattles";
+import {ICoinState} from "../../models/CoinStateModel";
 
 const _ = require('lodash');
 const debug	= require('debug')('app:api:hooks')
@@ -284,7 +285,7 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	const eventObj = eventToObj(iCoinReset, result!);
 	debug(`Coin reset ${eventObj.slot.toString()} for ${eventObj.owner}`);
 
-	CoinStateService.resetSlot(eventObj.slot, (err: any, coinState: { owner: { toLowerCase: () => void; }; }) => {
+	CoinStateService.resetSlot(eventObj.slot, (err: any, coinState: ICoinState) => {
 		if (err) return console.error(err);
 		//TODO what to do here?
 		if(coinState.owner.toLowerCase() != eventObj.owner.toLowerCase()) {

@@ -7,10 +7,12 @@ import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {BlockService} from ".";
 import {IBlock} from "../models/BlockInterface";
 import {Utils} from "../utils/Utils";
+import {ICoinState} from "../models/CoinStateModel";
+import {CoinStateService} from "./CoinStateService";
 
 const async = require("async");
 const debug = require('debug')('app:services:atomicSwap');
-const { TransactionService, CoinStateService, SecretRevealingBlockService } = require('./index');
+const { TransactionService, SecretRevealingBlockService } = require('./index');
 
 interface AtomicSwapData {
 	slot: BigNumber
@@ -55,7 +57,7 @@ export const isAtomicSwapTransactionValid = (transaction: AtomicSwapData, valida
 				return validateTransactionCb(null, "Recipient does not own the swapping slot");
 			}
 
-			CoinStateService.findById(swappingSlot, (err: any, coinState: any) => {
+			CoinStateService.findBySlot(swappingSlot, (err: any, coinState: ICoinState) => {
 				if (err) return validateTransactionCb(err);
 
 				if (coinState.state != "DEPOSITED") {

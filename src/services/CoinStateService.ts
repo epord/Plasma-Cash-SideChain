@@ -3,11 +3,14 @@ import CoinState, {ICoinState} from "../models/CoinStateModel";
 
 export class CoinStateService {
 
-    public static exitSlot(slot: BigNumber, cb: any) {
-        CoinState.find({slot: slot}, (err: Error, coinState: ICoinState) => {
-            coinState.state = "EXITING";
-            coinState.save();
+    public static findBySlot(slot: BigNumber, cb: any) {
+        CoinState.findOne({slot: slot}).exec( (err: Error, coinState: ICoinState) => {
+            if(err) return cb(err);
+            return cb(null, coinState);
         });
+    }
+
+    public static exitSlot(slot: BigNumber, cb: any) {
         CoinState.findOneAndUpdate({
             slot: new BigNumber(slot)
         }, {
@@ -69,9 +72,8 @@ export class CoinStateService {
         });
     }
 
-    //TODO: Change calls to this with the BigNumber instead of the string.
-    public static getOwner(token: BigNumber, cb: any) {
-        CoinState.find({slot: token}).exec( (err: Error, coin: ICoinState) => {
+    public static getOwner(slot: BigNumber, cb: any) {
+        CoinState.findOne({slot: slot}).exec( (err: Error, coin: ICoinState) => {
             if(err) return cb(err);
             return cb(null, coin.owner);
         });
