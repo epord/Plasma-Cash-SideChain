@@ -4,15 +4,22 @@ const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
 const CryptoMonsJson = require("../../json/CryptoMons.json");
 const RootChainJson = require("../../json/RootChain.json");
+const PlasmaChannelManagerJson = require('../../json/PlasmaCM.json');
+const CryptoMonsBattlesJson = require('../../json/CryptoMonBattles.json');
 
 import { BigNumber } from 'bignumber.js';
 import {CallBack, ChallengeData} from "../../utils/TypeDef";
 import {CoinStateService} from "../CoinStateService";
+import { createBattle, play } from "../battle";
+import { IBattle, ICryptoMon, ICMBState } from "../../models/BattleInterface";
+import {fromBytes, fromBytesAndData} from "../../utils/CryptoMonBattles";
 
 const _ = require('lodash');
 const debug	= require('debug')('app:api:hooks')
 const { TransactionService } = require('../index');
 const { getChallengeAfterData, getChallengeBeforeData } = require("../challenges");
+
+const { BattleService } = require('../../services');
 
 const async = require('async');
 
@@ -286,6 +293,45 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	});
 };
 
+const onChannelFunded = (iChannelFunded: abiInterface) => (error: any, result?: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iChannelFunded, result!);
+	debug(`Channel ${eventObj.channelId} has been funded`);
+	fromBytes(eventObj.initialState, (err: any, initialState?: ICMBState) => {
+		if (err) return console.error(err);
+		if (!initialState) return console.error('Couldn\'t decode initialState bytes');
+		createBattle(
+			eventObj.channelId.toString(),
+			eventObj.channelType,
+			eventObj.creator,
+			eventObj.opponent,
+			initialState,
+		(err) => { if(err) debug("ERROR: " + err) });
+	});
+};
+
+const onForceMoveResponded = (iForceMoveResponded: abiInterface) => (error: any, result?: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iForceMoveResponded, result!);
+	debug(`Force move responded in channel ${eventObj.channelId} with ${eventObj.nextState}`);
+	BattleService.findById(eventObj.channelId, (err: any, battle: IBattle) => {
+		if (err) return console.error("Error finding battle", err);
+		const nextState = {
+			channelId: eventObj.channelId.toString(),
+			channelType: eventObj.nextState.channelType,
+			participants: eventObj.nextState.participants,
+			turnNum: parseInt(eventObj.nextState.turnNum.toString()),
+			game: fromBytesAndData(eventObj.nextState.gameAttrbutes,
+				battle.state.game.cryptoMonPLInstance,
+				battle.state.game.cryptoMonOPInstance,
+				battle.state.game.cryptoMonPLData,
+				battle.state.game.cryptoMonOPData),
+			signature: eventObj.signature,
+		};
+		play(nextState, battle, (err: any) => console.error("Force move responded error", err));
+	});
+};
+
 const getExit = (slot: BigNumber, cb: CallBack<any>) => {
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
 	web3.eth.getAccounts().then((accounts: any) => {
@@ -334,6 +380,32 @@ export function init(cb: () => void) {
 
 	const iTransfer = getEventInterface(CryptoMonContract, 'Transfer');
 	subscribeLogEvent(CryptoMonContract, iTransfer, onTransfer(iTransfer));
+
+	//RPS Battles
+	// const RPSExampleContract = new web3.eth.Contract(RPSExampleJson.abi, RPSExampleJson.networks["5777"].address);
+	// const RPSaddress = RPSExampleJson.networks["5777"].address;
+
+	// const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
+	// subscribeLogEvent(RPSExampleContract, iRPSStarted, onBattleStarted(iRPSStarted, RPSaddress));
+
+	//CryptoMons Battles TODO: Listen to unlawful battles
+	// const CryptoMonsBattlesContract = new web3.eth.Contract(CryptoMonsBattlesJson.abi, CryptoMonsBattlesJson.networks["5777"].address);
+	// const CryptoMonsBattlesaddress = CryptoMonsBattlesJson.networks["5777"].address;
+
+	// const iCryptoMonBattleStarted = getEventInterface(CryptoMonsBattlesContract, 'CryptoMonBattleStarted');
+	// subscribeLogEvent(CryptoMonsBattlesContract, iCryptoMonBattleStarted, onBattleStarted(CryptoMonsBattlesContract, iCryptoMonBattleStarted, CryptoMonsBattlesaddress));
+
+	//Plasma Channel Manager
+	const PlasmaChannelManagerContract = new web3.eth.Contract(PlasmaChannelManagerJson.abi, PlasmaChannelManagerJson.networks["5777"].address);
+	const PlasmaChannelManagerAddress = PlasmaChannelManagerJson.networks["5777"].address;
+
+	const iForceMoveResponded = getEventInterface(PlasmaChannelManagerContract, 'ForceMoveResponded');
+	subscribeLogEvent(PlasmaChannelManagerContract, iForceMoveResponded, onForceMoveResponded(iForceMoveResponded));
+
+	const iChannelFunded = getEventInterface(PlasmaChannelManagerContract, 'ChannelFunded');
+	subscribeLogEvent(PlasmaChannelManagerContract, iChannelFunded, onChannelFunded(iChannelFunded));
+
+
 
 	cb();
 }

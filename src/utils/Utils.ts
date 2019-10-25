@@ -106,7 +106,7 @@ export class Utils {
         };
 
         if(transaction.is_swap) {
-            transactionObj.swappingSlong = transaction.swapping_slot.toFixed();
+            transactionObj.swappingSlot = transaction.swapping_slot.toFixed();
             transactionObj.hashSecret = transaction.hash_secret;
             transactionObj.secret = transaction.secret;
         }
@@ -225,14 +225,15 @@ export class Utils {
             }
         };
     }
-    //
-    // public static unWrapIfNoError<T>(cb: CallBack<T>) {
-    //     return (err: any, status?: ApiResponse<T>) => {
-    //         if (err && !err.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: err});
-    //         if (err && err.statusCode) return cb({statusCode: err.statusCode, error: err.error});
-    //         if (!status!.statusCode) return cb({statusCode: Status.INTERNAL_SERVER_ERROR, error: "No message"});
-    //
-    //         return cb(null, status!.result!);
-    //     }
-    // }
+
+    public static randomHex256 = () => {
+        const dict = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f'];
+        let hex = '0x';
+        for (let i = 0; i < 64; i++) {
+            const i = Math.floor(Math.random() * dict.length);
+            hex += dict[i];
+        }
+        return hex;
+    }
+
 }

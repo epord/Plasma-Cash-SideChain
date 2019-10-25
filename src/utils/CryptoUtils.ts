@@ -5,14 +5,20 @@ import {IBlock} from "../models/BlockInterface";
 import {SparseMerkleTree} from "./SparseMerkleTree";
 import EthUtils = require("ethereumjs-util");
 import RLP = require('rlp');
+import async = require('async');
 import CryptoMonsJson = require("../json/CryptoMons.json");
 import RootChainJson = require("../json/RootChain.json");
 import VMCJson = require("../json/ValidatorManagerContract.json");
+import CMBJson = require("../json/CryptoMonBattles.json");
+import PlasmaCMJson = require("../json/PlasmaCM.json");
 import Web3 from "web3";
 import {CallBack} from "./TypeDef";
 import {AbiItem} from "web3-utils";
 import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {TransactionService} from "../services";
+import {IState, ICryptoMon, IPokemonData} from "../models/BattleInterface";
+import  abi = require('ethereumjs-abi');
+import {toCMBBytes} from "./CryptoMonBattles";
 
 const debug = require('debug')('app:CryptoUtils');
 const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL!));
@@ -94,7 +100,7 @@ export class CryptoUtils {
         )
     }
 
-    private static keccak256(...args: Uint8Array[]): string {
+    public static keccak256(...args: Uint8Array[]): string {
         return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(args))));
     }
 
@@ -209,19 +215,129 @@ export class CryptoUtils {
     }
 
 
-    public static validateCryptoMons(cb: CallBack<void>) {
-        const VMC = new web3.eth.Contract(VMCJson.abi as AbiItem[], VMCJson.networks["5777"].address);
+    public static validateCryptoMons(done: CallBack<void>) {
         web3.eth.getAccounts().then((accounts: string[]) => {
-            VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]},
-                (err: Error, res: Response) => {
-                    if (err) {
-                        debug("ERROR: Contract couldn't be validated")
-                        debug(err);
-                        return cb(err);
-                    }
-                    debug("Validated contract");
-                    cb(null);
+            async.parallel([
+                (cb: any) => {
+                    const VMC = new web3.eth.Contract(VMCJson.abi as AbiItem[], VMCJson.networks["5777"].address);
+                    VMC.methods.setToken(CryptoMonsJson.networks["5777"].address, true).send({from: accounts[0]},
+                        (err: Error, res: Response) => {
+                            if (err) {
+                                debug("ERROR: Contract couldn't be validated")
+                                debug(err);
+                                return cb(err);
+                            }
+                            debug("Validated CryptoMon deposit");
+                            cb(null);
+                    });
+                },
+                (cb: any) => {
+                    const CryptoMonBattles = new web3.eth.Contract(CMBJson.abi as AbiItem[], CMBJson.networks["5777"].address);
+                    CryptoMonBattles.methods.setValidator(PlasmaCMJson.networks["5777"].address, true).send({from: accounts[0]},
+                        (err: Error, res: Response) => {
+                            if (err) {
+                                debug("ERROR: Contract couldn't be validated")
+                                debug(err);
+                                return cb(err);
+                            }
+                            debug("Validated CryptoMon battles");
+                            cb(null);
+                    });
+                }
+            ], (err: any) => done(err));
+        });
+    }
+
+    public static getPlasmaCoinId(slot: string, done: CallBack<string>) {
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            const RootChainContract = new web3.eth.Contract(RootChainJson.abi as AbiItem[], RootChainJson.networks["5777"].address);
+            RootChainContract.methods.getPlasmaCoin(slot).call({from: accounts[0]},(err: Error, res: any) => {
+                if (err) {
+                    debug("ERROR: Couldn't fetch plasma coin id");
+                    debug(err);
+                    return done(err);
+                }
+                const id = new BigNumber(res[0]).toFixed();
+                done(null, id);
             });
         });
+    }
+
+    public static getCryptomon(slot: string, done: CallBack<ICryptoMon>) {
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            const CryptoMonsContract = new web3.eth.Contract(CryptoMonsJson.abi as AbiItem[], CryptoMonsJson.networks["5777"].address);
+            CryptoMonsContract.methods.getCryptomon(slot).call({from: accounts[0]}, (err: Error, res: any) => {
+                if (err) {
+                    debug("ERROR: Couldn't fetch CryptoMon instance");
+                    debug(err);
+                    return done(err);
+                }
+                let cryptoMon: ICryptoMon = {
+                    id: res.id,
+                    gender: res.gender,
+                    isShiny: res.isShiny,
+                    IVs: {
+                        hp: res.IVs.hp,
+                        atk: res.IVs.atk,
+                        def: res.IVs.def,
+                        spAtk: res.IVs.spAtk,
+                        spDef: res.IVs.spDef,
+                        speed: res.IVs.speed
+                    },
+                    stats: {
+                        hp: res.stats.hp,
+                        atk: res.stats.atk,
+                        def: res.stats.def,
+                        spAtk: res.stats.spAtk,
+                        spDef: res.stats.spDef,
+                        speed: res.stats.speed
+                    },
+                };
+                done(null, cryptoMon)
+            });
+        });
+    }
+
+    public static getPokemonData(id: string, done: CallBack<IPokemonData>) {
+        web3.eth.getAccounts().then((accounts: string[]) => {
+            const CryptoMonsContract = new web3.eth.Contract(CryptoMonsJson.abi as unknown as AbiItem[], CryptoMonsJson.networks["5777"].address);
+            CryptoMonsContract.methods.getPokemonData(id).call({from: accounts[0]}, (err: Error, res: any) => {
+                if (err) {
+                    debug("ERROR: Couldn't fetch pokemon data");
+                    debug(err);
+                    return done(err);
+                }
+                const pokeData: IPokemonData = {
+                    id: res.id,
+                    type1: res.type1,
+                    type2: res.type2,
+                    base: {
+                        hp: res.base.hp,
+                        atk: res.base.atk,
+                        def: res.base.def,
+                        spAtk: res.base.spAtk,
+                        spDef: res.base.spDef,
+                        speed: res.base.speed
+
+                    }
+                };
+
+                done(null, pokeData);
+            });
+        });
+    }
+
+    public static hashChannelState(state: IState) {
+
+        return EthUtils.bufferToHex(
+            abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
+                [
+                    state.channelId,
+                    state.channelType,
+                    state.participants,
+                    state.turnNum,
+                    toCMBBytes(state.game)
+                ])
+            )
     }
 }
