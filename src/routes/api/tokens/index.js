@@ -1,7 +1,7 @@
 import {Utils} from "../../../utils/Utils";
 import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
-import { TransactionService } from '../../../services';
-import {CoinStateService} from "../../../services/CoinStateService";
+import {TransactionService} from '../../../services';
+import {CoinState} from "../../../services/coinState";
 
 const express = require('express')
 	, router = express.Router({ mergeParams: true })
@@ -38,7 +38,7 @@ router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
   const { owner } = req.params;
 	const { state } = req.query;
 
-    CoinStateService.getOwnedTokens(owner, state, Utils.responseWithStatus(res));
+    CoinState.getOwnedTokens(owner, state, Utils.responseWithStatus(res));
 });
 
 router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {

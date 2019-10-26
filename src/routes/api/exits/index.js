@@ -5,8 +5,6 @@ const express 					= require('express')
 	, debug 					= require('debug')('app:api:exit')
 	, Status 					= require('http-status-codes')
 	, BigNumber       			= require('bignumber.js')
-	, { getExitData, getSingleData } = require('../../../services/exits')
-	, { TransactionService }  = require( '../../../services')
 
 debug('registering /api/exit routes')
 
@@ -22,14 +20,14 @@ router.get('/data/:slot([A-Fa-f0-9]+)', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid slot');
 	}
 
-	getExitData(slot, Utils.responseWithStatus(res));
+	Exit.getData(slot, Utils.responseWithStatus(res));
 
 });
 
 router.get('/singleData/:hash([0-9a-zA-z]+)', (req, res, next) => {
 	const { hash } = req.params;
 
-	getSingleData(hash, Utils.responseWithStatus(res));
+	Exit.getSingleData(hash, Utils.responseWithStatus(res));
 
 
 });

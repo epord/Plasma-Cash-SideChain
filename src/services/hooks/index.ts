@@ -1,4 +1,12 @@
 import {depositBlock} from "../block";
+import {BigNumber} from 'bignumber.js';
+import {CallBack, ChallengeData} from "../../utils/TypeDef";
+import {CoinState} from "../coinState";
+import {fromBytes, fromBytesAndData} from "../../utils/CryptoMonBattles";
+import {ICoinState} from "../../models/coinStateModel";
+import {IBattle, ICMBState} from "../../models/battle";
+import {Challenge} from "../challenges";
+import {Battle} from "../battle";
 
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL));
@@ -7,20 +15,11 @@ const RootChainJson = require("../../json/RootChain.json");
 const PlasmaChannelManagerJson = require('../../json/PlasmaCM.json');
 const CryptoMonsBattlesJson = require('../../json/CryptoMonBattles.json');
 
-import { BigNumber } from 'bignumber.js';
-import {CallBack, ChallengeData} from "../../utils/TypeDef";
-import {CoinStateService} from "../CoinStateService";
-import { createBattle, play } from "../battle";
-import { IBattle, ICryptoMon, ICMBState } from "../../models/BattleInterface";
-import {fromBytes, fromBytesAndData} from "../../utils/CryptoMonBattles";
-import {ICoinState} from "../../models/CoinStateModel";
-
 const _ = require('lodash');
 const debug	= require('debug')('app:api:hooks')
-const { TransactionService } = require('../index');
-const { getChallengeAfterData, getChallengeBeforeData } = require("../challenges");
+const { TransactionService } = require('..');
 
-const { BattleService } = require('../../services');
+const { BattleService } = require('..');
 
 const async = require('async');
 
@@ -97,10 +96,10 @@ const onExitStarted = (iExitStarted: abiInterface) => (error: any, result?: even
 	const slotBN = new BigNumber(eventObj.slot.toString());
 	debug(`Exit: `,eventObj);
 
-	CoinStateService.exitSlot(slotBN, (err: any) => { if (err) console.error(err) });
+	CoinState.exitSlot(slotBN, (err: any) => { if (err) console.error(err) });
 
 	async.waterfall([
-		(next: CallBack<string>) => { CoinStateService.getOwner(eventObj.slot.toString(), next) },
+		(next: CallBack<string>) => { CoinState.getOwner(eventObj.slot.toString(), next) },
 		(owner: string, next: CallBack<ExitingBlocks>) => {
 			const isExitCorrect = owner.toLowerCase() == eventObj.owner.toLowerCase();
 			const autoChallengeEnabled = process.env.AUTO_CHALLENGE != 'false';
@@ -125,7 +124,7 @@ const tryChallengeAfter = (slotBN: BigNumber, exitingBlocks: ExitingBlocks, next
 
 		debug("Challenging after...");
 		async.waterfall([
-			(next: any) => getChallengeAfterData(slotBN, exitBlockBN, (err: any, status: any) => next(err, status.message)),
+			(next: any) => Challenge.getAfterData(slotBN, exitBlockBN, (err: any, status: any) => next(err, status.message)),
 			(challengeData: ChallengeData, next: any) => {
 
 				challengeAfter(
@@ -140,7 +139,7 @@ const tryChallengeAfter = (slotBN: BigNumber, exitingBlocks: ExitingBlocks, next
 		], (err: any) => {
 			if (err) return console.error(err);
 			debug('Successfully challenged after');
-			CoinStateService.resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
+			CoinState.resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
 		});
 		return; // do not continue waterfall
 	});
@@ -177,7 +176,7 @@ const tryChallengeBetween =  (slotBN: BigNumber, exitingBlocks: ExitingBlocks, n
 
 		debug("Challenging between...");
 		async.waterfall([
-			(next: any) => getChallengeAfterData(slotBN, prevBlockBN, (err: any, status: any) => next(err, status.message)),
+			(next: any) => Challenge.getAfterData(slotBN, prevBlockBN, (err: any, status: any) => next(err, status.message)),
 
 			(challengeData: ChallengeData, next: any) => {
 				challengeBetween(
@@ -191,7 +190,7 @@ const tryChallengeBetween =  (slotBN: BigNumber, exitingBlocks: ExitingBlocks, n
 		], (err: any) => {
 			if (err) return console.error(err);
 			debug('Successfully challenged between');
-			CoinStateService.resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
+			CoinState.resetSlot(slotBN, (err: any) => { if (err) console.error(err) });
 		});
 		return; // do not continue waterfall
 	});
@@ -221,7 +220,7 @@ const tryChallengeBefore =  (slotBN: BigNumber, exitingBlocks: ExitingBlocks, ne
 
 	debug("Challenging before...");
 	async.waterfall([
-		(next: any) => getChallengeBeforeData(slotBN, prevBlockBN, (err: any, status: any) => next(err, status.message) ),
+		(next: any) => Challenge.getBeforeData(slotBN, prevBlockBN, (err: any, status: any) => next(err, status.message) ),
 		(exitData: ChallengeData, next: any) => {
 			challengeBefore(
 				slotBN,
@@ -285,7 +284,7 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	const eventObj = eventToObj(iCoinReset, result!);
 	debug(`Coin reset ${eventObj.slot.toString()} for ${eventObj.owner}`);
 
-	CoinStateService.resetSlot(eventObj.slot, (err: any, coinState: ICoinState) => {
+	CoinState.resetSlot(eventObj.slot, (err: any, coinState: ICoinState) => {
 		if (err) return console.error(err);
 		//TODO what to do here?
 		if(coinState.owner.toLowerCase() != eventObj.owner.toLowerCase()) {
@@ -301,13 +300,13 @@ const onChannelFunded = (iChannelFunded: abiInterface) => (error: any, result?: 
 	fromBytes(eventObj.initialState, (err: any, initialState?: ICMBState) => {
 		if (err) return console.error(err);
 		if (!initialState) return console.error('Couldn\'t decode initialState bytes');
-		createBattle(
+		Battle.create(
 			eventObj.channelId.toString(),
 			eventObj.channelType,
 			eventObj.creator,
 			eventObj.opponent,
 			initialState,
-		(err) => { if(err) debug("ERROR: " + err) });
+		(err: any) => { if(err) debug("ERROR: " + err) });
 	});
 };
 
@@ -329,7 +328,7 @@ const onForceMoveResponded = (iForceMoveResponded: abiInterface) => (error: any,
 				battle.state.game.cryptoMonOPData),
 			signature: eventObj.signature,
 		};
-		play(nextState, battle, (err: any) => console.error("Force move responded error", err));
+		Battle.play(nextState, battle, (err: any) => console.error("Force move responded error", err));
 	});
 };
 

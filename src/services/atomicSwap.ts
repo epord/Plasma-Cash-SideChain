@@ -1,18 +1,18 @@
 import {ApiResponse, CallBack} from "../utils/TypeDef";
-import {ITransaction} from "../models/TransactionInterface";
 import {BigNumber} from "bignumber.js";
 import {getLastMinedTransaction, isTransactionValidWithHash} from "./transaction";
 import {CryptoUtils} from "../utils/CryptoUtils";
-import {ISRBlock} from "../models/SecretRevealingBlockInterface";
-import {BlockService} from ".";
-import {IBlock} from "../models/BlockInterface";
 import {Utils} from "../utils/Utils";
-import {ICoinState} from "../models/CoinStateModel";
-import {CoinStateService} from "./CoinStateService";
+import {ICoinState} from "../models/coinStateModel";
+import {CoinState} from "./coinState";
+import {ITransaction} from "../models/transaction";
+import {IBlock} from "../models/block";
+import {ISRBlock} from "../models/secretRevealingBlock";
+import {BlockService} from "./index";
 
 const async = require("async");
 const debug = require('debug')('app:services:atomicSwap');
-const { TransactionService, SecretRevealingBlockService } = require('./index');
+const { TransactionService, SecretRevealingBlockService } = require('.');
 
 interface AtomicSwapData {
 	slot: BigNumber
@@ -25,7 +25,7 @@ interface AtomicSwapData {
 	signature: string
 }
 
-export const toAtomicSwapData = (t: ITransaction) => {
+export const toAtomicSwapData = (t: ITransaction): AtomicSwapData => {
 	return {
 		slot: t.slot,
 		swappingSlot: t.swapping_slot,
@@ -34,9 +34,9 @@ export const toAtomicSwapData = (t: ITransaction) => {
 		hash: t.hash,
 		hashSecret: t.hash_secret,
 		blockSpent: t.block_spent,
-		signature: t.signature
+		signature: t.signature!
 	}
-}
+};
 
 export const isAtomicSwapTransactionValid = (transaction: AtomicSwapData, validateTransactionCb: CallBack<string>) => {
 	const { slot, swappingSlot, recipient, hashSecret, blockSpent } = transaction;
@@ -57,7 +57,7 @@ export const isAtomicSwapTransactionValid = (transaction: AtomicSwapData, valida
 				return validateTransactionCb(null, "Recipient does not own the swapping slot");
 			}
 
-			CoinStateService.findBySlot(swappingSlot, (err: any, coinState: ICoinState) => {
+			CoinState.findBySlot(swappingSlot, (err: any, coinState: ICoinState) => {
 				if (err) return validateTransactionCb(err);
 
 				if (coinState.state != "DEPOSITED") {
@@ -166,8 +166,8 @@ export const checkIfAnySecretBlockReady = () => {
 		if(err) return debug(`ERROR: ${err.message}`);
 
 		let functions = sblock.map((sblock: ISRBlock) => async (cb: CallBack<void>) => {
-			// @ts-ignore TODO: Remove ts-ignore when this is fixed
-            const block: IBlock  = await BlockService.findById(sblock.block_number).populate("transactions").exec();
+            const block = await BlockService.findById(sblock.block_number).populate("transactions").exec();
+            if(!block) return debug(`ERROR: ${sblock.block_number} block not found`)
 
 			const grouped = Utils.groupTransactionsBySlot(block.Transactions);
 
@@ -201,10 +201,10 @@ export const checkIfAnySecretBlockReady = () => {
 					t.secret = undefined;
 					t.invalidated = true;
 					t.save(() => {
-						CoinStateService.resetSlot(t.slot, cb);
+						CoinState.resetSlot(t.slot, cb);
 					})
 				}));
-				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => CoinStateService.endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
+				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => CoinState.endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
 
 
 				return cb(null);
@@ -236,7 +236,7 @@ export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBa
 				}
 
 				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { is_submitted: true } });
-				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => CoinStateService.endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
+				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => CoinState.endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
 				return cb(null);
 			});
 		} else {

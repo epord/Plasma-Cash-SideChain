@@ -2,17 +2,21 @@ import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
 import BigNumber from "bignumber.js";
 import {ApiResponse, CallBack} from "../utils/TypeDef";
-import {ITransaction} from "../models/TransactionInterface";
-import {IBlock} from "../models/BlockInterface";
-import {ISRBlock} from "../models/SecretRevealingBlockInterface";
+import {CoinState} from "./coinState";
+//TODO Clean up this. We had to put it down here due to cyclical dependencies
+import {isTransactionValid, toTransactionData} from './transaction';
+import {checkIfAnySecretBlockReady, isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
+import {IBlock} from "../models/block";
+import {ITransaction} from "../models/transaction";
 import RLP = require('rlp');
-import {CoinStateService} from "./CoinStateService";
+import {ISRBlock} from "../models/secretRevealingBlock";
+import {CoinStateService} from "./index";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
     , async = require('async')
     , EthUtils = require('ethereumjs-util')
-    , { TransactionService, BlockService, SecretRevealingBlockService } = require('../services');
+    , { TransactionService, BlockService, SecretRevealingBlockService } = require('.');
 
 
 export const blockInterval = new BigNumber(1000);
@@ -47,9 +51,9 @@ export const createBlock = (transactions: ITransaction[], blockNumber: BigNumber
 					transaction.save();
 
 					if(transaction.is_swap) {
-						CoinStateService.swapSlot(transaction.slot, Utils.errorCB)
+						CoinState.swapSlot(transaction.slot, Utils.errorCB)
 					} else {
-                        CoinStateService.updateOwner(transaction.slot, transaction.recipient, Utils.errorCB)
+                        CoinState.updateOwner(transaction.slot, transaction.recipient, Utils.errorCB)
 					}
 				});
 
@@ -186,8 +190,8 @@ export const depositBlock = (slot: string, blockNumber: string, _owner: string, 
 					if (transaction) return cb({ statusCode: 400, error: "The transaction already exists"});
 
 					/// TODO: make atomic
-					CoinState.create({
-						slot: slotBN,
+					CoinStateService.create({
+						_id: slotBN,
 						state: "DEPOSITED",
 						owner: owner
 					});
@@ -226,6 +230,10 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<string>
 	const blockNumberBN = new BigNumber(blockNumber);
 	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
 
+	if (blockNumberBN.mod(blockInterval).isZero()) {
+		return cb(null)
+	}
+
 	TransactionService.findOne({slot: slotBN, mined_block: blockNumberBN}).exec((err: any, transaction: ITransaction) => {
 		if(err) return cb(err);
 		if(!transaction) return getNotInclusionProof(slotBN, blockNumberBN, cb);
@@ -250,7 +258,7 @@ export const getNotInclusionProof = (slot: BigNumber, blockNumber: BigNumber, cb
 			const proof = sparseMerkleTree.createMerkleProof(slot.toFixed());
 			cb(null, proof);
 		})
-}
+};
 
 export const getInclusionProof = (transaction: ITransaction, cb: CallBack<string>) => {
 	BlockService
@@ -321,11 +329,6 @@ export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) 
 	})
 };
 
-//TODO Clean up this. We had to put it down here due to cyclical dependencies
-import {isTransactionValid, toTransactionData} from './transaction';
-import {checkIfAnySecretBlockReady, isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
-import CoinState from "../models/CoinStateModel";
-
 /**
  * Given a set of transactions, will find the first valid one, remove those that finds invalid
  * @param {Set of transactions that share the same Slot} transactions
@@ -367,7 +370,7 @@ const getFirstValidTransaction = (transactions: ITransaction[], transactionsCb: 
 				hash: t.hash,
 				hashSecret: t.hash_secret,
 				blockSpent: t.block_spent,
-				signature: t.signature
+				signature: t.signature!
 			}, validateTransactionCB)
 	} else {
 		isTransactionValid(toTransactionData(t), validateTransactionCB)

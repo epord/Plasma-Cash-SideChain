@@ -1,17 +1,18 @@
 import {CryptoUtils} from "./CryptoUtils";
-import {IBlock, IJSONBlock} from "../models/BlockInterface";
-import {
-    IJSONSingleSwapData,
-    IJSONSwapData,
-    IJSONTransaction,
-    ISingleSwapData,
-    ITransaction
-} from "../models/TransactionInterface";
-import {ApiResponse, CallBack} from "./TypeDef";
+import {ApiResponse} from "./TypeDef";
 import Status from 'http-status-codes';
-import {IJSONSRBlock, ISRBlock} from "../models/SecretRevealingBlockInterface";
-import RLP = require('rlp');
 import * as EthUtils from 'ethereumjs-util';
+import {
+    IJSONBlock, IJSONChallengeData,
+    IJSONExitData,
+    IJSONSingleSwapData, IJSONSRBlock,
+    IJSONSwapData,
+    IJSONTransaction
+} from "../routes/api/jsonModels";
+import {ISingleSwapData, ITransaction} from "../models/transaction";
+import {IBlock} from "../models/block";
+import RLP = require('rlp');
+import {ISRBlock} from "../models/secretRevealingBlock";
 
 const debug = require('debug')('app:api:Utils')
 
@@ -137,17 +138,16 @@ export class Utils {
             proof = EthUtils.bufferToHex(RLP.encode(proofParams));
 
             const bytesParams = [
-                new EthUtils.BN(swapDataA.data.slot.toFixed()),
-                new EthUtils.BN(swapDataA.data.block_spent.toFixed()),
-                swapDataA.data.secret!,
-                swapDataA.data.recipient,
+                new EthUtils.BN(swapDataA.data.slot.toFixed()).toBuffer(),
+                new EthUtils.BN(swapDataA.data.block_spent.toFixed()).toBuffer(),
+                EthUtils.toBuffer(swapDataA.data.secret!),
+                EthUtils.toBuffer(swapDataA.data.recipient),
 
-                new EthUtils.BN(swapDataB.data.slot.toFixed()),
-                new EthUtils.BN(swapDataB.data.block_spent.toFixed()),
-                swapDataB.data.secret!,
-                swapDataB.data.recipient,
-
-                swapDataB.data.signature
+                new EthUtils.BN(swapDataB.data.slot.toFixed()).toBuffer(),
+                new EthUtils.BN(swapDataB.data.block_spent.toFixed()).toBuffer(),
+                EthUtils.toBuffer(swapDataB.data.secret!),
+                EthUtils.toBuffer(swapDataB.data.recipient),
+                EthUtils.toBuffer(swapDataB.data.signature)
             ];
             bytes = EthUtils.bufferToHex(RLP.encode(bytesParams));
         }
@@ -158,7 +158,7 @@ export class Utils {
             counterpart: this.singleSwapDataToJson(swapDataB),
             proof,
             mined_block: swapDataA.data.mined_block.toFixed(),
-            signature:   swapDataA.data.signature,
+            signature: swapDataA.data.signature!,
             bytes,
             isRevealed: (swapDataA.data.secret != undefined && swapDataB.data.secret != undefined)
         }
@@ -166,34 +166,34 @@ export class Utils {
 
     }
 
-    public static async exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx: ITransaction, prevProof: string): Promise<Object> {
+    public static async exitDataToJson(lastTx: ITransaction, lastProof: string, prevTx?: ITransaction, prevProof?: string): Promise<IJSONExitData> {
         let prevTxBytes = prevTx ? await CryptoUtils.getTransactionBytes(prevTx) : undefined;
         let prevTxInclusionProof = prevTx ? prevProof : undefined;
         let prevBlock = prevTx ? prevTx.mined_block : undefined;
         let prevTransactionHash = prevTx ? prevTx.hash : undefined;
         return {
-            slot: lastTx.slot,
+            slot: lastTx.slot.toString(),
             prevTxBytes,
             exitingTxBytes: await CryptoUtils.getTransactionBytes(lastTx),
             prevTxInclusionProof,
             exitingTxInclusionProof: lastProof,
-            signature: lastTx.signature,
+            signature: lastTx.signature!,
             lastTransactionHash: lastTx.hash,
             prevTransactionHash,
-            prevBlock: prevBlock,
-            exitingBlock: lastTx.mined_block
+            prevBlock: prevBlock ? prevBlock.toString() : undefined,
+            exitingBlock: lastTx.mined_block.toString()
         }
     }
 
 
-    public static async challengeDataToJson(challengingTx: ITransaction, proof: string): Promise<Object> {
+    public static async challengeDataToJson(challengingTx: ITransaction, proof: string): Promise<IJSONChallengeData> {
         return {
             hash: challengingTx.hash,
-            slot: challengingTx.slot,
-            challengingBlockNumber: challengingTx.mined_block,
+            slot: challengingTx.slot.toString(),
+            challengingBlockNumber: challengingTx.mined_block.toString(),
             challengingTransaction: await CryptoUtils.getTransactionBytes(challengingTx),
             proof: proof,
-            signature: challengingTx.signature,
+            signature: challengingTx.signature!,
         }
     }
 
@@ -218,6 +218,7 @@ export class Utils {
             if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
             if (err && err.statusCode) return res.status(err.statusCode).json(err.error);
             if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
+            if (status.error) return res.status(status.statusCode).json(status.error);
             if(mapper) {
                 return res.status(status.statusCode).json(mapper(status.result!))
             } else {

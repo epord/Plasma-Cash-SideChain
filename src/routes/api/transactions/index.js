@@ -1,8 +1,7 @@
 import {Utils} from "../../../utils/Utils";
 import {createTransaction, getSwapData, isSwapCommitted} from "../../../services/transaction";
 import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
-import {ITransaction} from "../../../models/TransactionInterface";
-import {getInclusionProof, getProof, getSecretProof} from "../../../services/block";
+import {getInclusionProof, getSecretProof} from "../../../services/block";
 import * as async from "async";
 
 const express 					= require('express')

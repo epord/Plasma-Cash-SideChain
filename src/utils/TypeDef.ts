@@ -1,5 +1,4 @@
 import {BigNumber} from "bignumber.js";
-import {CryptoUtils} from "./CryptoUtils";
 
 // interface ExitData {
 //     hash: string,

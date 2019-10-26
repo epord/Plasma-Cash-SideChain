@@ -1,16 +1,18 @@
 import {CryptoUtils} from "../utils/CryptoUtils";
 import {Utils} from "../utils/Utils";
 import {ApiResponse, CallBack} from "../utils/TypeDef";
-import {ITransaction} from "../models/TransactionInterface";
 import BigNumber from "bignumber.js";
-import {IBlock} from "../models/BlockInterface";
 import {getProof} from "./block";
-import {ISRBlock} from "../models/SecretRevealingBlockInterface";
-import {ICoinState} from "../models/CoinStateModel";
-import {CoinStateService} from "./CoinStateService";
+import {ICoinState} from "../models/coinStateModel";
+import {CoinState} from "./coinState";
+import {IBlock} from "../models/block";
+import {ITransaction} from "../models/transaction";
+import {ISRBlock} from "../models/secretRevealingBlock";
+import {Exit} from "./exits";
+import {IJSONExitData} from "../routes/api/jsonModels";
 
 const { recover } = require('../utils/sign')
-	, { TransactionService, BlockService, SecretRevealingBlockService } = require('./index')
+	, { TransactionService, BlockService, SecretRevealingBlockService } = require('.')
 	, async = require('async');
 
 interface TransactionData {
@@ -19,10 +21,10 @@ interface TransactionData {
 	recipient: string,
 	hash: string,
 	blockSpent: BigNumber,
-	signature: string
+	signature?: string
 }
 
-export const toTransactionData = (t: ITransaction) => {
+export const toTransactionData = (t: ITransaction): TransactionData => {
 	return {
 		slot: t.slot,
 		owner: t.owner,
@@ -111,7 +113,7 @@ export const isTransactionValidWithHash = (transaction: TransactionData, calcula
 				return validateTransactionCb(null, 'Invalid Signature');
 			}
 
-			CoinStateService.findBySlot(slot, (err: any, coinState: ICoinState) => {
+			CoinState.findBySlot(slot, (err: any, coinState: ICoinState) => {
 				if (err) return validateTransactionCb(err);
 
 				if (coinState.state != "DEPOSITED") {
@@ -160,8 +162,6 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 
 
 //TODO: change this require in mid-file
-const { getExitDataForBlock } = require('./exits')
-
 export const getHistory = (slot: BigNumber, cb: CallBack<ApiResponse<Object[]>>) => {
 	let filter: any = { slot: slot };
 	filter.mined_block = { $ne: null };
@@ -173,7 +173,7 @@ export const getHistory = (slot: BigNumber, cb: CallBack<ApiResponse<Object[]>>)
 			if (err) return cb(err);
 
 			let proofRetrievers = transactions.map((t: ITransaction) =>
-							(cb: CallBack<ApiResponse<string>>) => getExitDataForBlock(slot, t.mined_block, cb));
+							(cb: CallBack<ApiResponse<IJSONExitData>>) => Exit.getDataForBlock(slot.toString(), t.mined_block.toString(), cb));
 
 
 			async.parallel(proofRetrievers, (err: any, apiResponse: any) => {

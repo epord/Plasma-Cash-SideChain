@@ -1,17 +1,10 @@
-import { IBlock } from "./models/BlockInterface";
-import { Socket } from "socket.io";
-import { IBattle, IState } from './models/BattleInterface';
-import {
-  isTransitionValid,
-  isBattleFinished,
-  getBattleById
-} from "./services/battle";
-import { disconnect } from "cluster";
-import { Utils } from "./utils/Utils";
-import { CryptoUtils } from "./utils/CryptoUtils";
-import { recover } from "./utils/sign";
-import { CallBack } from "./utils/TypeDef";
-import { play } from './services/battle';
+import {Socket} from "socket.io";
+import {Utils} from "./utils/Utils";
+import {CryptoUtils} from "./utils/CryptoUtils";
+import {recover} from "./utils/sign";
+import {CallBack} from "./utils/TypeDef";
+import {IBattle, IChannelState} from "./models/battle";
+import {Battle} from "./services/battle";
 
 const debug = require('debug')('app:websockets');
 const _ = require('lodash');
@@ -77,7 +70,7 @@ const onAuthentication = (socket: Socket) => {
 };
 
 const updateSocketIdIfNeeded = (channelId: string, socketId: string, cb: CallBack<IBattle>) => {
-  getBattleById(channelId, (err: any, battle?: IBattle) => {
+  Battle.getById(channelId, (err: any, battle?: IBattle) => {
     // Errors
     if (err) {
       debug("ERROR Finding battle: ", err);
@@ -129,7 +122,7 @@ const onBattleRequest = (socket: Socket) => {
 };
 
 const onPlay = (socket: Socket) => {
-  socket.on('play', (state: IState) => {
+  socket.on('play', (state: IChannelState) => {
     debug('Player playing with state ', state.turnNum);
     if(!isAuthenticated(socket.id)) return emitError(socket, undefined, "Not authenticated");
 
@@ -143,7 +136,8 @@ const onPlay = (socket: Socket) => {
         (!isPlayer1Turn && battle.players[1].socket_id == socket.id)) {
         return emitError(socket, battle, 'Not your turn');
       }
-      play(state, battle, (err: any) => {
+
+      Battle.play(state, battle, (err: any) => {
         if (err) return emitError(socket, battle, err);
       })
     });

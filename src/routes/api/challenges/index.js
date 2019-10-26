@@ -3,7 +3,6 @@ import {Utils} from "../../../utils/Utils";
 const express 					= require('express')
 	, router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:challenges')
-	, { getChallengeAfterData, getChallengeBeforeData } = require("../../../services/challenges")
 	, BigNumber       			= require('bignumber.js')
 	, Status 					= require('http-status-codes');
 
@@ -34,7 +33,7 @@ router.get('/after/', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid slot');
 	}
 
-	getChallengeAfterData(slotBN, exitBlockBN, Utils.responseWithStatus(res));
+	Challenge.getAfterData(slotBN, exitBlockBN, Utils.responseWithStatus(res));
 
 });
 
@@ -63,7 +62,7 @@ router.get('/before', (req, res, next) => {
 		return res.status(Status.BAD_REQUEST).json('Invalid slot');
 	}
 
-	getChallengeBeforeData(slotBN, parentBlockBN, Utils.responseWithStatus(res));
+	Challenge.getBeforeData(slotBN, parentBlockBN, Utils.responseWithStatus(res));
 
 });
 

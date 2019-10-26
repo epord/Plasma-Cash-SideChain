@@ -1,4 +1,4 @@
-import {IJSONBlock} from "../src/models/BlockInterface";
+import {IJSONBlock} from "../src/routes/api/jsonModels";
 
 require('dotenv').config();
 // @ts-ignore

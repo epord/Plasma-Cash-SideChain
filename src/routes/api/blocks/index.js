@@ -1,5 +1,6 @@
 import {Utils} from "../../../utils/Utils";
-import {depositBlock, getProof, mineBlock} from "../../../services/block";
+import {depositBlock, mineBlock} from "../../../services/block";
+import {BlockService, SecretRevealingBlockService} from "../../../services";
 
 const express 			= require('express')
 , router 						= express.Router({ mergeParams: true })
@@ -7,7 +8,6 @@ const express 			= require('express')
 , Status 						= require('http-status-codes')
 , async							= require('async')
 , BigNumber					= require("bignumber.js")
-, { BlockService, SecretRevealingBlockService } 	= require('../../../services/index.js')
 
 debug('registering /api/blocks routes');
 

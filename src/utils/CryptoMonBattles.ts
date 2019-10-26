@@ -1,12 +1,12 @@
-import {ICMBState, ICryptoMon, IPokemonData, IStats, Move, Type} from "../models/BattleInterface";
 import {CallBack, Maybe} from "./TypeDef";
 import {CryptoUtils} from "./CryptoUtils";
 import {BN} from "ethereumjs-util";
-import EthUtils = require("ethereumjs-util");
 import abi from "ethereumjs-abi";
-import RLP = require('rlp');
 import {calculateBattle, needsCharge, usesFirstType, usesSecondType} from "./BattleDamageCalculator";
+import EthUtils = require("ethereumjs-util");
+import RLP = require('rlp');
 import async = require('async');
+import {ICMBState, ICryptoMon, IPokemonData, IStats, Type, Move} from "../models/battle";
 
 function validateTransitionKeepStats(first: IStats, second: IStats): Maybe<boolean> {
     if(!first || !second) return {err: "no stats"};

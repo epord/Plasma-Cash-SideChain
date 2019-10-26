@@ -1,8 +1,4 @@
 import BN = require("bn.js");
-import BigNumber from "bignumber.js";
-import {ITransaction} from "../models/TransactionInterface";
-import {IBlock} from "../models/BlockInterface";
-import {SparseMerkleTree} from "./SparseMerkleTree";
 import EthUtils = require("ethereumjs-util");
 import RLP = require('rlp');
 import async = require('async');
@@ -11,14 +7,18 @@ import RootChainJson = require("../json/RootChain.json");
 import VMCJson = require("../json/ValidatorManagerContract.json");
 import CMBJson = require("../json/CryptoMonBattles.json");
 import PlasmaCMJson = require("../json/PlasmaCM.json");
+import  abi = require('ethereumjs-abi');
+import BigNumber from "bignumber.js";
+import {SparseMerkleTree} from "./SparseMerkleTree";
 import Web3 from "web3";
 import {CallBack} from "./TypeDef";
 import {AbiItem} from "web3-utils";
-import {ISRBlock} from "../models/SecretRevealingBlockInterface";
 import {TransactionService} from "../services";
-import {IState, ICryptoMon, IPokemonData} from "../models/BattleInterface";
-import  abi = require('ethereumjs-abi');
 import {toCMBBytes} from "./CryptoMonBattles";
+import {IBlock} from "../models/block";
+import {ITransaction} from "../models/transaction";
+import {ISRBlock} from "../models/secretRevealingBlock";
+import {IChannelState, ICryptoMon, IPokemonData} from "../models/battle";
 
 const debug = require('debug')('app:CryptoUtils');
 const web3: Web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAIN_WS_URL!));
@@ -332,7 +332,7 @@ export class CryptoUtils {
         });
     }
 
-    public static hashChannelState(state: IState) {
+    public static hashChannelState(state: IChannelState) {
 
         return EthUtils.bufferToHex(
             abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
