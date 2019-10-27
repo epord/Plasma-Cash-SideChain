@@ -1,16 +1,17 @@
-const express 					= require('express')
-	, router 					= express.Router({ mergeParams: true })
+import * as Status from 'http-status-codes'
+import * as express from 'express';
+
+const router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:exit')
-	, Status 					= require('http-status-codes')
 	, CryptoMonsJson = require("../../../json/CryptoMons.json")
 	, RootChainJson = require("../../../json/RootChain.json")
 	, ValidatorManagerContractJson = require('../../../json/ValidatorManagerContract.json')
 	, PlasmaChannelManagerJson = require('../../../json/PlasmaCM.json')
 	, PlasmaTurnGameJson = require('../../../json/CryptoMonBattles.json');
 
-debug('registering /api/contracts routes')
+debug('registering /api/contracts routes');
 
-router.get('/', (req, res, next) => {
+router.get('/', (req: express.Request, res: express.Response, next) => {
 
 	if (!CryptoMonsJson || !RootChainJson) {
 		return res.status(Status.INTERNAL_SERVER_ERROR).json('Contracts do not exist');
@@ -41,5 +42,4 @@ router.get('/', (req, res, next) => {
 
 });
 
-
-module.exports = router;
+export default router;

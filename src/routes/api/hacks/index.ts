@@ -1,16 +1,17 @@
 import {CryptoUtils} from "../../../utils/CryptoUtils";
 import {Utils} from "../../../utils/Utils";
 import {blockInterval} from "../../../services/block";
+import * as Status from 'http-status-codes'
+import * as express from 'express';
+import BigNumber from "bignumber.js";
+import {NativeError} from "mongoose";
+import {IBlock} from "../../../models/block";
+import {BlockService} from "../../../services";
 
-const  { BlockService }  = require( '../../../services');
+const router 					= express.Router({ mergeParams: true })
+	, debug 					= require('debug')('app:api:hacks');
 
-const express 					= require('express')
-	, router 					= express.Router({ mergeParams: true })
-	, debug 					= require('debug')('app:api:hacks')
-	, BigNumber       			= require('bignumber.js')
-	, Status 					= require('http-status-codes');
-
-debug('registering /api/hacks routes')
+debug('registering /api/hacks routes');
 
 /**
  * Creates an Unchecked Transaction
@@ -23,7 +24,7 @@ debug('registering /api/hacks routes')
  *  "signature" string (hex) [sig of hash]
  * }
  */
-router.post('/transactions/create', (req, res, next) => {
+router.post('/transactions/create', (req: express.Request, res: express.Response, next) => {
 	let { slot, owner, recipient, hash, blockSpent, signature } = req.body;
 
 	if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || !signature) {
@@ -50,7 +51,7 @@ router.post('/transactions/create', (req, res, next) => {
 		.findOne({})
 		.sort({_id: -1})
 		.collation({locale: "en_US", numericOrdering: true})
-		.exec((err, lastBlock) => {
+		.exec((err: NativeError, lastBlock: IBlock) => {
 			if(err) return Utils.responseWithStatus(res)(err);
 
 			let nextNumber;
@@ -74,7 +75,9 @@ router.post('/transactions/create', (req, res, next) => {
 
 			};
 
-			const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions([t]);
+			// TODO: If this transaction wants to be added, this should be handled somehow else
+			// @ts-ignore
+            const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions([t]);
 			const rootHash = sparseMerkleTree.root;
 
 			BlockService.create({
@@ -82,14 +85,18 @@ router.post('/transactions/create', (req, res, next) => {
 				timestamp,
 				root_hash: rootHash,
 				transactions: [] //Creating empty block cause we dont want no corrupted transactions in our DB
-			}, (err, block) => {
+			}, (err: NativeError, block: IBlock) => {
 				if(err) return Utils.responseWithStatus(res)(err);
 				CryptoUtils.submitBlock(block, async (err) => {
-					if(err) return Utils.responseWithStatus(res)(err) //TODO rollback block creation
+					if(err) return Utils.responseWithStatus(res)(err); //TODO rollback block creation
 
 					let blockJSON =  Utils.blockToJson(block);
-					blockJSON.transactions = [t];
-					let exitingBytes = await CryptoUtils.getTransactionBytes(t);
+					// TODO: If this transaction wants to be added, this should be handled somehow else
+					// @ts-ignore
+                    blockJSON.transactions = [t];
+                    // TODO: If this transaction wants to be added, this should be handled somehow else
+					// @ts-ignore
+                    let exitingBytes = await CryptoUtils.getTransactionBytes(t);
 
 					const message = {
 						block: blockJSON,
@@ -109,4 +116,4 @@ router.post('/transactions/create', (req, res, next) => {
 		});
 });
 
-module.exports = router;
+export default router;

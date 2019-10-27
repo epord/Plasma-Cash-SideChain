@@ -11,6 +11,7 @@ import {ITransaction} from "../models/transaction";
 import RLP = require('rlp');
 import {ISRBlock} from "../models/secretRevealingBlock";
 import {CoinStateService} from "./index";
+import {NativeError} from "mongoose";
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')
@@ -101,7 +102,7 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 			.find({ mined_block: null })
 			.exec(callback);
 		}
-	}, (err: any, results: {lastBlock: IBlock, transactions: ITransaction[]}) => {
+	}, (err: NativeError, results: {lastBlock: IBlock, transactions: ITransaction[]}) => {
 		if (err) return cb(err);
 
 		const { lastBlock, transactions } = results;
@@ -142,7 +143,7 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 
 
 					if(hasSwap) {
-						SecretRevealingBlockService.create({ _id: block.block_number }, (sblock: ISRBlock) => {
+						SecretRevealingBlockService.create({ _id: block.block_number }, () => {
 							submit();
 						})
 					} else {
@@ -161,55 +162,53 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 	checkIfAnySecretBlockReady()
 };
 
-export const depositBlock = (slot: string, blockNumber: string, _owner: string, cb: CallBack<ApiResponse<IBlock>>) => {
+export const depositBlock = (slot: BigNumber, blockNumber: BigNumber, _owner: string, cb: CallBack<ApiResponse<IBlock>>) => {
 
 	const owner = _owner.toLowerCase();
 
-	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
+	if(slot.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot'});
 
-	const blockNumberBN = new BigNumber(blockNumber);
-	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
+	if(blockNumber.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
 
-	const rootHash = CryptoUtils.generateDepositBlockRootHash(slotBN);
+	const rootHash = CryptoUtils.generateDepositBlockRootHash(slot);
 
 	const blockSpent = new BigNumber(0);
 	const nullAddress = EthUtils.bufferToHex(EthUtils.setLengthLeft(0, 20));
 
-	const hash = CryptoUtils.generateTransactionHash(slotBN, blockSpent, owner);
+	const hash = CryptoUtils.generateTransactionHash(slot, blockSpent, owner);
 	const timestamp = Date.now();
 
-	BlockService.findById(blockNumberBN)
+	BlockService.findById(blockNumber)
 		.exec((err: any, block: CallBack<IBlock>) => {
 			if(err) return cb(err);
 			if(block) return cb({statusCode: 409, message: "Block number already deposited"});
 
-			TransactionService.findOne({ slot: slotBN })
+			TransactionService.findOne({ slot: slot })
 				.exec((err: any, transaction: ITransaction) => {
 					if (err) return cb(err);
 					if (transaction) return cb({ statusCode: 400, error: "The transaction already exists"});
 
 					/// TODO: make atomic
 					CoinStateService.create({
-						_id: slotBN,
+						_id: slot,
 						state: "DEPOSITED",
 						owner: owner
 					});
 
 					TransactionService.create({
-						slot: slotBN,
+						slot: slot,
 						owner: nullAddress,
 						recipient: owner,
 						_id: hash,
 						block_spent: blockSpent,
 						mined: true,
-						mined_block: blockNumberBN,
+						mined_block: blockNumber,
 						mined_timestamp: timestamp
 					}, (err: any, t: ITransaction) => {
 						if(err) return cb(err);
 
 						BlockService.create({
-							_id: blockNumberBN,
+							_id: blockNumber,
 							timestamp,
 							root_hash: rootHash,
 							transactions: [t]
@@ -310,7 +309,7 @@ export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) 
 	if(!transaction.secret) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
 
 	SecretRevealingBlockService.findById(transaction.mined_block).exec((err:any, sblock:ISRBlock) => {
-		if(err) return cb(err)
+		if(err) return cb(err);
 		if(!sblock || !sblock.is_submitted) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
 		BlockService
 		.findById(transaction.mined_block)

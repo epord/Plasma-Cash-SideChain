@@ -1,5 +1,5 @@
 import {CryptoUtils} from "./CryptoUtils";
-import {ApiResponse} from "./TypeDef";
+import {ApiResponse, CallBack} from "./TypeDef";
 import Status from 'http-status-codes';
 import * as EthUtils from 'ethereumjs-util';
 import {
@@ -13,8 +13,9 @@ import {ISingleSwapData, ITransaction} from "../models/transaction";
 import {IBlock} from "../models/block";
 import RLP = require('rlp');
 import {ISRBlock} from "../models/secretRevealingBlock";
+import * as e from "express";
 
-const debug = require('debug')('app:api:Utils')
+const debug = require('debug')('app:api:Utils');
 
 export class Utils {
 
@@ -212,11 +213,12 @@ export class Utils {
             return debug("ERROR: " + err.error);
     };
 
-    public static responseWithStatus<T>(res: any, mapper?: (_: T) => string | Object) {
-        return (err: any, status: ApiResponse<T>)  => {
+    public static responseWithStatus<T>(res: e.Response, mapper?: (_: T) => string | Object): CallBack<ApiResponse<T>> {
+        return (err: any, status: ApiResponse<T> | undefined)  => {
             Utils.logError(err);
             if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
             if (err && err.statusCode) return res.status(err.statusCode).json(err.error);
+            if (status === undefined) return res.status(Status.INTERNAL_SERVER_ERROR).json("No status");
             if (!status.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json("No message");
             if (status.error) return res.status(status.statusCode).json(status.error);
             if(mapper) {

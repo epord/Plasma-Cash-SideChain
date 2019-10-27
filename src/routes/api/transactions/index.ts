@@ -3,28 +3,31 @@ import {createTransaction, getSwapData, isSwapCommitted} from "../../../services
 import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
 import {getInclusionProof, getSecretProof} from "../../../services/block";
 import * as async from "async";
+import * as Status from 'http-status-codes'
+import * as express from 'express';
+import {TransactionService} from "../../../services";
+import {NativeError} from "mongoose";
+import {ITransaction} from "../../../models/transaction";
+import BigNumber from "bignumber.js";
 
-const express 					= require('express')
-	, router 					= express.Router({ mergeParams: true })
-	, debug 					= require('debug')('app:api:transactions')
-	, Status 					= require('http-status-codes')
-	, { TransactionService }	= require('../../../services')
-	, BigNumber       			= require('bignumber.js');
+const router 					= express.Router({ mergeParams: true })
+	, debug 					= require('debug')('app:api:transactions');
 
-debug('registering /api/transactions routes')
+debug('registering /api/transactions routes');
 
-router.get('/:id([A-Za-z0-9]+)', (req, res, next) => {
+router.get('/:id([A-Za-z0-9]+)', (req: express.Request, res: express.Response, next) => {
 	TransactionService
 		.findById(req.params.id)
-		.exec((err, transaction) => {
+		.exec((err: NativeError, transaction: ITransaction) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 			res.status(Status.OK).json(Utils.transactionToJson(transaction));
 		})
 });
 
-router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
-	getSwapData(req.params.id, (err, transactions) => {
-		if (err) return Utils.responseWithStatus(res)(err, null);
+router.get('/swap-data/:id([A-Za-z0-9]+)', (req: express.Request, res: express.Response, next) => {
+	getSwapData(req.params.id, (err: NativeError, transactions: [ITransaction, ITransaction] | undefined) => {
+		if (err) return Utils.responseWithStatus(res)(err);
+		if (transactions === undefined) return Utils.responseWithStatus(res)(err);
 
 		isSwapCommitted(transactions[0], transactions[1], (err, isCommitted) => {
 			if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
@@ -36,7 +39,7 @@ router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
 				secretProofA: cb => getSecretProof(transactions[0], cb),
 				secretProofB: cb => getSecretProof(transactions[1], cb),
 			}, (err, result) => {
-				if (err) return Utils.responseWithStatus(res)(err, null);
+				if (err) return Utils.responseWithStatus(res)(err);
 
 				//Get AllProof
 				let swapDataA = {
@@ -51,7 +54,9 @@ router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
 					secretProof: result.secretProofB
 				};
 
-				return res.status(Status.OK).json(Utils.swapDataToJson(swapDataA, swapDataB));
+				// TODO: swapDataToJson should receive ISingleSwapData
+				// @ts-ignore
+                return res.status(Status.OK).json(Utils.swapDataToJson(swapDataA, swapDataB));
 
 			});
 		});
@@ -69,7 +74,7 @@ router.get('/swap-data/:id([A-Za-z0-9]+)', (req, res, next) => {
  *  "signature" string (hex) [sig of hash]
  * }
  */
-router.post('/create', (req, res, next) => {
+router.post('/create', (req: express.Request, res: express.Response, next) => {
 	const { slot, owner, recipient, hash, blockSpent, signature } = req.body;
 
 	if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || !signature) {
@@ -102,7 +107,7 @@ router.post('/create', (req, res, next) => {
  *  "signature" string (hex) [sig of hash]
  * }
  */
-router.post('/create-atomic-swap', (req, res, next) => {
+router.post('/create-atomic-swap', (req: express.Request, res: express.Response, next) => {
 	const { slot, owner, recipient, hash, blockSpent, signature, swappingSlot, hashSecret } = req.body;
 
 	if (slot == undefined || !owner || !recipient || !hash || blockSpent == undefined || swappingSlot == undefined || !hashSecret || !signature) {
@@ -130,7 +135,7 @@ router.post('/create-atomic-swap', (req, res, next) => {
  *  "minedBlock": int|string
  * }
  */
-router.post('/reveal-secret', (req, res, next) => {
+router.post('/reveal-secret', (req: express.Request, res: express.Response, next) => {
 	const { slot, minedBlock, secret } = req.body;
 
 	if (!secret || slot == undefined || minedBlock == undefined) {
@@ -145,8 +150,8 @@ router.post('/reveal-secret', (req, res, next) => {
 /**
  * id: slot
  */
-router.get('/last/:id([0-9]+)', (req, res, next) => {
-	const slot = req.params.id
+router.get('/last/:id([0-9]+)', (req: express.Request, res: express.Response, next) => {
+	const slot = req.params.id;
 	TransactionService
 		.findOne({
 			slot: new BigNumber(slot),
@@ -173,7 +178,7 @@ router.get('/last/:id([0-9]+)', (req, res, next) => {
 			};
 			return res.status(Status.OK).json(dto);
 		})
-})
+});
 
 
-module.exports = router;
+export default router;

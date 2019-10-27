@@ -1,11 +1,12 @@
-let express 	= require('express')
-		, app 			= express()
+import express from 'express';
+import routes from './routes';
+
+let app 			= express()
 		, bodyParser	= require('body-parser')
 		, compression				= require('compression')
 		, debug 		= require('debug')('app:server')
 		, moment 		= require('moment')
-		, logger		= require('morgan')
-		, routes 		= require('./routes');
+		, logger		= require('morgan');
 
 debug('setting up server');
 
@@ -28,26 +29,31 @@ logger.format('mine', (tokens: any, req: { socket: any; ip: any; method: any; or
 app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(function (req: any, res: { setHeader: { (arg0: string, arg1: string): void; (arg0: string, arg1: string): void; (arg0: string, arg1: string): void; (arg0: string, arg1: boolean): void; }; }, next: () => void) {
+app.use((request: express.Request, response: express.Response, next) => {
 	// Website you wish to allow to connect
-	res.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Origin', '*');
 	// Request methods you wish to allow
-	res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
 	// Request headers you wish to allow
-	res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    response.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
 	// Set to true if you need the website to include cookies in the requests sent
 	// to the API (e.g. in case you use sessions)
-	res.setHeader('Access-Control-Allow-Credentials', true);
+    response.setHeader('Access-Control-Allow-Credentials', "true");
 	// Pass to next layer of middleware
 	next();
 });
-app.use('/api', routes.api);
+app.use('/api', routes);
 
 export function init(cb: () => void) {
     let server = app.listen(process.env.PORT || 8000, () => {
-        let host = server.address().address;
-        let port = server.address().port;
-        debug('Listening on port %s', port);
+        let address = server.address();
+        if (typeof address == "string") {
+            debug('Listening on address %s', address);
+        } else {
+            // let host = address.address;
+            let port = address.port;
+            debug('Listening on port %s', port);
+        }
         app.use('/api', logger('mine'));
         cb();
     })

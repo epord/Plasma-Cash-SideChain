@@ -36,20 +36,20 @@ export const toTransactionData = (t: ITransaction): TransactionData => {
 };
 
 export const createTransaction = (
-		_slot: string,
+		_slot: BigNumber,
 		_owner: string,
 		_recipient: string,
 		_hash: string,
-		_blockSpent: string,
+		_blockSpent: BigNumber,
 		_signature: string,
 		cb: CallBack<ApiResponse<ITransaction>>
 	) => {
 
-	const slot = new BigNumber(_slot);
+	const slot = _slot;
 	const owner = _owner.toLowerCase();
 	const recipient = _recipient.toLowerCase();
 	const hash = _hash.toLowerCase();
-	const blockSpent = new BigNumber(_blockSpent);
+	const blockSpent = _blockSpent;
 	const signature = _signature.toLowerCase();
 
 	if (slot.isNaN()) return cb({ statusCode: 400, error: 'Invalid slot' });
@@ -67,7 +67,7 @@ export const createTransaction = (
 			block_spent: blockSpent,
 			signature
 		}, (err: any, t: ITransaction) => {
-			if (err) return cb(err)
+			if (err) return cb(err);
 			cb(null, { statusCode: 201, result: t })
 		});
 	})
@@ -86,9 +86,8 @@ export const isTransactionValid = (transaction: TransactionData, validateTransac
 };
 
 export const isTransactionValidWithHash = (transaction: TransactionData, calculatedHash: string, validateTransactionCb: CallBack<string>) => {
-	const { slot, owner, recipient, hash, blockSpent, signature } = transaction;
 
-	getLastMinedTransaction({ slot: slot }, (err: any, result?: ITransaction) => {
+	getLastMinedTransaction({ slot: transaction.slot }, (err: any, result?: ITransaction) => {
 
 		if (err) return validateTransactionCb(err);
 		let lastTransaction = result;
@@ -99,21 +98,21 @@ export const isTransactionValidWithHash = (transaction: TransactionData, calcula
 
 			if (!mined_block) return validateTransactionCb(null, 'Last mined block does not exist');
 
-			if (!(mined_block.block_number as BigNumber).eq(blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
+			if (!(mined_block.block_number as BigNumber).eq(transaction.blockSpent)) return validateTransactionCb(null, 'blockSpent is invalid');
 
-			if (hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
+			if (transaction.hash !== calculatedHash) return validateTransactionCb(null, 'Hash invalid');
 
-			if (lastTransaction!.recipient.toLowerCase() !== owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
+			if (lastTransaction!.recipient.toLowerCase() !== transaction.owner.toLowerCase()) return validateTransactionCb(null, "Owner does not match");
 
 			try {
-				const pubAddress = CryptoUtils.pubToAddress(recover(hash, signature));
-				if (owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
+				const pubAddress = CryptoUtils.pubToAddress(recover(transaction.hash, transaction.signature));
+				if (transaction.owner.toLowerCase() !== pubAddress) return validateTransactionCb(null, 'Owner did not sign this');
 			} catch (e) {
 				console.error(e.message);
 				return validateTransactionCb(null, 'Invalid Signature');
 			}
 
-			CoinState.findBySlot(slot, (err: any, coinState: ICoinState) => {
+			CoinState.findBySlot(transaction.slot, (err: any, coinState: ICoinState) => {
 				if (err) return validateTransactionCb(err);
 
 				if (coinState.state != "DEPOSITED") {
@@ -128,7 +127,7 @@ export const isTransactionValidWithHash = (transaction: TransactionData, calcula
 
 
 	})
-}
+};
 
 export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>) => {
 	filter.mined_block = { $ne: null };
@@ -263,7 +262,7 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 									}
 								}
 
-								history[e[0].block_number.toString()] = data
+								history[e[0].block_number.toString()] = data;
 								cb(null);
 						}), (err: any) => next(err, history));
 					})
@@ -304,4 +303,4 @@ export const isSwapCommitted = (transaction: ITransaction, counterpart: ITransac
 		if(!sblock) return cb(`ERROR: SecretRevealingBlock ${transaction.mined_block} was not found`);
 		return cb(null, sblock.is_submitted != undefined)
 	})
-}
+};

@@ -1,18 +1,19 @@
 import {Utils} from "../../../utils/Utils";
+import * as Status from 'http-status-codes'
+import * as express from 'express';
+import BigNumber from "bignumber.js";
+import {Challenge} from "../../../services/challenges";
 
-const express 					= require('express')
-	, router 					= express.Router({ mergeParams: true })
-	, debug 					= require('debug')('app:api:challenges')
-	, BigNumber       			= require('bignumber.js')
-	, Status 					= require('http-status-codes');
+const router 					= express.Router({ mergeParams: true })
+	, debug 					= require('debug')('app:api:challenges');
 
-debug('registering /api/challenges routes')
+debug('registering /api/challenges routes');
 
 /**
  * slot
  * exitBlock
  */
-router.get('/after/', (req, res, next) => {
+router.get('/after/', (req: express.Request, res: express.Response) => {
 	const { slot, exitBlock } = req.query;
 
 	if (!slot) {
@@ -41,7 +42,7 @@ router.get('/after/', (req, res, next) => {
  *  slot: slot being exited
  *  parentBlock: parent of exited transaction
  */
-router.get('/before', (req, res, next) => {
+router.get('/before', (req: express.Request, res: express.Response, next) => {
 	const { slot, parentBlock } = req.query;
 
 	if (!slot) {
@@ -66,5 +67,4 @@ router.get('/before', (req, res, next) => {
 
 });
 
-
-module.exports = router;
+export default router;

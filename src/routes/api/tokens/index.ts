@@ -2,16 +2,18 @@ import {Utils} from "../../../utils/Utils";
 import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
 import {TransactionService} from '../../../services';
 import {CoinState} from "../../../services/coinState";
+import * as Status from 'http-status-codes'
+import * as express from 'express';
+import {NativeError} from "mongoose";
+import {ITransaction} from "../../../models/transaction";
+import BigNumber from "bignumber.js";
 
-const express = require('express')
-	, router = express.Router({ mergeParams: true })
-	, debug = require('debug')('app:api:tokens')
-	, Status = require('http-status-codes')
-	, BigNumber = require('bignumber.js');
+const router = express.Router({ mergeParams: true })
+	, debug = require('debug')('app:api:tokens');
 
-debug('registering /api/tokens routes')
+debug('registering /api/tokens routes');
 
-router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req, res, next) => {
+router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req: express.Request, res: express.Response, next) => {
 	const { id } = req.params;
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
@@ -21,7 +23,7 @@ router.get('/:id([A-Fa-f0-9]+)/last-transaction', (req, res, next) => {
 });
 
 //Test only
-router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
+router.get('/:id([0-9]+)/last-owner', (req: express.Request, res: express.Response, next) => {
 	const { id } = req.params;
 	getLastMinedTransaction({ slot: id }, (err, transaction) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
@@ -34,27 +36,27 @@ router.get('/:id([0-9]+)/last-owner', (req, res, next) => {
 *	Query params:
 * 	- state: only return tokens in state 'EXITING'
 */
-router.get('/owned-by/:owner([0-9a-zA-z]+)', (req, res, next) => {
+router.get('/owned-by/:owner([0-9a-zA-z]+)', (req: express.Request, res: express.Response, next) => {
   const { owner } = req.params;
 	const { state } = req.query;
 
     CoinState.getOwnedTokens(owner, state, Utils.responseWithStatus(res));
 });
 
-router.get('/:id([0-9a-zA-z]+)/history', (req, res, next) => {
+router.get('/:id([0-9a-zA-z]+)/history', (req: express.Request, res: express.Response, next) => {
 	const { id } = req.params;
-	getHistory(id, Utils.responseWithStatus(res));
+	getHistory(new BigNumber(id), Utils.responseWithStatus(res));
 });
 
-router.get('/:id([0-9a-zA-Z]+)/history-proof', (req, res, next) => {
+router.get('/:id([0-9a-zA-Z]+)/history-proof', (req: express.Request, res: express.Response, next) => {
 	const { id } = req.params;
 	getHistoryProof(id, (err, history) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err); // TODO: add responseWithStatus when migrating to TS
 		return Utils.responseWithStatus(res)(null, {statusCode: 200, result: { history }})
 	})
-})
+});
 
-router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req, res, next) => {
+router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req: express.Request, res: express.Response, next) => {
 	const { address } = req.params;
 
 	TransactionService.aggregate([
@@ -82,7 +84,7 @@ router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req, res, next) => {
 				mined_block: null,
 			}
 		}
-	], (err, transactions) => {
+	], (err: NativeError, transactions: ITransaction[]) => {
 		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
 
 		const swappingRequests = transactions.map(t => ({
@@ -101,8 +103,6 @@ router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req, res, next) => {
 
 		res.status(Status.OK).json(swappingRequests);
 	});
-})
+});
 
-
-
-module.exports = router;
+export default router;

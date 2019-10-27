@@ -13,10 +13,9 @@ const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.BLOCKCHAI
 const CryptoMonsJson = require("../../json/CryptoMons.json");
 const RootChainJson = require("../../json/RootChain.json");
 const PlasmaChannelManagerJson = require('../../json/PlasmaCM.json');
-const CryptoMonsBattlesJson = require('../../json/CryptoMonBattles.json');
 
 const _ = require('lodash');
-const debug	= require('debug')('app:api:hooks')
+const debug	= require('debug')('app:api:hooks');
 const { TransactionService } = require('..');
 
 const { BattleService } = require('..');
@@ -86,7 +85,8 @@ const onDeposit = (iDeposit: abiInterface) => (error: any, result?: eventResultI
 
 	const { slot, blockNumber, from } = eventObj;
 
-	depositBlock(slot.toString(), blockNumber.toString(), from, (err: any) => { console.error(err); });
+	// TODO: See the type of slot, maybe we can send it like it is
+	depositBlock(new BigNumber(slot.toString()), new BigNumber(blockNumber.toString()), from, (err: any) => { console.error(err); });
 };
 
 const onExitStarted = (iExitStarted: abiInterface) => (error: any, result?: eventResultInterface) => {
@@ -345,7 +345,7 @@ const getExit = (slot: BigNumber, cb: CallBack<any>) => {
 			cb(null, exitData);
 		});
 	});
-}
+};
 
 export function init(cb: () => void) {
 	//RootChain
@@ -397,7 +397,7 @@ export function init(cb: () => void) {
 
 	//Plasma Channel Manager
 	const PlasmaChannelManagerContract = new web3.eth.Contract(PlasmaChannelManagerJson.abi, PlasmaChannelManagerJson.networks["5777"].address);
-	const PlasmaChannelManagerAddress = PlasmaChannelManagerJson.networks["5777"].address;
+	// const PlasmaChannelManagerAddress = PlasmaChannelManagerJson.networks["5777"].address;
 
 	const iForceMoveResponded = getEventInterface(PlasmaChannelManagerContract, 'ForceMoveResponded');
 	subscribeLogEvent(PlasmaChannelManagerContract, iForceMoveResponded, onForceMoveResponded(iForceMoveResponded));
