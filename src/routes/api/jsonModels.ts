@@ -55,7 +55,7 @@ export interface IJSONExitData {
     lastTransactionHash: string,
     prevBlock?: string,
     exitingBlock: string
-    signature: string,
+    signature?: string,
 }
 
 export interface IJSONSingleExitData {

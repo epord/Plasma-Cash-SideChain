@@ -43,7 +43,6 @@ export class Exit {
 			if (err) return cb(err);
 			if (!lastProof) return cb({statusCode: 500, error: 'Could not create Proof for the exiting transaction'});
 			if (lastTransaction.mined_block.mod(blockInterval).isZero()) {
-
 				TransactionService.findOne({
 					slot: slot,
 					mined_block: lastTransaction.block_spent

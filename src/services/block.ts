@@ -229,8 +229,8 @@ export const getProof = (slot: string, blockNumber: string, cb: CallBack<string>
 	const blockNumberBN = new BigNumber(blockNumber);
 	if(blockNumberBN.isNaN()) return cb({ statusCode: 400, error: 'Invalid blockNumber'});
 
-	if (blockNumberBN.mod(blockInterval).isZero()) {
-		return cb(null)
+	if (!blockNumberBN.mod(blockInterval).isZero()) {
+		return cb(null, "0x0")
 	}
 
 	TransactionService.findOne({slot: slotBN, mined_block: blockNumberBN}).exec((err: any, transaction: ITransaction) => {
