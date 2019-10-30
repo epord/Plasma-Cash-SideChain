@@ -213,9 +213,11 @@ export class Utils {
             return debug("ERROR: " + err.error);
     };
 
-    public static responseWithStatus<T>(res: e.Response, mapper?: (_: T) => string | Object): CallBack<ApiResponse<T>> {
-        return (err: any, status: ApiResponse<T> | undefined)  => {
+    public static responseWithStatus<T>(res: e.Response, mapper?: (_: T) => string | Object) {
+        return (err: any, status?: ApiResponse<T>) => {
             Utils.logError(err);
+            Utils.logError(status);
+
             if (err && !err.statusCode) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
             if (err && err.statusCode) return res.status(err.statusCode).json(err.error);
             if (status === undefined) return res.status(Status.INTERNAL_SERVER_ERROR).json("No status");

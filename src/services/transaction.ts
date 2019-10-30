@@ -159,11 +159,11 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 		});
 };
 
+export const getHistory = (slot: string, cb: CallBack<ApiResponse<{history: Object[]}>>) => {
+	let slotBN =  new BigNumber(slot);
+	if(slotBN.isNaN()) cb({status: 400, error: "Invalid Slot"});
 
-//TODO: change this require in mid-file
-export const getHistory = (slot: BigNumber, cb: CallBack<ApiResponse<Object[]>>) => {
-	let filter: any = { slot: slot };
-	filter.mined_block = { $ne: null };
+	let filter = { slot: slotBN, mined_block: { $ne: null } };
 	TransactionService
 		.find(filter)
 		.sort({ mined_block: -1 })
@@ -171,17 +171,20 @@ export const getHistory = (slot: BigNumber, cb: CallBack<ApiResponse<Object[]>>)
 		.exec((err: any, transactions: ITransaction[]) => {
 			if (err) return cb(err);
 
-			let proofRetrievers = transactions.map((t: ITransaction) =>
-							(cb: CallBack<ApiResponse<IJSONExitData>>) => Exit.getDataForBlock(slot.toString(), t.mined_block.toString(), cb));
+			let proofRetrievers = transactions.map(
+				(t: ITransaction) =>
+					(cb: CallBack<ApiResponse<IJSONExitData>>) =>
+						Exit.getDataForBlock(slot.toString(), t.mined_block.toString(), cb)
+			);
 
-
-			async.parallel(proofRetrievers, (err: any, apiResponse: any) => {
+			async.parallel(proofRetrievers, (err: any, apiResponses: [ApiResponse<IJSONExitData>]) => {
 				if (err) return cb(err);
-				let result = Utils.zip(transactions, apiResponse).map((pair: [any, any]) => {
-					return {transaction: Utils.transactionToJson(pair[0]), exitData: pair[1].result}
-				});
+				let result = Utils.zip(transactions, apiResponses)
+					.map((pair: [any, any]) => {
+						return {transaction: Utils.transactionToJson(pair[0]), exitData: pair[1].result!}
+					});
 
-				cb(null, { statusCode: 200, result: result });
+				return cb(null, { statusCode: 200, result: { history: result }});
 			})
 		});
 };
@@ -189,8 +192,7 @@ export const getHistory = (slot: BigNumber, cb: CallBack<ApiResponse<Object[]>>)
 /**
  * Gets all blocks since slot's deposit and the proof for the coin in each of them
  */
-//TODO migrate to ApiResponse
-export const getHistoryProof = (slot: string, done: CallBack<any>) => {
+export const getHistoryProof = (slot: string, done: CallBack<ApiResponse<{history: Object[]}>>) => {
 	const slotBN = new BigNumber(slot);
 	if(slotBN.isNaN()) done({status: 400, error: "Invalid Slot"});
 
@@ -201,8 +203,8 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 				block_spent: '0' // deposit
 			}, next)
 		},
-		(depositTransaction: ITransaction, next: CallBack<any>) => {
-			if (!depositTransaction) return next('The slot has never been deposited.');
+		(depositTransaction: ITransaction, next: CallBack<ApiResponse<{history: Object[]}>>) => {
+			if (!depositTransaction) return next({statusCode: 404, error: 'The slot has never been deposited.'});
 
 			async.parallel({
 				minedTransactions: (cb: CallBack<ITransaction[]>) =>
@@ -264,7 +266,7 @@ export const getHistoryProof = (slot: string, done: CallBack<any>) => {
 
 								history[e[0].block_number.toString()] = data;
 								cb(null);
-						}), (err: any) => next(err, history));
+						}), (err: any) => next(err, {statusCode: 200, result: {history: history}}));
 					})
 				});
 			}

@@ -45,15 +45,12 @@ router.get('/owned-by/:owner([0-9a-zA-z]+)', (req: express.Request, res: express
 
 router.get('/:id([0-9a-zA-z]+)/history', (req: express.Request, res: express.Response, next) => {
 	const { id } = req.params;
-	getHistory(new BigNumber(id), Utils.responseWithStatus(res));
+	getHistory(id, Utils.responseWithStatus(res));
 });
 
 router.get('/:id([0-9a-zA-Z]+)/history-proof', (req: express.Request, res: express.Response, next) => {
 	const { id } = req.params;
-	getHistoryProof(id, (err, history) => {
-		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err); // TODO: add responseWithStatus when migrating to TS
-		return Utils.responseWithStatus(res)(null, {statusCode: 200, result: { history }})
-	})
+	getHistoryProof(id, Utils.responseWithStatus(res))
 });
 
 router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req: express.Request, res: express.Response, next) => {
