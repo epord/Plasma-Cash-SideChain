@@ -194,7 +194,7 @@ export const getHistory = (slot: string, cb: CallBack<ApiResponse<{history: Obje
  */
 export const getHistoryProof = (slot: string, done: CallBack<ApiResponse<{history: Object[]}>>) => {
 	const slotBN = new BigNumber(slot);
-	if(slotBN.isNaN()) done({status: 400, error: "Invalid Slot"});
+	if(slotBN.isNaN()) return done({status: 400, error: "Invalid Slot"});
 
 	async.waterfall([
 		(next: CallBack<ITransaction>) => {

@@ -306,11 +306,11 @@ const getAtomicSwapProof = (transaction: ITransaction, cb: CallBack<string>) => 
 
 export const getSecretProof = (transaction: ITransaction, cb: CallBack<string>) => {
 	if(transaction.invalidated) return cb(null, "0x0000000000000000");
-	if(!transaction.secret) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
+	if(!transaction.secret) return cb(null, undefined);
 
 	SecretRevealingBlockService.findById(transaction.mined_block).exec((err:any, sblock:ISRBlock) => {
 		if(err) return cb(err);
-		if(!sblock || !sblock.is_submitted) return cb({statusCode: 409, error: "Transaction secret is not revealed yet"});
+		if(!sblock || !sblock.is_submitted) return cb(null, undefined);
 		BlockService
 		.findById(transaction.mined_block)
 		.populate("transactions")

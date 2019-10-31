@@ -38,7 +38,7 @@ router.get('/:id([0-9]+)/last-owner', (req: express.Request, res: express.Respon
 */
 router.get('/owned-by/:owner([0-9a-zA-z]+)', (req: express.Request, res: express.Response, next) => {
   const { owner } = req.params;
-	const { state } = req.query;
+  const { state } = req.query;
 
     CoinState.getOwnedTokens(owner, state, Utils.responseWithStatus(res));
 });
