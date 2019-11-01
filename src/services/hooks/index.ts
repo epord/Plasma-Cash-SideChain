@@ -284,7 +284,7 @@ const onCoinReset = (iCoinReset: abiInterface) => (error: any, result?: eventRes
 	const eventObj = eventToObj(iCoinReset, result!);
 	debug(`Coin reset ${eventObj.slot.toString()} for ${eventObj.owner}`);
 
-	CoinState.resetSlot(eventObj.slot, (err: any, coinState: ICoinState) => {
+	CoinState.resetSlot(new BigNumber(eventObj.slot.toString()), (err: any, coinState: ICoinState) => {
 		if (err) return console.error(err);
 		//TODO what to do here?
 		if(coinState.owner.toLowerCase() != eventObj.owner.toLowerCase()) {

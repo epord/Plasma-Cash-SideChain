@@ -161,7 +161,7 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 
 export const getHistory = (slot: string, cb: CallBack<ApiResponse<{history: Object[]}>>) => {
 	let slotBN =  new BigNumber(slot);
-	if(slotBN.isNaN()) cb({status: 400, error: "Invalid Slot"});
+	if(slotBN.isNaN()) return cb({status: 400, error: "Invalid Slot"});
 
 	let filter = { slot: slotBN, mined_block: { $ne: null } };
 	TransactionService
