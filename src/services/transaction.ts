@@ -244,8 +244,8 @@ export const getHistoryProof = (slot: string, done: CallBack<ApiResponse<{histor
 
 						const history: any = {};
 
-						async.parallel(
-							Utils.zip(blocks, proofs).map(e => async (cb: CallBack<void>) => {
+						async.parallel( Utils.zip(blocks, proofs).map(
+							e => async (cb: CallBack<void>) => {
 								const transaction = minedTransactions.find(
 									t => (e[0].transactions as Array<string>).includes(t.hash)
 								);

@@ -207,10 +207,11 @@ export class Utils {
     }
 
     public static logError(err: any | ApiResponse<any>) {
-        if (err && !err.statusCode)
-            return debug("ERROR: " + err);
-        if (err && err.statusCode && err.error)
-            return debug("ERROR: " + err.error);
+        if (err && !err.statusCode) {
+            return debug(`ERROR: ${(err.error || err.message)}`)
+        } else if (err && err.statusCode && err.error) {
+            return debug(`ERROR: Code: ${err.statusCode} error:${err.error}`)
+        }
     };
 
     public static responseWithStatus<T>(res: e.Response, mapper?: (_: T) => string | Object) {

@@ -66,12 +66,6 @@ const eventToObj = (iface: abiInterface, result: eventResultInterface) => {
 	);
 };
 
-const onDebug = (iDebug: abiInterface) => (error: any, result?: eventResultInterface) => {
-	if(error) return console.error(error);
-	const eventObj = eventToObj(iDebug, result!);
-	debug(`Debug: ${eventObj.message}`)
-};
-
 const onWithdrew = (iWithdrew: abiInterface) => (error: any, result?: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iWithdrew, result!);
@@ -350,9 +344,6 @@ const getExit = (slot: BigNumber, cb: CallBack<any>) => {
 export function init(cb: () => void) {
 	//RootChain
 	const RootChainContract = new web3.eth.Contract(RootChainJson.abi,RootChainJson.networks["5777"].address);
-
-	const iDebug = getEventInterface(RootChainContract, 'Debug');
-	subscribeLogEvent(RootChainContract, iDebug, onDebug(iDebug));
 
 	const iDeposit = getEventInterface(RootChainContract, 'Deposit');
 	subscribeLogEvent(RootChainContract, iDeposit, onDeposit(iDeposit));

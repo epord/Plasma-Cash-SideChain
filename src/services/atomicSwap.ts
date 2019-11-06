@@ -42,7 +42,7 @@ export const isAtomicSwapTransactionValid = (transaction: AtomicSwapData, valida
 	const { slot, swappingSlot, recipient, hashSecret, blockSpent } = transaction;
 	const calculatedHash = CryptoUtils.generateAtomicSwapTransactionHash(slot, blockSpent, hashSecret, recipient, swappingSlot);
 
-	if(!calculatedHash) return validateTransactionCb(null, "Invalid Hash, blockSpent can be 0 in a swap");
+	if(!calculatedHash) return validateTransactionCb(null, "Invalid Hash, blockSpent cant be 0 in a swap");
 
 	isTransactionValidWithHash(transaction, calculatedHash, (err: any, result?: string) => {
 		if(err || result) return validateTransactionCb(err, result);
