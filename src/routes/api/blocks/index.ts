@@ -33,10 +33,18 @@ router.get('/secret-block/:block_number([0-9]+)', (req: express.Request, res: ex
         })
 });
 
+/**
+ *  Query params:
+ *      from: Block number
+ */
 router.get('/', (req: express.Request, res: express.Response) => {
+    const { from } = req.query;
+    const filter = from ? { _id: { $gte: from } } : {};
     BlockService
-        .find({})
+        .find(filter)
         .populate("transactions")
+		.sort({_id: 1})
+		.collation({locale: "en_US", numericOrdering: true})
         .exec((err: NativeError, blocks: IBlock[]) => {
             if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
             res.status(Status.OK).json(blocks.map(Utils.blockToJson));
