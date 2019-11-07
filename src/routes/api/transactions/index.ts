@@ -1,6 +1,6 @@
 import {Utils} from "../../../utils/Utils";
 import {createTransaction, getSwapData, isSwapCommitted} from "../../../services/transaction";
-import {createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
+import {cancelRevealSecret, createAtomicSwapComponent, revealSecret} from "../../../services/atomicSwap";
 import {getInclusionProof, getSecretProof} from "../../../services/block";
 import * as async from "async";
 import * as Status from 'http-status-codes'
@@ -146,6 +146,24 @@ router.post('/reveal-secret', (req: express.Request, res: express.Response, next
 
 });
 
+/**
+ * Cancel the revealing of a secret
+ * {
+ *  "signature" : signed(hash("hashSecret + slot + minedBlock"))
+ *  "slot": int|string
+ *  "minedBlock": int|string
+ * }
+ */
+router.post('/cancel-reveal-secret', (req: express.Request, res: express.Response, next) => {
+	const { slot, minedBlock, signature } = req.body;
+
+	if (!signature || slot == undefined || minedBlock == undefined) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter secret');
+	}
+
+	cancelRevealSecret(slot, minedBlock, signature,Utils.responseWithStatus(res, Utils.transactionToJson));
+
+});
 
 /**
  * id: slot

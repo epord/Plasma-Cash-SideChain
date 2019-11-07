@@ -345,4 +345,16 @@ export class CryptoUtils {
                 ])
             )
     }
+
+    public static hashCancelSecret(hashSecret: string, slot: BigNumber, minedBlock: BigNumber) {
+
+        return EthUtils.bufferToHex(
+            abi.soliditySHA3(["bytes","uint64","uint256"],
+                [
+                    EthUtils.toBuffer(hashSecret),
+                    slot.toFixed(),
+                    minedBlock.toFixed()
+                ])
+        )
+    }
 }

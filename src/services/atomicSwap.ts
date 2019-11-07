@@ -9,6 +9,7 @@ import {ITransaction} from "../models/transaction";
 import {IBlock} from "../models/block";
 import {ISRBlock} from "../models/secretRevealingBlock";
 import {BlockService} from "./index";
+import {recover} from "../utils/sign";
 
 const async = require("async");
 const debug = require('debug')('app:services:atomicSwap');
@@ -153,6 +154,46 @@ export const revealSecret = (_slot: string, _minedBlock: string, secret: string,
 
 	})
 };
+
+
+export const cancelRevealSecret = (_slot: string, _minedBlock: string, signature: string, cb: CallBack<ApiResponse<ITransaction>>) => {
+	const slot = new BigNumber(_slot);
+	const minedBlock = new BigNumber(_minedBlock);
+	const nullSecret = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+	SecretRevealingBlockService.findById(minedBlock).exec((err: any, sblock: ISRBlock) => {
+		if(err) return cb(err);
+		if(!sblock) return cb(null, {statusCode: 409, error: "Invalid blockIncluded, this block has not atomic swaps"});
+		if(sblock.is_submitted) return cb(null, {statusCode: 409, error: "This secret-revealing block was already submitted"});
+
+		TransactionService.findOne({ slot, mined_block: minedBlock}).exec((err: any, t: ITransaction) => {
+			if(err) return cb(err);
+			if(!t) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
+			if(!t.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
+			try {
+				const pubAddress = CryptoUtils.pubToAddress(recover(CryptoUtils.hashCancelSecret(t.hash_secret, slot, minedBlock), signature));
+				if(t.owner.toLowerCase() !== pubAddress.toLowerCase()) return cb({statusCode: 400, error: "Signature failed verification"});
+			}catch (e) {
+				return cb({statusCode: 400, error: "Signature failed verification"});
+			}
+
+			t.secret = nullSecret;
+			t.save((err, t) => {
+				if(err) return cb(err);
+				TransactionService.findOne({ slot: t.swapping_slot, mined_block: minedBlock}).exec((err: any, ts: ITransaction) => {
+					if(err) return cb(err);
+					if(!ts) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
+					if(!ts.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
+					ts.secret = nullSecret;
+					ts.save((err, t) => {
+						if(err) return cb(err);
+						submitSecretBlockIfReady(minedBlock,() => cb(null, {statusCode: 202, result: t}));
+					});
+				});
+			});
+		});
+	});
+}
 
 export const getCutoffDate = () => {
 	var date = new Date();
