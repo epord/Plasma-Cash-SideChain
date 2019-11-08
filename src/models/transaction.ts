@@ -2,7 +2,6 @@ import BigNumber from "bignumber.js";
 import {Document, Schema} from "mongoose";
 import {ITransaction} from "./transaction";
 import {IBlock} from "./block";
-import CoinStateSchema from "./coinStateModel";
 
 const BigNumberSchema = require('mongoose-bignumber');
 

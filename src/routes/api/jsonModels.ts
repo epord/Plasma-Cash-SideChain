@@ -31,7 +31,7 @@ export interface IJSONSwapData {
 
     transaction: IJSONSingleSwapData
     counterpart: IJSONSingleSwapData
-    mined_block: string
+    minedBlock: string
     signature: string
     isRevealed: boolean
     proof?: string

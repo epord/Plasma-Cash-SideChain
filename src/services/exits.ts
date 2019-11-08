@@ -8,6 +8,7 @@ import {blockInterval, getProof} from "./block";
 import {Utils} from "../utils/Utils";
 import {CryptoUtils} from "../utils/CryptoUtils";
 import * as Status from 'http-status-codes';
+
 export class Exit {
 	public static getDataForBlock = (slot: string, block: string, cb:CallBack<ApiResponse<IJSONExitData>>) => {
 

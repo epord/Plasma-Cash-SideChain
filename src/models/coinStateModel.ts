@@ -1,7 +1,5 @@
 import BigNumber from "bignumber.js";
 import {Document, Schema} from "mongoose";
-import TransactionSchema from "./transaction";
-import BlockSchema from "./block";
 
 const BigNumberSchema = require('mongoose-bignumber');
 

@@ -171,6 +171,7 @@ export const cancelRevealSecret = (_slot: string, _minedBlock: string, signature
 			if(!t) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
 			if(!t.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
 			try {
+				console.log({hashSecret: t.hash_secret, slot, minedBlock})
 				const pubAddress = CryptoUtils.pubToAddress(recover(CryptoUtils.hashCancelSecret(t.hash_secret, slot, minedBlock), signature));
 				if(t.owner.toLowerCase() !== pubAddress.toLowerCase()) return cb({statusCode: 400, error: "Signature failed verification"});
 			}catch (e) {
@@ -277,7 +278,13 @@ export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBa
 				}
 
 				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { is_submitted: true } });
-				async.parallel(swapTransactions.map((t=> (cb: CallBack<void>) => CoinState.endSwap(t.slot, t.recipient, cb)), Utils.errorCB));
+				async.parallel(swapTransactions.map(((t: ITransaction) => (cb: CallBack<void>) => {
+					if(t.invalidated || t.secret == "0x0000000000000000000000000000000000000000000000000000000000000000") {
+						CoinState.resetSlot(t.slot, cb)
+					} else {
+						CoinState.endSwap(t.slot, t.recipient, cb)
+					}
+				}), Utils.errorCB));
 				return cb(null);
 			});
 		} else {
@@ -287,3 +294,54 @@ export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBa
 		return cb(null)
 	}
 };
+
+
+export const getSwappingRequests = (address: string, cb: CallBack<ApiResponse<ITransaction[]>>) => {
+	TransactionService.aggregate([
+		{ $addFields: { mined_block_str: { $toString: "$mined_block" } } },
+		{
+			$match: {
+				recipient: address,
+				invalidated: false,
+				is_swap: true,
+				mined_block_str: null,
+			}
+		}
+	], (err: any, transactions: ITransaction[]) => {
+		if(err) return cb(err)
+		cb(null, {
+			statusCode: 200,
+			result: transactions
+		})
+	});
+}
+
+export const getSwappingTokens = (address: string, cb: CallBack<ApiResponse<ITransaction[]>>) => {
+
+	TransactionService.aggregate([
+		{ $addFields: { mined_block_str: { $toString: "$mined_block" } } },
+		{
+			$match: {
+				owner: address,
+				invalidated: false,
+				is_swap: true,
+				mined_block_str: {$ne: null},
+			}
+		},
+		{
+			$lookup: {
+				from: "secretRevealingBlocks",
+				localField: "mined_block",    // field in the orders collection
+				foreignField: "_id",  // field in the items collection
+				as: "secret_revealing_block"
+			}
+		}
+	], (err: any, transactions: ITransaction[]) => {
+		if(err) return cb(err)
+		cb(null, {
+			statusCode: 200,
+			// @ts-ignore
+			result: transactions.filter(t => !t.secret_revealing_block[0].is_submitted )
+		})
+	});
+}

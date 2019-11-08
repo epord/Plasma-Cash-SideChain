@@ -1,19 +1,21 @@
 import {CryptoUtils} from "./CryptoUtils";
-import {ApiResponse, CallBack} from "./TypeDef";
+import {ApiResponse} from "./TypeDef";
 import Status from 'http-status-codes';
 import * as EthUtils from 'ethereumjs-util';
 import {
-    IJSONBlock, IJSONChallengeData,
+    IJSONBlock,
+    IJSONChallengeData,
     IJSONExitData,
-    IJSONSingleSwapData, IJSONSRBlock,
+    IJSONSingleSwapData,
+    IJSONSRBlock,
     IJSONSwapData,
     IJSONTransaction
 } from "../routes/api/jsonModels";
 import {ISingleSwapData, ITransaction} from "../models/transaction";
 import {IBlock} from "../models/block";
-import RLP = require('rlp');
 import {ISRBlock} from "../models/secretRevealingBlock";
 import * as e from "express";
+import RLP = require('rlp');
 
 const debug = require('debug')('app:api:Utils');
 
@@ -95,12 +97,12 @@ export class Utils {
     public static transactionToJson(transaction: ITransaction): IJSONTransaction {
 
         let transactionObj: any = {
-            slot: transaction.slot.toFixed(),
+            slot: transaction.slot.toString(),
             isSwap: transaction.is_swap,
             owner: transaction.owner,
             recipient: transaction.recipient,
             hash: transaction.hash,
-            blockSpent: transaction.block_spent.toFixed(),
+            blockSpent: transaction.block_spent.toString(),
             signature: transaction.signature,
 
             minedTimestamp: transaction.mined_timestamp,
@@ -108,7 +110,7 @@ export class Utils {
         };
 
         if(transaction.is_swap) {
-            transactionObj.swappingSlot = transaction.swapping_slot.toFixed();
+            transactionObj.swappingSlot = transaction.swapping_slot.toString();
             transactionObj.hashSecret = transaction.hash_secret;
             transactionObj.secret = transaction.secret;
         }
@@ -158,7 +160,7 @@ export class Utils {
             transaction: this.singleSwapDataToJson(swapDataA),
             counterpart: this.singleSwapDataToJson(swapDataB),
             proof,
-            mined_block: swapDataA.data.mined_block.toFixed(),
+            minedBlock: swapDataA.data.mined_block.toFixed(),
             signature: swapDataA.data.signature!,
             bytes,
             isRevealed: (swapDataA.data.secret != undefined && swapDataB.data.secret != undefined)

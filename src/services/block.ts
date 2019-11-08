@@ -8,10 +8,10 @@ import {isTransactionValid, toTransactionData} from './transaction';
 import {checkIfAnySecretBlockReady, isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
 import {IBlock} from "../models/block";
 import {ITransaction} from "../models/transaction";
-import RLP = require('rlp');
 import {ISRBlock} from "../models/secretRevealingBlock";
 import {CoinStateService} from "./index";
 import {NativeError} from "mongoose";
+import RLP = require('rlp');
 
 const moment = require('moment')
     , debug = require('debug')('app:services:transaction')

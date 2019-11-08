@@ -1,6 +1,5 @@
 import {Document, Schema} from "mongoose";
 import BigNumber from "bignumber.js";
-import CoinStateSchema from "./coinStateModel";
 
 const BigNumberSchema = require('mongoose-bignumber');
 

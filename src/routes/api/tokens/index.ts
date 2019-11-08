@@ -1,12 +1,9 @@
 import {Utils} from "../../../utils/Utils";
 import {getHistory, getHistoryProof, getLastMinedTransaction} from "../../../services/transaction";
-import {TransactionService} from '../../../services';
 import {CoinState} from "../../../services/coinState";
 import * as Status from 'http-status-codes'
 import * as express from 'express';
-import {NativeError} from "mongoose";
-import {ITransaction} from "../../../models/transaction";
-import BigNumber from "bignumber.js";
+import {getSwappingRequests, getSwappingTokens} from "../../../services/atomicSwap";
 
 const router = express.Router({ mergeParams: true })
 	, debug = require('debug')('app:api:tokens');
@@ -56,101 +53,21 @@ router.get('/:id([0-9a-zA-Z]+)/history-proof', (req: express.Request, res: expre
 router.get('/swapping-requests/:address([0-9a-zA-Z]+)', (req: express.Request, res: express.Response, next) => {
 	const { address } = req.params;
 
-	TransactionService.aggregate([
-		{
-			$project: {
-				slot: { $toString: "$slot" },
-				owner: true,
-				recipient: true,
-				_id: true,
-				block_spent: { $toString: "$block_spent" },
-				mined_timestamp: true,
-				timestamp: true,
-				signature: true,
-				swapping_slot: { $toString: "$swapping_slot" },
-				hash_secret: true,
-				is_swap: true,
-				invalidated: true,
-				mined_block: { $toString: "$mined_block" },
-			}
-		}, {
-			$match: {
-				is_swap: true,
-				invalidated: false,
-				recipient: address,
-				mined_block: null,
-			}
-		}
-	], (err: NativeError, transactions: ITransaction[]) => {
-		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+	if (!address) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter');
+	}
 
-		const swappingRequests = transactions.map(t => ({
-			slot: t.slot,
-			isSwap: t.is_swap,
-			owner: t.owner,
-			recipient: t.recipient,
-			hash: t._id,
-			blockSpent: t.block_spent,
-			signature: t.signature,
-			minedTimestamp: t.mined_timestamp,
-			minedBlock: t.mined_block,
-			swappingSlot: t.swapping_slot,
-			hashSecret: t.hash_secret,
-		}));
-
-		res.status(Status.OK).json(swappingRequests);
-	});
+	getSwappingRequests(address, Utils.responseWithStatus(res, (arr) => arr.map(Utils.transactionToJson)));
 });
 
 router.get('/swapping-tokens/:address([0-9a-zA-Z]+)', (req: express.Request, res: express.Response, next) => {
 	const { address } = req.params;
 
-	TransactionService.aggregate([
-		{
-			$project: {
-				slot: { $toString: "$slot" },
-				owner: true,
-				recipient: true,
-				_id: true,
-				block_spent: { $toString: "$block_spent" },
-				mined_timestamp: true,
-				timestamp: true,
-				signature: true,
-				swapping_slot: { $toString: "$swapping_slot" },
-				secret: true,
-				hash_secret: true,
-				is_swap: true,
-				invalidated: true,
-				mined_block: { $toString: "$mined_block" },
-			}
-		}, {
-			$match: {
-				is_swap: true,
-				invalidated: false,
-				recipient: address,
-				mined_block: { $ne: null },
-				secret: null,
-			}
-		}
-	], (err: NativeError, transactions: ITransaction[]) => {
-		if (err) return res.status(Status.INTERNAL_SERVER_ERROR).json(err);
+	if (!address) {
+		return res.status(Status.BAD_REQUEST).json('Missing parameter');
+	}
 
-		const swappingRequests = transactions.map(t => ({
-			slot: t.slot,
-			isSwap: t.is_swap,
-			owner: t.owner,
-			recipient: t.recipient,
-			hash: t._id,
-			blockSpent: t.block_spent,
-			signature: t.signature,
-			minedTimestamp: t.mined_timestamp,
-			minedBlock: t.mined_block,
-			swappingSlot: t.swapping_slot,
-			hashSecret: t.hash_secret,
-		}));
-
-		res.status(Status.OK).json(swappingRequests);
-	});
+	getSwappingTokens(address, Utils.responseWithStatus(res, (arr) => arr.map(Utils.transactionToJson)));
 });
 
 export default router;

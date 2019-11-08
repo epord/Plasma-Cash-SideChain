@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
-import mongoose, {Schema, Document} from "mongoose";
+import {Document, Schema} from "mongoose";
 import {ITransaction} from "./transaction";
+
 const BigNumberSchema = require('mongoose-bignumber');
 
 export interface IBlock extends Document {
