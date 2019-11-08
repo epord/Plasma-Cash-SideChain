@@ -77,6 +77,7 @@ export class CryptoUtils {
 
     public static async getAtomicSwapTransactionBytes(transaction: ITransaction): Promise<string>  {
         let counterpart = await TransactionService.findOne({slot: transaction.swapping_slot, mined_block: transaction.mined_block}).exec();
+        if(counterpart == null) throw "Illegal state, no counterpart for this atomic transaction";
 
         let params = [
             //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
@@ -84,15 +85,10 @@ export class CryptoUtils {
             EthUtils.setLengthLeft(new BN(transaction.block_spent.toFixed()).toBuffer(), 256/8),    // uint256 little endian
             EthUtils.toBuffer(transaction.secret || "0x0"), // must start with 0x
             EthUtils.toBuffer(transaction.recipient),
-            // @ts-ignore TODO: Remove ts-ignore when this is fixed
             EthUtils.setLengthLeft(new BN(counterpart.slot.toFixed()).toBuffer(), 256/8),   // uint256 little endian
-            // @ts-ignore TODO: Remove ts-ignore when this is fixed
             EthUtils.setLengthLeft(new BN(counterpart.block_spent.toFixed()).toBuffer(), 256/8),    // uint256 little endian
-            // @ts-ignore TODO: Remove ts-ignore when this is fixed
             EthUtils.toBuffer(counterpart.secret || "0x0"), // must start with 0x
-            // @ts-ignore TODO: Remove ts-ignore when this is fixed
             EthUtils.toBuffer(counterpart.recipient),   // must start with 0x
-            // @ts-ignore TODO: Remove ts-ignore when this is fixed
             EthUtils.toBuffer(counterpart.signature),   // must start with 0x
         ];
 

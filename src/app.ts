@@ -12,7 +12,6 @@ const dotenv 		= require('dotenv')
 
 dotenv.config();
 
-// TODO: Ver de qué tipo es cb
 async.waterfall([
     (cb: any) => {
         if(process.env.BLOCKCHAINLESS) return cb();

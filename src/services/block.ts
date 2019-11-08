@@ -3,7 +3,6 @@ import {Utils} from "../utils/Utils";
 import BigNumber from "bignumber.js";
 import {ApiResponse, CallBack} from "../utils/TypeDef";
 import {CoinState} from "./coinState";
-//TODO Clean up this. We had to put it down here due to cyclical dependencies
 import {isTransactionValid, toTransactionData} from './transaction';
 import {checkIfAnySecretBlockReady, isAtomicSwapTransactionValid, toAtomicSwapData} from "./atomicSwap";
 import {IBlock} from "../models/block";

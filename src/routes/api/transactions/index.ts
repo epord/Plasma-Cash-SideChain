@@ -44,20 +44,17 @@ router.get('/swap-data/:id([A-Za-z0-9]+)', (req: express.Request, res: express.R
 				//Get AllProof
 				let swapDataA = {
 					data: transactions[0],
-					firstInclusionProof: result.firstProofA,
-					secretProof: result.secretProofA
+					firstInclusionProof: result.firstProofA as string,
+					secretProof: result.secretProofA as string
 				};
 
 				let swapDataB = {
 					data: transactions[1],
-					firstInclusionProof: result.firstProofB,
-					secretProof: result.secretProofB
+					firstInclusionProof: result.firstProofB as string,
+					secretProof: result.secretProofB as string
 				};
 
-				// TODO: swapDataToJson should receive ISingleSwapData
-				// @ts-ignore
                 return res.status(Status.OK).json(Utils.swapDataToJson(swapDataA, swapDataB));
-
 			});
 		});
 	});

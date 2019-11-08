@@ -258,8 +258,9 @@ export const checkIfAnySecretBlockReady = () => {
 };
 
 export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBack<void>) => {
-	// @ts-ignore //TODO: Remove ts-ignore when this is fixed
-    const block: IBlock  = await BlockService.findById(minedBlock).populate("transactions").exec();
+    const block: (IBlock | null)  = await BlockService.findById(minedBlock).populate("transactions").exec();
+    if(block == null) return cb({message: `${minedBlock} block could not be found`});
+
 	const swapTransactions = block.Transactions.filter(t => t.is_swap);
 	const isAllRevealed = swapTransactions.map(t=> t.secret).indexOf(undefined) < 0;
 
