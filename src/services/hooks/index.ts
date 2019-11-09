@@ -304,6 +304,15 @@ const onChannelFunded = (iChannelFunded: abiInterface) => (error: any, result?: 
 	});
 };
 
+
+const onChannelConcluded = (iChannelEnd: abiInterface) => (error: any, result?: eventResultInterface) => {
+	if(error) return console.error(error);
+	const eventObj = eventToObj(iChannelEnd, result!);
+	debug(`Channel ${eventObj.channelId} has concluded`);
+	Battle.conclude(eventObj.channelId, (err: any) => console.error("Error concluding battle", err));
+};
+
+
 const onForceMoveResponded = (iForceMoveResponded: abiInterface) => (error: any, result?: eventResultInterface) => {
 	if(error) return console.error(error);
 	const eventObj = eventToObj(iForceMoveResponded, result!);
@@ -372,13 +381,6 @@ export function init(cb: () => void) {
 	const iTransfer = getEventInterface(CryptoMonContract, 'Transfer');
 	subscribeLogEvent(CryptoMonContract, iTransfer, onTransfer(iTransfer));
 
-	//RPS Battles
-	// const RPSExampleContract = new web3.eth.Contract(RPSExampleJson.abi, RPSExampleJson.networks["5777"].address);
-	// const RPSaddress = RPSExampleJson.networks["5777"].address;
-
-	// const iRPSStarted = getEventInterface(RPSExampleContract, 'RPSStarted');
-	// subscribeLogEvent(RPSExampleContract, iRPSStarted, onBattleStarted(iRPSStarted, RPSaddress));
-
 	//CryptoMons Battles TODO: Listen to unlawful battles
 	// const CryptoMonsBattlesContract = new web3.eth.Contract(CryptoMonsBattlesJson.abi, CryptoMonsBattlesJson.networks["5777"].address);
 	// const CryptoMonsBattlesaddress = CryptoMonsBattlesJson.networks["5777"].address;
@@ -396,7 +398,11 @@ export function init(cb: () => void) {
 	const iChannelFunded = getEventInterface(PlasmaChannelManagerContract, 'ChannelFunded');
 	subscribeLogEvent(PlasmaChannelManagerContract, iChannelFunded, onChannelFunded(iChannelFunded));
 
+	const iChannelConcluded = getEventInterface(PlasmaChannelManagerContract, 'ChannelConcluded');
+	subscribeLogEvent(PlasmaChannelManagerContract, iChannelConcluded, onChannelConcluded(iChannelConcluded));
 
+	const iChannelChallenged = getEventInterface(PlasmaChannelManagerContract, 'ChannelChallenged');
+	subscribeLogEvent(PlasmaChannelManagerContract, iChannelChallenged, onChannelConcluded(iChannelChallenged));
 
 	cb();
 }

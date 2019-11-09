@@ -90,4 +90,13 @@ export class Battle {
 
     battle.save(cb);
   }
+
+  static conclude(channelId: string, cb: CallBack<IBattle>) {
+      Battle.getById(channelId, (err, battle) => {
+        if(err) return cb(err);
+        if(!battle) return cb("Error battle not found");
+        battle.finished = true;
+        battle.save(cb);
+      })
+  }
 }
