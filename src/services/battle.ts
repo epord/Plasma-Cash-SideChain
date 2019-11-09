@@ -97,6 +97,8 @@ export class Battle {
         if(!battle) return cb("Error battle not found");
         battle.finished = true;
         battle.save(cb);
+        emitState(battle.players[0].socket_id, 'battleFinished', battle);
+        emitState(battle.players[1].socket_id, 'battleFinished', battle);
       })
   }
 }
