@@ -171,7 +171,6 @@ export const cancelRevealSecret = (_slot: string, _minedBlock: string, signature
 			if(!t) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
 			if(!t.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
 			try {
-				console.log({hashSecret: t.hash_secret, slot, minedBlock})
 				const pubAddress = CryptoUtils.pubToAddress(recover(CryptoUtils.hashCancelSecret(t.hash_secret, slot, minedBlock), signature));
 				if(t.owner.toLowerCase() !== pubAddress.toLowerCase()) return cb({statusCode: 400, error: "Signature failed verification"});
 			}catch (e) {
@@ -179,6 +178,7 @@ export const cancelRevealSecret = (_slot: string, _minedBlock: string, signature
 			}
 
 			t.secret = nullSecret;
+			t.invalidated = true;
 			t.save((err, t) => {
 				if(err) return cb(err);
 				TransactionService.findOne({ slot: t.swapping_slot, mined_block: minedBlock}).exec((err: any, ts: ITransaction) => {
@@ -186,6 +186,7 @@ export const cancelRevealSecret = (_slot: string, _minedBlock: string, signature
 					if(!ts) return cb(null, {statusCode: 404, error: "Transaction of the slot on the mined block could not be found"});
 					if(!ts.is_swap) return cb(null, {statusCode: 409, error: "Transaction does not appear to be an Atomic Swap"});
 					ts.secret = nullSecret;
+					ts.invalidated = true;
 					ts.save((err, t) => {
 						if(err) return cb(err);
 						submitSecretBlockIfReady(minedBlock,() => cb(null, {statusCode: 202, result: t}));
@@ -280,7 +281,7 @@ export const submitSecretBlockIfReady = async (minedBlock: BigNumber, cb: CallBa
 
 				await SecretRevealingBlockService.updateOne({ _id: sblock.block_number }, { $set: { is_submitted: true } });
 				async.parallel(swapTransactions.map(((t: ITransaction) => (cb: CallBack<void>) => {
-					if(t.invalidated || t.secret == "0x0000000000000000000000000000000000000000000000000000000000000000") {
+					if(t.invalidated) {
 						CoinState.resetSlot(t.slot, cb)
 					} else {
 						CoinState.endSwap(t.slot, t.recipient, cb)
