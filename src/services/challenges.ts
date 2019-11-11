@@ -10,7 +10,7 @@ export class Challenge {
 		getLastMinedTransaction({slot: slot, block_spent: exitBlock}, (err, transaction) => {
 
 			if (err) return cb(err);
-			if (!transaction) return cb({ statusCode: 404, message: 'There is no data for a Challenge After for said transaction' });
+			if (!transaction) return cb({ statusCode: 404, error: 'There is no data for a Challenge After for said transaction' });
 
 			getProof(slot.toString(), transaction.mined_block.toString(), async (err: any, proof?: string) => {
 				if (err) return cb(err)
@@ -24,7 +24,7 @@ export class Challenge {
 	public static getBeforeData = (slot: BigNumber, parentBlock: BigNumber, cb: CallBack<ApiResponse<IJSONChallengeData>>) => {
 		getLastMinedTransaction({ slot, block_spent: { $lte: parentBlock } }, (err, transaction) => {
 			if (err) return cb(err);
-			if (!transaction) return cb({ statusCode: 404, message: 'There is no data for a Challenge Before for said transaction' });
+			if (!transaction) return cb({ statusCode: 404, error: 'There is no data for a Challenge Before for said transaction' });
 
 			getProof(slot.toString(), transaction.mined_block.toString(), async (err: any, proof?: string) => {
 				if (err) return cb(err)

@@ -13,7 +13,7 @@ debug('registering /api/challenges routes');
  * slot
  * exitBlock
  */
-router.get('/after/', (req: express.Request, res: express.Response) => {
+router.get('/after', (req: express.Request, res: express.Response, next) => {
 	const { slot, exitBlock } = req.query;
 
 	if (!slot) {
