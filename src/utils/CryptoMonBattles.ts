@@ -286,7 +286,7 @@ export const fromBytesAndData = (
             game.decisionPL = parseInt(decoded[11].toString('hex'), 16);
             game.saltPL = '0x' + decoded[12].toString('hex');
             if (decoded.length > 13) {
-                game.decisionPL = parseInt(decoded[13].toString('hex'), 16);
+                game.decisionOP = parseInt(decoded[13].toString('hex'), 16);
                 game.saltOP = '0x' + decoded[14].toString('hex');
                 if (decoded.length > 15) {
                     game.nextHashDecision = '0x' + decoded[15].toString('hex');

@@ -130,7 +130,7 @@ export const mineBlock = (cb: CallBack<ApiResponse<IBlock>>) => {
 				}
 
 				createBlock(transactions!, nextNumber, (err: any, block: IBlock) => {
-					debug(`mining ${block}`);
+					debug(`mining ${block.block_number}`);
 					if(err) return cb(err);
 
 					const hasSwap = block.Transactions.map(t => t.is_swap).indexOf(true) >= 0;
