@@ -19,12 +19,12 @@ const DRAGON_SPATK_INC   = 130;
 
 const STEEL_SPDEF_INC   = 150;
 
-const BUG_HIT_NOT_MISS      = Math.floor((50) * 100 * 255 / 100);
-const ELECTRIC_HIT_NOT_MISS = Math.floor((75) * 100 * 255 / 100);
-const FAIRY_SAME_SEX_HIT_NOT_MISS = Math.floor((65) * 100 * 255 / 100);
-const FAIRY_DIFF_SEX_HIT_NOT_MISS = Math.floor((30) * 100 * 255 / 100);
-const PSYCHIC_HIT_NOT_MISS = Math.floor((85) * 100 * 255 / 100);
-const GHOST_HIT_NOT_MISS   = Math.floor((70) * 100 * 255 / 100);
+const BUG_HIT_NOT_MISS      = Math.floor((50) * 100 * 255 / 10000);
+const ELECTRIC_HIT_NOT_MISS = Math.floor((75) * 100 * 255 / 10000);
+const FAIRY_SAME_SEX_HIT_NOT_MISS = Math.floor((65) * 100 * 255 / 10000);
+const FAIRY_DIFF_SEX_HIT_NOT_MISS = Math.floor((30) * 100 * 255 / 10000);
+const PSYCHIC_HIT_NOT_MISS = Math.floor((85) * 100 * 255 / 10000);
+const GHOST_HIT_NOT_MISS   = Math.floor((70) * 100 * 255 / 10000);
 
 
 const BONUS_EFFECTIVE = 150;
@@ -483,11 +483,11 @@ function willHit(state, otherState, random) {
     let odds = Math.floor(
       Math.floor((odds1) * decimals / 255) *  Math.floor((odds2) * decimals / 255) * 255 / (decimals * decimals)
     );
-    return random > odds;
+    return random < odds;
   } else if(state.status1) {
-    return random > getMissOdds(otherState.data.type1, state.cryptoMon.gender === otherState.cryptoMon.gender);
+    return random < getMissOdds(otherState.data.type1, state.cryptoMon.gender === otherState.cryptoMon.gender);
   } else if(state.status2) {
-    return random > getMissOdds(otherState.data.type2, state.cryptoMon.gender === otherState.cryptoMon.gender);
+    return random < getMissOdds(otherState.data.type2, state.cryptoMon.gender === otherState.cryptoMon.gender);
   } else {
     return true;
   }

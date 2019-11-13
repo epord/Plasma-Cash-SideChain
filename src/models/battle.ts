@@ -4,6 +4,7 @@ export interface IChannelState {
 	channelId: string;
 	channelType: string;
 	participants: Array<string>;
+	publicKeys: Array<string>;
 	turnNum: number;
 	game: ICMBState;
 	signature?: string;

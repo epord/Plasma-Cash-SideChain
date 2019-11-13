@@ -18,9 +18,7 @@ const { BattleService } = require('./services');
 // sockets: socketId -> Socket
 interface ISocketState {
   socket: Socket,
-  owner: string,
-  authenticated: boolean,
-  nonce: string,
+  owner?: string,
 }
 const sockets = new Map<String, ISocketState>();
 
@@ -40,34 +38,11 @@ const emitError = (socket: Socket, battle: IBattle | undefined, message: String)
 export const emitState = (socketId: string, event: string, battle: IBattle) => {
   emitEvent(socketId, event, { state: battle.state, prevState: battle.prev_state })
 };
+
 const isAuthenticated = (socketId: string) => {
-  return sockets.get(socketId)!.authenticated;
+  return sockets.get(socketId) == undefined || sockets.get(socketId)!.owner != undefined;
 };
 
-const onAuthentication = (socket: Socket) => {
-  socket.on("authenticationResponse", (data: { user: string, signature: string }) => {
-    debug('Response of authentication ', data.user)
-
-    const socketState = sockets.get(socket.id);
-    if (!socketState) return emitError(socket, undefined, "No connection registered");
-
-    try {
-      debug('recovering address')
-      debug('address recovered')
-      const pubAddress = CryptoUtils.pubToAddress(recover(socketState.nonce, data.signature));
-      if (data.user.toLowerCase() !== pubAddress) return emitError(socket, undefined, 'Validation failed');
-    } catch (e) {
-      console.error(e.message);
-      return emitError(socket, undefined, 'Validation failed');
-    }
-
-    socketState.owner = data.user;
-    socketState.authenticated = true;
-    sockets.set(socket.id, socketState);
-    debug("Client authenticated");
-    socket.emit("authenticated");
-  });
-};
 
 const updateSocketIdIfNeeded = (channelId: string, socketId: string, cb: CallBack<IBattle>) => {
   Battle.getById(channelId, (err: any, battle?: IBattle) => {
@@ -81,7 +56,7 @@ const updateSocketIdIfNeeded = (channelId: string, socketId: string, cb: CallBac
     const socketState = sockets.get(socketId);
     if (!socketState) return cb('Authenticate first');
 
-    const user = socketState.owner;
+    const user = socketState.owner!;
     let playerIndex = battle.players.findIndex(u => u.id.toLowerCase() == user.toLowerCase());
     if (playerIndex < 0) return cb('This socket is not participating of this battle');
 
@@ -98,8 +73,10 @@ const updateSocketIdIfNeeded = (channelId: string, socketId: string, cb: CallBac
 };
 
 const onBattleRequest = (socket: Socket) => {
-  socket.on("battleRequest", (data: { channelId: string }) => {
-    const { channelId } = data;
+  socket.on("battleRequest", (data: { owner: string, channelId: string }) => {
+    const { channelId, owner } = data;
+    const socketState = { socket: socket, owner: owner };
+    sockets.set(socket.id, socketState);
 
     if (!isAuthenticated(socket.id)) return emitError(socket, undefined, "Not authenticated");
 
@@ -137,7 +114,7 @@ const onPlay = (socket: Socket) => {
         return emitError(socket, battle, 'Not your turn');
       }
 
-      Battle.play(state, battle, (err: any) => {
+      Battle.play(state, _.cloneDeep(battle), (err: any) => {
         if (err) return emitError(socket, battle, err);
       })
     });
@@ -155,21 +132,9 @@ const onDisonnect = (socket: Socket) => {
 io.on('connection', (socket: Socket) => {
   debug('User connected');
 
-  const socketState = { socket: socket, nonce: "0x00000000000000000000000000000000" + Utils.randomHex256().slice(2,34), authenticated: false, owner: "" };
-  sockets.set(socket.id, socketState);
-
   onBattleRequest(socket);
   onPlay(socket);
   onDisonnect(socket);
-  onAuthentication(socket);
-
-  socket.on('debugBattles', (state: any) => {
-    debug(sockets.keys());
-    BattleService.find({}, console.log)
-  });
-
-  socket.emit("authenticationRequest", { nonce: socketState.nonce })
-
 });
 
 export function init(cb: (err: any) => void) {

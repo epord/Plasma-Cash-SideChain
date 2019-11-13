@@ -299,6 +299,7 @@ const onChannelFunded = (iChannelFunded: abiInterface) => (error: any, result?: 
 			eventObj.channelType,
 			eventObj.creator,
 			eventObj.opponent,
+			eventObj.publicKeys,
 			initialState,
 		(err: any) => { if(err) debug("ERROR: " + err) });
 	});
@@ -323,6 +324,7 @@ const onForceMoveResponded = (iForceMoveResponded: abiInterface) => (error: any,
 			channelId: eventObj.channelId.toString(),
 			channelType: eventObj.nextState.channelType,
 			participants: eventObj.nextState.participants,
+			publicKeys: battle.state.publicKeys,
 			turnNum: parseInt(eventObj.nextState.turnNum.toString()),
 			game: fromBytesAndData(eventObj.nextState.gameAttributes,
 				battle.state.game.cryptoMonPLInstance,

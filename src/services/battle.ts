@@ -18,6 +18,10 @@ export class Battle {
     return state.participants[state.turnNum % 2];
   }
 
+  public static publicKey(state: IChannelState) {
+    return state.publicKeys[state.turnNum % 2];
+  }
+
   public static isTransitionValid(battle: IBattle, newState: IChannelState): Maybe<boolean> {
     const oldState = battle.state;
 
@@ -29,16 +33,19 @@ export class Battle {
     if (oldState.turnNum + 1 != newState.turnNum) return {err: "TurnNum should be increased by 1"};
 
     if (!newState.signature) return {err: "Missing siganture"};
+    let valid = validateTurnTransition(oldState.game, oldState.turnNum, newState.game);
+    if (!valid.result) return valid;
 
     try {
       const pubAddress = CryptoUtils.pubToAddress(recover(CryptoUtils.hashChannelState(newState), newState.signature));
-      if (Battle.mover(newState).toLowerCase() !== pubAddress) return {err: "Invalid Signature"};
+      if (Battle.publicKey(newState).toLowerCase() !== pubAddress) return {err: "Invalid Signature"};
     } catch (e) {
       console.error(e.message);
       return {err: "Invalid Signature"}
     }
 
-    return validateTurnTransition(oldState.game, oldState.turnNum, newState.game);
+    return valid;
+
   }
 
   public static isFinished(battle: IBattle) {
@@ -50,6 +57,7 @@ export class Battle {
       channelType: string,
       player: string,
       opponent: string,
+      publicKeys: Array<string>,
       initialState: ICMBState,
       cb: CallBack<IBattle>) => {
 
@@ -64,6 +72,7 @@ export class Battle {
         channelId,
         channelType,
         participants: [player, opponent],
+        publicKeys,
         turnNum: 0,
         game: initialState
       },
