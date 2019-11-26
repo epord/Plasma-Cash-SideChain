@@ -19,12 +19,12 @@ const DRAGON_SPATK_INC   = 130;
 
 const STEEL_SPDEF_INC   = 150;
 
-const BUG_HIT_NOT_MISS      = Math.floor((50) * 100 * 255 / 10000);
-const ELECTRIC_HIT_NOT_MISS = Math.floor((75) * 100 * 255 / 10000);
-const FAIRY_SAME_SEX_HIT_NOT_MISS = Math.floor((65) * 100 * 255 / 10000);
-const FAIRY_DIFF_SEX_HIT_NOT_MISS = Math.floor((30) * 100 * 255 / 10000);
-const PSYCHIC_HIT_NOT_MISS = Math.floor((85) * 100 * 255 / 10000);
-const GHOST_HIT_NOT_MISS   = Math.floor((70) * 100 * 255 / 10000);
+const BUG_MISS_ODDS      = Math.floor((50) * 100 * 255 / 10000);
+const ELECTRIC_MISS_ODDS = Math.floor((25) * 100 * 255 / 10000);
+const FAIRY_SAME_SEX_MISS_ODDS = Math.floor((35) * 100 * 255 / 10000);
+const FAIRY_DIFF_SEX_MISS_ODDS = Math.floor((70) * 100 * 255 / 10000);
+const PSYCHIC_MISS_ODDS = Math.floor((15) * 100 * 255 / 10000);
+const GHOST_MISS_ODDS   = Math.floor((30) * 100 * 255 / 10000);
 
 
 const BONUS_EFFECTIVE = 150;
@@ -287,8 +287,8 @@ function moveTurn(state){
 }
 
 function canStatus(state, random) {
-  if(state.player.status1) check(state.opponent.data.type1 !== Type.Ice, "Cant use Status while Froze");
-  if(state.player.status2) check(state.opponent.data.type2 !== Type.Ice, "Cant use Status while Froze");
+  if(state.player.status1 && state.opponent.data.type1 !== Type.Ice) return false;
+  if(state.player.status2 && state.opponent.data.type2 !== Type.Ice) return false;
   return random < STATUS_HIT_CHANCE;
 }
 
@@ -480,27 +480,28 @@ function willHit(state, otherState, random) {
   if(state.status1 && state.status2) {
     let odds1 = getMissOdds(otherState.data.type1, state.cryptoMon.gender === otherState.cryptoMon.gender);
     let odds2 = getMissOdds(otherState.data.type2, state.cryptoMon.gender === otherState.cryptoMon.gender);
-    let odds = Math.floor(
-      Math.floor((odds1) * decimals / 255) *  Math.floor((odds2) * decimals / 255) * 255 / (decimals * decimals)
+    let odds = 255 - Math.floor(
+      (Math.floor((255-odds1) * decimals/255) * Math.floor((255-odds2) * decimals/255))*255
+      /(decimals*decimals)
     );
-    return random < odds;
+    return random > odds;
   } else if(state.status1) {
-    return random < getMissOdds(otherState.data.type1, state.cryptoMon.gender === otherState.cryptoMon.gender);
+    return random > getMissOdds(otherState.data.type1, state.cryptoMon.gender === otherState.cryptoMon.gender);
   } else if(state.status2) {
-    return random < getMissOdds(otherState.data.type2, state.cryptoMon.gender === otherState.cryptoMon.gender);
+    return random > getMissOdds(otherState.data.type2, state.cryptoMon.gender === otherState.cryptoMon.gender);
   } else {
     return true;
   }
 }
 
 function getMissOdds(ptype, sameSex) {
-  if(ptype === Type.Bug) return BUG_HIT_NOT_MISS;
-  if(ptype === Type.Electric) return ELECTRIC_HIT_NOT_MISS;
-  if(ptype === Type.Ghost) return GHOST_HIT_NOT_MISS;
-  if(ptype === Type.Psychic) return PSYCHIC_HIT_NOT_MISS;
+  if(ptype === Type.Bug) return BUG_MISS_ODDS;
+  if(ptype === Type.Electric) return ELECTRIC_MISS_ODDS;
+  if(ptype === Type.Ghost) return GHOST_MISS_ODDS;
+  if(ptype === Type.Psychic) return PSYCHIC_MISS_ODDS;
   if(ptype === Type.Fairy) {
-    if(sameSex) return FAIRY_SAME_SEX_HIT_NOT_MISS;
-    return FAIRY_DIFF_SEX_HIT_NOT_MISS;
+    if(sameSex) return FAIRY_SAME_SEX_MISS_ODDS;
+    return FAIRY_DIFF_SEX_MISS_ODDS;
   }
 
   return 0;
