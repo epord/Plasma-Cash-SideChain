@@ -6,7 +6,8 @@ import * as express from 'express';
 import BigNumber from "bignumber.js";
 import {NativeError} from "mongoose";
 import {IBlock} from "../../../models/block";
-import {BlockService} from "../../../services";
+import {BlockService, TransactionService} from "../../../services";
+import {ITransaction} from "../../../models/transaction";
 
 const router 					= express.Router({ mergeParams: true })
 	, debug 					= require('debug')('app:api:hacks');
@@ -52,65 +53,58 @@ router.post('/transactions/create', (req: express.Request, res: express.Response
 		.sort({_id: -1})
 		.collation({locale: "en_US", numericOrdering: true})
 		.exec((err: NativeError, lastBlock: IBlock) => {
-			if(err) return Utils.responseWithStatus(res)(err);
+			if (err) return Utils.responseWithStatus(res)(err);
 
-			let nextNumber;
-			if(!lastBlock) {
+			let nextNumber: BigNumber;
+			if (!lastBlock) {
 				nextNumber = blockInterval;
 			} else {
 				const rest = lastBlock.block_number.mod(blockInterval);
 				nextNumber = lastBlock.block_number.minus(rest).plus(blockInterval);
 			}
 
-			const t = {
+			TransactionService.create({
+				_id: hash,
 				slot: slotBN,
 				owner: owner,
 				recipient: recipient,
-				hash: hash,
 				block_spent: blockSpentBN,
 				mined: true,
 				mined_block: nextNumber,
 				signature: signature,
-				mined_timestamp: timestamp,
+				invalidated: true
+			}, (err: any, t: ITransaction) => {
+				if (err) return Utils.responseWithStatus(res)(err); //TODO rollback block creation
+				const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions([t]);
+				const rootHash = sparseMerkleTree.root;
 
-			};
+				BlockService.create({
+					_id: nextNumber,
+					timestamp,
+					root_hash: rootHash,
+					transactions: [t]
+				}, (err: NativeError, block: IBlock) => {
+					if (err) return Utils.responseWithStatus(res)(err);
+					CryptoUtils.submitBlock(block, async (err) => {
+						if (err) return Utils.responseWithStatus(res)(err);
 
-			// TODO: If this transaction wants to be added, this should be handled somehow else
-			// @ts-ignore
-            const sparseMerkleTree = CryptoUtils.generateSMTFromTransactions([t]);
-			const rootHash = sparseMerkleTree.root;
+						let blockJSON = Utils.blockToJson(block);
+						let exitingBytes = await CryptoUtils.getTransactionBytes(t);
 
-			BlockService.create({
-				_id: nextNumber,
-				timestamp,
-				root_hash: rootHash,
-				transactions: [] //Creating empty block cause we dont want no corrupted transactions in our DB
-			}, (err: NativeError, block: IBlock) => {
-				if(err) return Utils.responseWithStatus(res)(err);
-				CryptoUtils.submitBlock(block, async (err) => {
-					if(err) return Utils.responseWithStatus(res)(err); //TODO rollback block creation
+						const message = {
+							block: blockJSON,
+							exitData: {
+								slot: t.slot,
+								bytes: exitingBytes,
+								hash: t.hash,
+								proof: sparseMerkleTree.createMerkleProof(t.slot.toFixed()),
+								signature: t.signature,
+								block: t.mined_block,
+							}
+						};
 
-					let blockJSON =  Utils.blockToJson(block);
-					// TODO: If this transaction wants to be added, this should be handled somehow else
-					// @ts-ignore
-                    blockJSON.transactions = [t];
-                    // TODO: If this transaction wants to be added, this should be handled somehow else
-					// @ts-ignore
-                    let exitingBytes = await CryptoUtils.getTransactionBytes(t);
-
-					const message = {
-						block: blockJSON,
-						exitData: {
-							slot: t.slot,
-							bytes: exitingBytes,
-							hash: t.hash,
-							proof: sparseMerkleTree.createMerkleProof(t.slot.toFixed()),
-							signature: t.signature,
-              block: t.mined_block,
-						}
-					};
-
-					return Utils.responseWithStatus(res)(null, {statusCode: 201, result: message})
+						return Utils.responseWithStatus(res)(null, {statusCode: 201, result: message})
+					});
 				});
 			});
 		});

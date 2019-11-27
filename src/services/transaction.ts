@@ -154,7 +154,12 @@ export const getLastMinedTransaction = (filter: any, cb: CallBack<ITransaction>)
 					});
 				}
 			} else {
-				return cb(null, transaction);
+				if(transaction.invalidated) {
+					filter.mined_timestamp = { $lt: transaction.mined_timestamp };
+					return getLastMinedTransaction(filter, cb);
+				} else {
+					return cb(null, transaction);
+				}
 			}
 		});
 };
