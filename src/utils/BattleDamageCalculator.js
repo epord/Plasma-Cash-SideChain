@@ -287,8 +287,8 @@ function moveTurn(state){
 }
 
 function canStatus(state, random) {
-  if(state.player.status1 && state.opponent.data.type1 !== Type.Ice) return false;
-  if(state.player.status2 && state.opponent.data.type2 !== Type.Ice) return false;
+  if(state.player.status1 && state.opponent.data.type1 == Type.Ice) return false;
+  if(state.player.status2 && state.opponent.data.type2 == Type.Ice) return false;
   return random < STATUS_HIT_CHANCE;
 }
 
